@@ -21,6 +21,8 @@ var voices: Array = []
 var _voice_i := 0
 var _char_n := 0
 var danger := 0.0              # perceived danger 0..1, decays
+var thinking := false          # she's composing a reply: faint crackles on the line
+var _crackle_t := 0.0
 var active := true             # false on the title / while paused: everything fades
 var title_mood := false        # on the title: just rain against the window and the drone
 var master_db := 0.0
@@ -205,6 +207,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"receiver":
 			one_shot("click", "Room", -4.0)
+		"rescuer_thinking":
+			thinking = d.on
 		"line_click":
 			one_shot("click", "Line", -2.0, randf_range(0.9, 1.1))
 			danger = maxf(danger, 0.6)
@@ -282,6 +286,11 @@ func _process(dt: float) -> void:
 		_fade(line_amb[f], FEATURE_DB[f] - 12.0 if f in theirs else -80.0, dt)
 	_fade(heart, lerpf(-40.0, -4.0, danger) if danger > 0.05 else -80.0, dt * 2.0)
 	heart.pitch_scale = lerpf(0.9, 1.35, danger)
+	if thinking and on:
+		_crackle_t -= dt
+		if _crackle_t <= 0.0:
+			_crackle_t = randf_range(0.6, 1.8)
+			one_shot("tap", "Line", -24.0, randf_range(1.8, 2.6))
 	_fade(drone, lerpf(DRONE_DB_CALM, DRONE_DB_DANGER, danger) if DRONE_ON else -80.0, dt * 0.5)
 
 
