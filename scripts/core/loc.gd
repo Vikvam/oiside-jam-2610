@@ -148,6 +148,9 @@ const S := {
 	"him": ["HIM", "ON"],
 	"exit": ["EXIT", "VÝCHOD"],
 	"line": ["LINE", "LINKA"],
+	"plan_block1": ["HOUSE · GROUND FLOOR", "DŮM · PŘÍZEMÍ"],
+	"plan_block2": ["EXIT: [REDACTED]", "VÝCHOD: [ZAČERNĚNO]"],
+	"call_time": ["CALL %d:%02d", "HOVOR %d:%02d"],
 	# ---- game over
 	"end_escaped": ["YOU GOT OUT.", "DOSTAL/A SES VEN."],
 	"end_caught": ["HE FOUND YOU.", "NAŠEL TĚ."],

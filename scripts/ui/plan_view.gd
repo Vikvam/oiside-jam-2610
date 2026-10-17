@@ -225,7 +225,14 @@ func _draw() -> void:
 		var name_col: Color = Style.c("text") if game.visited.has(id) else dim
 		if id == game.player_room:
 			name_col = Style.c("accent")
-		draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 14, name_col)
+		if Style.current == "ink":
+			# Hand-lettered: each label slightly crooked.
+			var ang := sin(float(id.hash() % 100)) * 0.05
+			draw_set_transform(rc.position + Vector2(10, 22), ang, Vector2.ONE)
+			draw_string(font, Vector2.ZERO, h.room_name(id), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 16, name_col)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 14, name_col)
 		if not explore_mode or game.visited.has(id) or game.over:
 			_draw_icons(id, rc)
 		else:
@@ -246,6 +253,7 @@ func _draw() -> void:
 			_icon_phone(rc.position + Vector2(rc.size.x - 22, 18), dim if id != game.player_room else Style.c("text"))
 	# Compass
 	_draw_compass(Vector2(size_px.x - 30, size_px.y - 34))
+	_draw_flourish(size_px, font)
 	# Ripples
 	for r in ripples:
 		var f: float = r.t / 2.2
@@ -322,6 +330,27 @@ func _draw_reveal(font: Font) -> void:
 		star.append(ec + Vector2(cos(ang), sin(ang)) * rr)
 	draw_colored_polygon(star, ac)
 	draw_string(font, ec + Vector2(14, 5), game.house.obj_name(game.exit_obj), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, ac)
+
+
+func _draw_flourish(size_px: Vector2, font: Font) -> void:
+	## Per-style decoration: what makes each look its own.
+	match Style.current:
+		"ink":
+			# Coffee rings left by someone who drew this plan at night.
+			for ring in [[Vector2(size_px.x * 0.78, size_px.y * 0.2), 38.0], [Vector2(size_px.x * 0.12, size_px.y * 0.86), 30.0]]:
+				var c := Color("6b4a2b")
+				for k in 3:
+					c.a = 0.10 - k * 0.025
+					draw_arc(ring[0], ring[1] + k * 1.5, 0.3, TAU - 0.2, 48, c, 2.5 - k * 0.6, true)
+		"blueprint":
+			# Architect's title block in the corner of the Pantry.
+			var r := Rect2(size_px.x - 168, size_px.y - 44, 120, 40)
+			var c: Color = Style.c("dim")
+			draw_rect(r, c, false, 1.0)
+			draw_line(r.position + Vector2(0, 14), Vector2(r.end.x, r.position.y + 14), c, 1.0)
+			draw_string(font, r.position + Vector2(4, 11), Loc.t("plan_block1"), HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
+			draw_string(font, r.position + Vector2(4, 26), Loc.t("plan_block2"), HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
+			draw_string(font, r.position + Vector2(4, 37), "SCALE 1:100", HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
 
 
 func _dashed_rect(r: Rect2, col: Color) -> void:

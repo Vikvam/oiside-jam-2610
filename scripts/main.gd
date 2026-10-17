@@ -41,6 +41,7 @@ var _intro_t := 0.0
 var _settings := ConfigFile.new()
 var cfg := {}
 var autobot = null
+var _dev := false
 var _autoplay_policy := ""
 var _soak_left := 0
 var _soak_stats := {}
@@ -82,6 +83,7 @@ func _dev_args() -> void:
 		a[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	if a.is_empty():
 		return
+	_dev = true
 	if a.has("style"):
 		Style.current = a.style
 		_apply_style()
@@ -143,6 +145,8 @@ func _load_settings() -> void:
 
 
 func _save_settings() -> void:
+	if _dev:
+		return  # dev/test runs never overwrite the player's settings
 	_settings.set_value("ui", "style", Style.current)
 	_settings.set_value("ui", "backend", backend)
 	_settings.set_value("ui", "difficulty", difficulty)
@@ -660,6 +664,8 @@ func _process(dt: float) -> void:
 			if _intro_queue.is_empty():
 				phone.hint("first")
 	game.tick(dt)
+	var cursor := (" █" if int(game.time * 2.0) % 2 == 0 else "  ") if Style.current == "phosphor" else ""
+	header_label.text = "%s     %s%s" % [Loc.t("header"), Loc.t("call_time", [int(game.time) / 60, int(game.time) % 60]), cursor]
 	if autobot != null and not game.over:
 		autobot.tick(dt)
 	mat.set_shader_parameter("danger", sfx.danger)
