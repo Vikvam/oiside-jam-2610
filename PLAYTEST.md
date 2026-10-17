@@ -2,6 +2,35 @@
 
 I (Claude) can't hear audio and can't really *feel* tension. This file lists what only you can judge, what I verified, and what I'd do next.
 
+## 0. Added after my first hand-off (~03:06)
+
+**Variety**
+- **Large house** (12 rooms) and **rearranged house** (new doors, phones and sounds every call): title toggles.
+
+**Hard mode**
+- **He imitates her voice** ("sharp-eared" only). It comes with fair tells, and she warns you.
+
+**Mechanics**
+- **Shouting:** typing in ALL CAPS carries through walls.
+- **The offline voice plays along with lies.** It also confirms where you are with a tap question instead of assuming you followed her.
+- **You can slip out of a doorway as he comes in,** but meeting him head-on in the same door gets you caught.
+
+**Presentation**
+- A coiled phone cord while you're on the line.
+- Ringback tone at the start, an escape sound, and an ending flash.
+- Title-screen mood (rain plus a drone).
+
+**Information and controls**
+- Post-game: your route plus his, and a "Look at the call" toggle.
+- **F1 how-to-play card**, keyboard walking (arrows/WASD, H, Enter/Esc), and stats on the title screen.
+
+**Under the hood**
+- Two code-review passes; all findings fixed.
+- `tests/run_all.sh` regression check.
+- Export presets.
+- `JAM_PAGE.md` blurb.
+- Screenshots in `docs/`.
+
 ## 1. Please listen for
 
 All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio/sfx.gd`.
