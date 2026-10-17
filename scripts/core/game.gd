@@ -21,6 +21,8 @@ var busy := ""            # current action label
 var busy_timer := 0.0
 var _busy_done: Callable
 var receiver_up := true
+var hidden := false
+var _seek_timer := 0.0
 var attempts_left := 3
 var tried := {}           # obj id -> true
 var visited := {}         # rooms the player has seen
@@ -29,6 +31,8 @@ var off_line_since := 0.0
 # World
 var room_state := {}      # room id -> {clock: bool, fan: bool, window: bool}
 var raining := true
+var heating := true
+var heating_timer := 0.0
 var weather_timer := 0.0
 var strike_timer := 0.0
 var exit_room := ""
@@ -45,6 +49,16 @@ var _tap_count := 0
 var _tap_timer := -1.0
 
 # Tunables
+var difficulty := "normal"
+const DIFFICULTY := {
+	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "find_chance_hunt": 0.55, "find_chance_pass": 0.1},
+	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "find_chance_hunt": 0.65, "find_chance_pass": 0.15},
+	"hard": {"identify_time": 4.0, "hunt_threshold": 2, "far_step_chance": 0.5, "fake_hangup_chance": 0.35, "find_chance_hunt": 0.8, "find_chance_pass": 0.25},
+}
+var hide_time := 1.0
+var find_chance_hunt := 0.75   # he came for this room
+var find_chance_pass := 0.2    # he's just passing through
+var find_chance_stay := 0.08   # per 5 s while he lingers in your room
 var player_walk := 2.0
 var player_sneak := 4.5
 var toggle_time := 2.0
@@ -62,6 +76,8 @@ func setup(seed_value := -1) -> void:
 	raining = true
 	weather_timer = randf_range(70.0, 110.0)
 	strike_timer = randf_range(35.0, 55.0)
+	heating = randf() < 0.5
+	heating_timer = randf_range(10.0, 25.0)
 	var phones := house.phone_rooms()
 	player_room = phones[randi() % phones.size()]
 	visited[player_room] = true
@@ -83,8 +99,19 @@ func setup(seed_value := -1) -> void:
 			if house.distance(player_room, r) >= 2 and r != exit_room:
 				mstart.append(r)
 	murderer = Murderer.new(self, mstart[randi() % mstart.size()])
+	apply_difficulty(difficulty)
 	murderer.timer = 15.0
 	receiver_up = true
+
+
+func apply_difficulty(level: String) -> void:
+	difficulty = level
+	var d: Dictionary = DIFFICULTY.get(level, DIFFICULTY.normal)
+	for k in d:
+		if k in murderer:
+			murderer.set(k, d[k])
+		else:
+			set(k, d[k])
 
 
 func emit(type: String, data := {}) -> void:
@@ -114,7 +141,7 @@ func active_features(r: String) -> Array:
 		out.append("fan")
 	if s.window and raining:
 		out.append("rain")
-	if house.has_feature(r, "radiator"):
+	if heating and house.has_feature(r, "radiator"):
 		out.append("radiator")
 	return out
 
@@ -128,8 +155,8 @@ func possible_features(r: String) -> Array:
 	return out
 
 
-func permanent_features(r: String) -> Array:
-	return ["radiator"] if house.has_feature(r, "radiator") else []
+func permanent_features(_r: String) -> Array:
+	return []
 
 
 func expected_features(r: String, mem: Dictionary) -> Array:
@@ -141,7 +168,7 @@ func expected_features(r: String, mem: Dictionary) -> Array:
 		out.append("fan")
 	if s.window and raining:
 		out.append("rain")
-	if house.has_feature(r, "radiator"):
+	if heating and house.has_feature(r, "radiator"):
 		out.append("radiator")
 	return out
 
@@ -158,11 +185,34 @@ func can_act() -> bool:
 	return not over and moving_to == "" and busy == ""
 
 
+func _unhide() -> void:
+	if hidden:
+		hidden = false
+		emit("hidden", {"on": false})
+
+
+func hide() -> bool:
+	if not can_act() or hidden:
+		return false
+	if receiver_up and house.rooms[player_room].phone:
+		hang_up()
+	_start_busy("Hiding...", hide_time, func():
+		hidden = true
+		emit("hidden", {"on": true})
+	)
+	return true
+
+
 # ---------------------------------------------------------------- player verbs
 
 func move_to(r: String, sneak := false) -> bool:
 	if not can_act() or house.door_to(player_room, r) == "":
 		return false
+	if hidden and murderer.room == player_room:
+		_unhide()
+		_end(false, "caught")
+		return true
+	_unhide()
 	if receiver_up and house.rooms[player_room].phone:
 		hang_up()
 	moving_to = r
@@ -175,6 +225,10 @@ func move_to(r: String, sneak := false) -> bool:
 func pick_up() -> bool:
 	if receiver_up or not can_act() or not house.rooms[player_room].phone:
 		return false
+	if hidden and murderer.room == player_room:
+		_end(false, "caught")
+		return true
+	_unhide()
 	receiver_up = true
 	emit("receiver", {"up": true})
 	_line_note("[the player's extension picks up]")
@@ -223,6 +277,8 @@ func tap() -> bool:
 func toggle_feature(f: String) -> bool:
 	if not can_act():
 		return false
+	if hidden:
+		return false
 	var key := "window" if f == "rain" else f
 	if not room_state[player_room].has(key) or not house.has_feature(player_room, "rain" if key == "window" else key):
 		return false
@@ -246,7 +302,7 @@ func toggle_feature(f: String) -> bool:
 
 
 func try_exit(obj: String) -> bool:
-	if not can_act() or tried.has(obj) or attempts_left <= 0:
+	if not can_act() or tried.has(obj) or attempts_left <= 0 or hidden:
 		return false
 	var od := house.object_def(obj)
 	if od.is_empty() or house.object_room[obj] != player_room:
@@ -280,10 +336,21 @@ func _start_busy(label: String, dur: float, done: Callable) -> void:
 func on_murderer_entered(r: String) -> void:
 	var d := house.distance(player_room, r)
 	if r == player_room:
+		if hidden and moving_to == "":
+			var targeted: bool = murderer.goal == "hunt" and murderer.goal_room == r
+			var chance := find_chance_hunt if targeted else find_chance_pass
+			if randf() >= chance:
+				_seek_timer = 5.0
+				emit("murderer_in_room", {})
+				murderer.note("Nobody in the %s." % house.rooms[r].name)
+				return
 		_end(false, "caught")
 		return
-	if d <= 2:
-		emit("footsteps", {"room": r, "dist": d, "dir": house.door_to(player_room, r)})
+	var running := murderer.goal == "hunt"
+	if d <= 2 or (running and d <= 3):
+		var p := house.path(player_room, r)
+		var dir := house.door_to(player_room, p[0]) if not p.is_empty() else ""
+		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": running})
 
 
 func on_murderer_pickup() -> void:
@@ -297,6 +364,11 @@ func on_murderer_hangup() -> void:
 	_line_note("[click: an extension hangs up]")
 	if player_on_line():
 		emit("line_click", {"text": "Click. An extension hung up.", "kind": "hangup"})
+
+
+func on_murderer_fake_hangup() -> void:
+	if player_on_line() and randf() < 0.5:
+		emit("line_fake_tell", {})
 
 
 func on_murderer_breath() -> void:
@@ -338,6 +410,13 @@ func rescuer_says(text: String, guess := "") -> void:
 	if rescuer_again:
 		rescuer_again = false
 		_ask_rescuer("followup")
+
+
+func foreign_sounds() -> Array:
+	## What the player hears on the line that isn't from their own room.
+	if not player_on_line() or not murderer.on_line:
+		return []
+	return active_features(murderer.room)
 
 
 func line_background() -> Array:
@@ -402,6 +481,14 @@ func tick(dt: float) -> void:
 			_emit_backgrounds()
 	_tick_world(dt)
 	murderer.tick(dt)
+	if hidden and not over and murderer.room == player_room:
+		_seek_timer -= dt
+		if _seek_timer <= 0.0:
+			_seek_timer = 5.0
+			if randf() < find_chance_stay:
+				_end(false, "caught")
+			else:
+				emit("murderer_in_room", {"still": true})
 
 
 func _emit_backgrounds() -> void:
@@ -414,6 +501,11 @@ func _emit_backgrounds() -> void:
 
 
 func _tick_world(dt: float) -> void:
+	heating_timer -= dt
+	if heating_timer <= 0.0:
+		heating = not heating
+		heating_timer = randf_range(12.0, 25.0) if heating else randf_range(15.0, 35.0)
+		emit("heating", {"on": heating})
 	weather_timer -= dt
 	if weather_timer <= 0.0:
 		raining = not raining

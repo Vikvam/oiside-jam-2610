@@ -37,10 +37,10 @@ var breath_timer := 5.0
 var log: Array = []       # [{t, text}]
 
 # Tunables (exposed so A/B settings can poke them)
-var walk_time := 3.4
-var hunt_time := 2.2
-var listen_min := 12.0
-var listen_max := 20.0
+var walk_time := 4.0
+var hunt_time := 2.6
+var listen_min := 18.0
+var listen_max := 28.0
 var hunt_threshold := 2
 var identify_time := 5.0
 var fake_hangup_chance := 0.3
@@ -59,6 +59,8 @@ func _init(g, start_room: String) -> void:
 
 
 func note(text: String) -> void:
+	if not log.is_empty() and log[-1].text == text and game.time - log[-1].t < 3.0:
+		return
 	log.append({"t": game.time, "text": text})
 	game.emit("murderer_log", {"text": text})
 
@@ -228,6 +230,8 @@ func _hear_background() -> void:
 	var ex := []
 	for r in house.phone_rooms():
 		var possible: Array = game.possible_features(r)
+		if house.has_feature(r, "radiator") and "radiator" not in possible:
+			possible.append("radiator")
 		var ok := true
 		for f in bg:
 			if f not in possible:
@@ -281,6 +285,7 @@ func tick(dt: float) -> void:
 			timer -= dt
 			if timer <= 0.0:
 				listening = false
+				on_line = false
 				state = S.THINK
 				timer = 0.5
 		S.SEARCH:
@@ -297,11 +302,19 @@ func tick(dt: float) -> void:
 				state = S.THINK
 				timer = 0.5
 		S.GUARD:
+			if listening:
+				_tick_listen_ears(dt)
+				breath_timer -= dt
+				if breath_timer <= 0.0:
+					breath_timer = randf_range(6.0, 10.0)
+					if randf() < 0.4:
+						game.on_murderer_breath()
 			timer -= dt
 			if timer <= 0.0:
 				timer = 1.0
 				if candidates.size() == 1 and game.time - lead_time < 8.0 and not candidates.has(room):
 					note("A fresh lead. I'll leave the exit for a moment.")
+					_stop_listening()
 					_decide()
 
 
@@ -407,6 +420,19 @@ func _arrive() -> void:
 func _arrive_guard() -> void:
 	state = S.GUARD
 	timer = 1.0
+	if house.rooms[room].phone and not listening:
+		listening = true
+		on_line = true
+		listen_overlap = 0.0
+		heard_bg = []
+		game.on_murderer_pickup()
+
+
+func _stop_listening() -> void:
+	if listening:
+		listening = false
+		on_line = false
+		game.on_murderer_hangup()
 
 
 # ---------------------------------------------------------------- listening
@@ -447,8 +473,10 @@ func _tick_listen(dt: float) -> void:
 		game.on_murderer_hangup()
 		if randf() < fake_hangup_chance and candidates.size() > hunt_threshold:
 			state = S.FAKE_HANGUP
+			on_line = true  # his room's background is still on the line: the tell
 			timer = randf_range(5.0, 8.0)
 			note("Pretended to hang up. Still listening.")
+			game.on_murderer_fake_hangup()
 		else:
 			listening = false
 			state = S.THINK

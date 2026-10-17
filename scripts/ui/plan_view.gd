@@ -48,7 +48,10 @@ func _on_event(t: String, d: Dictionary) -> void:
 			if d.dist == 1:
 				ripple(_c(d.room), col, 1.0)
 			else:
-				ripple(_c(game.player_room), col, 0.45, 3.2 * U)
+				# Only the direction is known: ripple at the door on that side.
+				var to := game.house.step(game.player_room, d.dir)
+				var at := _door_point(game.player_room, to) if to != "" else _c(game.player_room)
+				ripple(at, col, 0.9 if d.dist == 2 else 0.5, (2.4 if d.dist == 2 else 1.6) * U)
 		"exit_try":
 			if not d.ok:
 				ripple(_c(game.player_room), Style.c("accent"), 1.0, 5.0 * U)
@@ -298,13 +301,14 @@ func _draw_icons(id: String, rc: Rect2) -> void:
 			"clock": active = s.clock
 			"fan": active = s.fan
 			"rain": active = s.window and game.raining
+			"radiator": active = game.heating
 		var col := on if active else off
 		match f:
 			"clock": _icon_clock(Vector2(x, y), col, active)
 			"fan": _icon_fan(Vector2(x, y), col, active)
 			"rain": _icon_window(Vector2(x, y), col, s.window, game.raining)
 			"radiator": _icon_radiator(Vector2(x, y), col)
-		if not active and f != "radiator":
+		if not active:
 			draw_line(Vector2(x - 9, y + 9), Vector2(x + 9, y - 9), off, 1.5)
 		x += 26.0
 

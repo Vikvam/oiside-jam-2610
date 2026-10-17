@@ -14,6 +14,8 @@ var actions_box: HBoxContainer
 var doors_box: HBoxContainer
 var sneak_toggle: CheckButton
 var sneak := false
+var armed := ""
+var _armed_t := 0.0
 var _busy_total := 1.0
 
 
@@ -49,7 +51,7 @@ func bind(g: Game) -> void:
 
 func _on_event(t: String, d: Dictionary) -> void:
 	match t:
-		"player_arrive", "feature_toggled", "exit_try", "weather", "game_over", "player_move_start":
+		"player_arrive", "feature_toggled", "exit_try", "weather", "heating", "game_over", "player_move_start", "hidden":
 			rebuild()
 		"busy":
 			_busy_total = maxf(d.dur, 0.01)
@@ -59,7 +61,22 @@ func _on_event(t: String, d: Dictionary) -> void:
 			rebuild()
 
 
-func _process(_dt: float) -> void:
+func _search(obj: String) -> void:
+	if armed == obj:
+		armed = ""
+		game.try_exit(obj)
+	else:
+		armed = obj
+		_armed_t = 3.0
+		rebuild()
+
+
+func _process(dt: float) -> void:
+	if armed != "":
+		_armed_t -= dt
+		if _armed_t <= 0.0:
+			armed = ""
+			rebuild()
 	if game and game.busy != "":
 		busy_bar.value = (1.0 - game.busy_timer / _busy_total) * 100.0
 
@@ -98,7 +115,9 @@ func rebuild() -> void:
 		var label: String = o.name
 		if game.tried.has(o.id):
 			label += " ✗"
-		var b := _btn(objects_box, label, func(): game.try_exit(o.id), ok and not game.tried.has(o.id))
+		if armed == o.id:
+			label = "really? (loud if wrong)"
+		var b := _btn(objects_box, label, func(): _search(o.id), ok and not game.tried.has(o.id))
 		b.tooltip_text = o.desc + "\n\nClick: try to open a hidden exit here.\nA wrong guess makes a LOUD noise."
 	_small(actions_box, "Sounds:")
 	var s: Dictionary = game.room_state[game.player_room]
@@ -113,7 +132,7 @@ func rebuild() -> void:
 		_btn(actions_box, "Close window" if s.window else "Open window", func(): game.toggle_feature("rain"), ok)
 		any = true
 	if h.has_feature(game.player_room, "radiator"):
-		_small(actions_box, "· the radiator clanks (can't stop it)")
+		_small(actions_box, "· radiator: %s" % ("clanking (heating on)" if game.heating else "quiet (heating off)"))
 	if not any and not h.has_feature(game.player_room, "radiator"):
 		_small(actions_box, "· nothing here makes a sound")
 	_small(doors_box, "Doors:")
@@ -122,6 +141,11 @@ func rebuild() -> void:
 		if to != "":
 			_btn(doors_box, "%s → %s" % [dir.capitalize(), h.rooms[to].name], func():
 				move_requested.emit(to, sneak), ok)
+	if game.hidden:
+		_btn(doors_box, "(hidden — any action reveals you)", func(): pass, false)
+	else:
+		var hb := _btn(doors_box, "Hide", func(): game.hide(), ok)
+		hb.tooltip_text = "Hide in here (hangs up). If he only passes through, he probably won't find you.\nIf he came for this room, he probably will."
 	sneak_toggle = CheckButton.new()
 	sneak_toggle.text = "sneak (slow, quiet)"
 	sneak_toggle.focus_mode = Control.FOCUS_NONE

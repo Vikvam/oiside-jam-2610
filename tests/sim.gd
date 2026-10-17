@@ -4,13 +4,15 @@ extends SceneTree
 ## policy: follow (listens to rescuer), careful (also hides from clicks), random
 
 var stats := {}
+var diff := "normal"
 
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	var n := int(args[0]) if args.size() > 0 else 200
 	var policy: String = args[1] if args.size() > 1 else "careful"
-	var verbose := args.size() > 2
+	var verbose := args.size() > 2 and args[2] == "v"
+	diff = args[3] if args.size() > 3 else "normal"
 	var times := []
 	for i in n:
 		var r := _play(i, policy, verbose and i < 3)
@@ -23,6 +25,7 @@ func _init() -> void:
 
 func _play(seed_value: int, policy: String, verbose: bool) -> Dictionary:
 	var g := Game.new()
+	g.difficulty = diff
 	g.setup(seed_value)
 	g.rescuer = MockRescuer.new(g)
 	var bot := Bot.new(g, policy)
@@ -36,7 +39,14 @@ func _play(seed_value: int, policy: String, verbose: bool) -> Dictionary:
 	while not g.over and g.time < 900.0:
 		g.tick(dt)
 		bot.tick(dt)
-	return {"reason": g.end_reason if g.over else "timeout", "t": g.time}
+	var reason: String = g.end_reason if g.over else "timeout"
+	if reason in ["caught", "walked_in"]:
+		reason += ":" + g.murderer.goal
+		if OS.get_environment("WHY") != "" and g.murderer.goal == "hunt":
+			for e in g.murderer.log.slice(-4):
+				if "→" in e.text:
+					print("WHY ", e.text.split("→")[0].split("'")[0].left(40))
+	return {"reason": reason, "t": g.time}
 
 
 class Bot:
@@ -47,6 +57,9 @@ class Bot:
 	var plan_obj := ""
 	var hiding := 0.0
 	var spoke_in := ""
+	var danger_room := ""
+	var danger_t := 0.0
+	var line_hot := 0.0
 
 	func _init(game, p: String) -> void:
 		g = game
@@ -66,10 +79,27 @@ class Bot:
 					if h.room == g.player_room:
 						plan_obj = h.obj
 			"line_click":
-				if policy == "careful" and d.kind == "pickup":
+				if policy in ["careful", "smart"] and d.kind == "pickup":
 					hiding = randf_range(6.0, 12.0)
+			"line_quiet_presence", "line_breath", "line_fake_tell":
+				if policy == "smart":
+					hiding = randf_range(8.0, 14.0)
 			"footsteps":
-				if d.dist == 1 and policy != "random":
+				danger_room = d.room if d.dist == 1 else g.house.step(g.player_room, d.dir)
+				danger_t = 8.0
+				if d.dist >= 2 and policy == "smart" and g.can_act() and (d.running or d.dist == 2):
+					var bad: String = g.house.step(g.player_room, d.dir)
+					danger_room = bad
+					var opts := []
+					for n in g.house.neighbors(g.player_room):
+						if n != bad and g.house.neighbors(n).size() > 1:
+							opts.append(n)
+					if not opts.is_empty():
+						g.move_to(opts[randi() % opts.size()], false)
+				if d.dist == 1 and policy == "smart":
+					g.hide()
+					hiding = randf_range(8.0, 12.0)
+				elif d.dist == 1 and policy != "random":
 					var opts := []
 					for n in g.house.neighbors(g.player_room):
 						if n != d.room:
@@ -79,13 +109,26 @@ class Bot:
 
 	func tick(dt: float) -> void:
 		think -= dt
+		danger_t -= dt
+		if policy == "silent":
+			if not g.hidden and g.can_act():
+				if g.receiver_up:
+					g.hang_up()
+				g.hide()
+			return
 		if hiding > 0.0:
 			hiding -= dt
 			if g.receiver_up and policy == "careful":
 				g.hang_up()
 			if hiding <= 0.0 and g.house.rooms[g.player_room].phone:
 				g.pick_up()
+				if policy == "smart" and not g.foreign_sounds().is_empty():
+					hiding = randf_range(5.0, 9.0)
+					return
 				g.tap(); g.tap()
+			return
+		if policy == "smart" and g.receiver_up and not g.foreign_sounds().is_empty():
+			hiding = randf_range(5.0, 9.0)
 			return
 		if think > 0.0 or not g.can_act():
 			return
@@ -106,16 +149,29 @@ class Bot:
 		if plan_dir != "":
 			var to: String = g.house.step(g.player_room, plan_dir)
 			plan_dir = ""
-			if to != "":
-				g.move_to(to)
+			if to != "" and not (policy == "smart" and to == danger_room and danger_t > 0.0):
+				g.move_to(to, policy == "smart" and danger_t > 0.0)
 				return
 		var here: Dictionary = g.house.rooms[g.player_room]
 		if not here.phone:
 			var ns: Array = g.house.neighbors(g.player_room)
+			if policy == "smart" and danger_t > 0.0:
+				ns = ns.filter(func(x): return x != danger_room)
+				if ns.is_empty():
+					return
 			var phones := ns.filter(func(x): return g.house.rooms[x].phone)
 			var pool: Array = phones if not phones.is_empty() else ns
 			g.move_to(pool[randi() % pool.size()])
 			return
+		if policy == "smart":
+			var st: Dictionary = g.room_state[g.player_room]
+			for f in ["clock", "fan"]:
+				if st[f]:
+					g.toggle_feature(f)
+					return
+			if st.window and g.raining:
+				g.toggle_feature("rain")
+				return
 		if not g.receiver_up:
 			g.pick_up()
 			return
@@ -125,7 +181,7 @@ class Bot:
 			for o in here.objects:
 				if o.has("nick"):
 					nick = o.nick
-			if nick != "" and policy == "careful":
+			if nick != "" and policy in ["careful", "smart"]:
 				g.say("I'm next to %s." % nick)
 			else:
 				var o: Dictionary = here.objects[randi() % here.objects.size()]

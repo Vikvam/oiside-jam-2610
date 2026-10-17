@@ -158,12 +158,16 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"player_tap":
 			one_shot("tap", "Line", -4.0)
 		"footsteps":
+			var gap := 0.32 if d.running else 0.55
 			if d.dist == 1:
-				steps(3, true, "Walls", 0.0, 0.55)
+				steps(4, true, "Walls", 0.0, gap)
 				danger = 1.0
+			elif d.dist == 2:
+				steps(4, true, "Walls", -12.0, gap)
+				danger = maxf(danger, 0.6)
 			else:
-				steps(3, true, "Walls", -14.0, 0.6)
-				danger = maxf(danger, 0.45)
+				steps(4, true, "Walls", -22.0, gap)
+				danger = maxf(danger, 0.35)
 		"player_move_start":
 			steps(4 if not d.sneak else 3, false, "Room", -16.0 if not d.sneak else -28.0, d.dur / 4.0)
 		"feature_toggled":
@@ -177,6 +181,13 @@ func _on_event(t: String, d: Dictionary) -> void:
 			if not d.ok:
 				one_shot("crash", "Room", 0.0)
 				danger = 1.0
+		"murderer_in_room":
+			one_shot("breath", "Room", -4.0, 0.85)
+			if not d.get("still", false):
+				steps(2, true, "Room", -2.0, 0.6)
+			danger = 1.0
+		"murderer_found_exit":
+			one_shot("crash", "Walls", -10.0, 0.8)
 		"game_over":
 			if not d.won:
 				one_shot("crash", "Room", 0.0, 0.7)

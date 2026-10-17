@@ -123,10 +123,13 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"receiver":
 			add_line("sound", "you pick up the receiver" if d.up else "you hang up")
 		"footsteps":
+			var kind := "Running footsteps" if d.running else "Heavy footsteps"
 			if d.dist == 1:
-				add_line("danger", "Heavy footsteps — right behind the %s door!" % d.dir if d.dir != "" else "Heavy footsteps, very close.")
+				add_line("danger", "%s — right behind the %s door!" % [kind, d.dir])
+			elif d.dist == 2:
+				add_line("danger", "%s, two rooms away — beyond the %s door." % [kind, d.dir])
 			else:
-				add_line("danger", "Footsteps somewhere nearby. Two rooms away?")
+				add_line("danger", "%s, far off, somewhere past the %s door. Coming closer?" % [kind, d.dir])
 		"player_arrive":
 			var r: Dictionary = game.house.rooms[d.room]
 			add_line("narr", "You slip into the %s.%s" % [r.name, "" if r.phone else " There is no phone here."])
@@ -139,6 +142,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 			add_line("narr", what[d.feature][1 if d.on else 0])
 		"weather":
 			add_line("narr", "The rain picks up again." if d.raining else "The rain stops. Suddenly everything is quieter.")
+		"heating":
+			if game.house.has_feature(game.player_room, "radiator"):
+				add_line("narr", "The radiator starts knocking — the heating came on." if d.on else "The radiator goes quiet.")
 		"clock_strike":
 			if game.room_state[game.player_room].clock:
 				add_line("narr", "The clock in this room strikes. Loud. Every clock in the house joins in.")
@@ -149,8 +155,19 @@ func _on_event(t: String, d: Dictionary) -> void:
 				add_line("narr", "Something gives way. Cold air. A way out.")
 			else:
 				add_line("danger", "Nothing — and it made a terrible noise. %d tries left." % d.attempts_left)
+		"hidden":
+			add_line("narr", "You squeeze into the darkest corner and hold still." if d.on else "You come out of hiding.")
+		"murderer_in_room":
+			if d.get("still", false):
+				add_line("danger", "He's still here. Floorboards creak a few steps from you.")
+			else:
+				add_line("danger", "The door creaks open. He is IN THE ROOM. Don't. Breathe.")
 		"murderer_found_exit":
-			pass
+			add_line("danger", "Far off in the house: wood splintering. Then a low, pleased laugh.")
+		"line_fake_tell":
+			add_line("danger", "…but the line still sounds a little too full.")
+		"rescuer_error":
+			add_line("sound", "the line hisses — her voice comes through thin and strange")
 
 
 func _process(dt: float) -> void:
@@ -176,12 +193,21 @@ func _process(dt: float) -> void:
 	thinking.text = ("…the line crackles" + ".".repeat(int(_think_t * 2.0) % 3)) if _is_thinking else ""
 	var on := game.player_on_line()
 	var here: Dictionary = game.house.rooms[game.player_room]
-	if game.moving_to != "":
+	if game.hidden:
+		status.text = "○ HIDDEN — hold still"
+	elif game.moving_to != "":
 		status.text = "○ moving…"
 	elif not here.phone:
 		status.text = "○ no phone in this room"
 	elif game.receiver_up:
-		status.text = "● ON THE LINE — anyone could be listening"
+		var mine := game.player_active_features()
+		var foreign := []
+		for f in game.foreign_sounds():
+			foreign.append(("a second " + House.FEATURE_LABEL[f] + ", out of step") if f in mine else House.FEATURE_LABEL[f])
+		if foreign.is_empty():
+			status.text = "● ON THE LINE — just hiss"
+		else:
+			status.text = "● ON THE LINE — also: " + ", ".join(foreign)
 	else:
 		status.text = "○ receiver on the hook"
 	input.editable = on and not game.over

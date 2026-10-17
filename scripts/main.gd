@@ -20,6 +20,7 @@ var title_layer: CanvasLayer
 var over_layer: CanvasLayer
 var over_text: RichTextLabel
 var backend := "mock"
+var difficulty := "normal"
 var running := false
 var _intro_queue: Array = []
 var _intro_t := 0.0
@@ -79,6 +80,7 @@ func _load_settings() -> void:
 	_settings.load("user://settings.cfg")
 	Style.current = _settings.get_value("ui", "style", "blueprint")
 	backend = _settings.get_value("ui", "backend", "mock")
+	difficulty = _settings.get_value("ui", "difficulty", "normal")
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
 	if rc.load("res://rescuer_config.cfg") == OK or rc.load("user://rescuer_config.cfg") == OK:
@@ -89,6 +91,7 @@ func _load_settings() -> void:
 func _save_settings() -> void:
 	_settings.set_value("ui", "style", Style.current)
 	_settings.set_value("ui", "backend", backend)
+	_settings.set_value("ui", "difficulty", difficulty)
 	_settings.save("user://settings.cfg")
 
 
@@ -222,6 +225,21 @@ func _build_title() -> void:
 			backend = be[0]
 			_refresh_title_buttons())
 		row2.add_child(b)
+	var row3 := HBoxContainer.new()
+	row3.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row3)
+	var lab3 := Label.new()
+	lab3.text = "He is:"
+	row3.add_child(lab3)
+	for df in [["gentle", "slow-witted"], ["normal", "patient"], ["hard", "sharp-eared"]]:
+		var b := Button.new()
+		b.text = df[1]
+		b.toggle_mode = true
+		b.name = "diff_" + df[0]
+		b.pressed.connect(func():
+			difficulty = df[0]
+			_refresh_title_buttons())
+		row3.add_child(b)
 	var start := Button.new()
 	start.text = "Pick up the phone"
 	start.custom_minimum_size = Vector2(260, 44)
@@ -236,6 +254,8 @@ func _refresh_title_buttons() -> void:
 		n.button_pressed = n.name == "style_" + Style.current
 	for n in title_layer.find_children("backend_*", "Button", true, false):
 		n.button_pressed = n.name == "backend_" + backend
+	for n in title_layer.find_children("diff_*", "Button", true, false):
+		n.button_pressed = n.name == "diff_" + difficulty
 
 
 func _build_over() -> void:
@@ -371,6 +391,7 @@ func _start_game() -> void:
 	if game and game.rescuer is Node:
 		game.rescuer.queue_free()
 	game = Game.new()
+	game.difficulty = difficulty
 	game.setup(randi() % 100000)
 	game.murderer.timer += 12.0  # let her finish the intro
 	game.rescuer = _make_rescuer(game)
