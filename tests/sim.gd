@@ -42,6 +42,8 @@ func _play(seed_value: int, policy: String, verbose: bool) -> Dictionary:
 		g.tick(dt)
 		bot.tick(dt)
 	var reason: String = g.end_reason if g.over else "timeout"
+	if g.murderer.exit_known != "":
+		stats["exit_found"] = stats.get("exit_found", 0) + 1
 	if reason in ["caught", "walked_in"]:
 		reason += ":" + g.murderer.goal
 		if OS.get_environment("WHY") != "" and g.murderer.goal == "hunt":

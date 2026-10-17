@@ -33,6 +33,7 @@ var peek_btn: Button
 var cord: Cord
 var flash: ColorRect
 var pause_layer: CanvasLayer
+var help_layer: CanvasLayer
 var paused := false
 var backend := "mock"
 var difficulty := "gentle"
@@ -73,6 +74,7 @@ func _ready() -> void:
 	_build_title()
 	_build_over()
 	_build_pause()
+	_build_help()
 	_apply_style()
 	_show_title()
 	# Draw the house behind the title screen.
@@ -104,6 +106,8 @@ func _dev_args() -> void:
 		_set_lang(a.lang)
 	if a.has("rearranged"):
 		rearranged = true
+	if a.has("help"):
+		_toggle_help(true)
 	if a.has("large"):
 		large = true
 	if a.has("play"):
@@ -363,6 +367,12 @@ func _build_title() -> void:
 			explore_mode = pm[0]
 			_refresh_title_buttons())
 		row4.add_child(b)
+	row4 = HBoxContainer.new()
+	row4.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row4)
+	var lab4b := Label.new()
+	lab4b.text = Loc.t("house")
+	row4.add_child(lab4b)
 	var lb := CheckButton.new()
 	lb.text = Loc.t("large")
 	lb.tooltip_text = Loc.t("large_tip")
@@ -400,6 +410,11 @@ func _build_title() -> void:
 	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start.pressed.connect(_start_game)
 	v.add_child(start)
+	var howto := Button.new()
+	howto.text = Loc.t("howto")
+	howto.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	howto.pressed.connect(func(): _toggle_help(true))
+	v.add_child(howto)
 	stats_label = Label.new()
 	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stats_label.add_theme_font_size_override("font_size", 12)
@@ -412,13 +427,14 @@ func _set_lang(lg: String) -> void:
 	Loc.lang = lg
 	_save_settings()
 	# Rebuild the menus in the new language.
-	for layer in [title_layer, over_layer, pause_layer]:
+	for layer in [title_layer, over_layer, pause_layer, help_layer]:
 		remove_child(layer)
 		layer.queue_free()
 	over_panel = null
 	_build_title()
 	_build_over()
 	_build_pause()
+	_build_help()
 	header_label.text = Loc.t("header")
 	_apply_style()
 	_show_title()
@@ -531,6 +547,35 @@ func _build_pause() -> void:
 		v.add_child(btn)
 
 
+func _build_help() -> void:
+	help_layer = CanvasLayer.new()
+	help_layer.layer = 20
+	help_layer.visible = false
+	add_child(help_layer)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.6)
+	help_layer.add_child(dim)
+	var v := _panel_box(help_layer, Vector2(860, 0))
+	var body := RichTextLabel.new()
+	body.bbcode_enabled = true
+	body.fit_content = true
+	body.custom_minimum_size = Vector2(800, 0)
+	body.text = Loc.t("help_body")
+	v.add_child(body)
+	var close := Button.new()
+	close.text = Loc.t("close")
+	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close.pressed.connect(func(): _toggle_help(false))
+	v.add_child(close)
+
+
+func _toggle_help(on: bool) -> void:
+	help_layer.visible = on
+	if running:
+		_set_paused(on)
+
+
 func _set_paused(on: bool) -> void:
 	paused = on and running
 	pause_layer.visible = paused
@@ -603,7 +648,7 @@ func _apply_style() -> void:
 	pbg.bg_color = Color(text, 0.1)
 	th.set_stylebox("background", "ProgressBar", pbg)
 	ui.theme = th
-	for layer in [title_layer, over_layer, pause_layer]:
+	for layer in [title_layer, over_layer, pause_layer, help_layer]:
 		if layer:
 			for c in layer.get_children():
 				if c is Control:
@@ -776,8 +821,12 @@ func _unhandled_input(e: InputEvent) -> void:
 			return
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
+			KEY_F1:
+				_toggle_help(not help_layer.visible)
 			KEY_ESCAPE:
-				if running and not over_layer.visible:
+				if help_layer.visible:
+					_toggle_help(false)
+				elif running and not over_layer.visible:
 					_set_paused(not paused)
 			KEY_F2:
 				Style.next_style()
