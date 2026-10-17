@@ -65,7 +65,7 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"line_quiet_presence": _p("!! the line sounds open, someone already listening")
 		"line_background": _p("!! through the receiver (not yours): %s" % [d.features])
 		"line_fake_tell": _p("!! line still sounds too full")
-		"footsteps": _p("!! %s footsteps dist %d via %s door" % ["RUNNING" if d.running else "heavy", d.dist, d.dir])
+		"footsteps": _p("!! %s footsteps %s dist %d via %s door" % ["RUNNING" if d.running else "heavy", "SETTING OFF" if d.get("leaving", false) else "arriving", d.dist, d.dir])
 		"murderer_in_room": _p("!!! HE IS IN YOUR ROOM")
 		"presence": _p("!! someone standing behind the %s door" % d.dir)
 		"player_arrive":

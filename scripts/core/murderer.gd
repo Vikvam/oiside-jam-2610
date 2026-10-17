@@ -163,7 +163,7 @@ func on_loud_noise(src: String, what: String) -> void:
 
 func on_small_noise(src: String, what: String) -> void:
 	var d := house.distance(room, src)
-	if d <= 1 and not listening:
+	if d <= 1 and not listening and state != S.MOVE:
 		_intersect(house.rooms_at(room, d), "A %s nearby" % what)
 
 
@@ -339,6 +339,7 @@ func _go(target: String, kind: String) -> void:
 		return
 	state = S.MOVE
 	timer = hunt_time if kind == "hunt" else walk_time
+	game.on_murderer_sets_off(room)
 
 
 func _nearest(rs: Array) -> String:

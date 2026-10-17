@@ -143,7 +143,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"footsteps":
 			hint("steps", "Footsteps come with a direction. Move away — or Hide. Walking makes noise too (sneak is quieter).")
 			var kind := "Running footsteps" if d.running else "Heavy footsteps"
-			if d.dist == 1:
+			if d.get("leaving", false):
+				add_line("danger", "A door creaks %s beyond the %s door. %s — moving." % ["right" if d.dist == 1 else "somewhere", d.dir, kind])
+			elif d.dist == 1:
 				add_line("danger", "%s — right behind the %s door!" % [kind, d.dir])
 			elif d.dist == 2:
 				add_line("danger", "%s, two rooms away — beyond the %s door." % [kind, d.dir])

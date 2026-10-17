@@ -366,6 +366,14 @@ func on_murderer_entered(r: String) -> void:
 		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": running})
 
 
+func on_murderer_sets_off(r: String) -> void:
+	var d := house.distance(player_room, r)
+	if r != player_room and d <= 2:
+		var p := house.path(player_room, r)
+		var dir := house.door_to(player_room, p[0]) if not p.is_empty() else ""
+		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": murderer.goal == "hunt", "leaving": true})
+
+
 func on_murderer_pickup() -> void:
 	_line_note("[click: another extension picks up]")
 	if player_on_line():
