@@ -62,3 +62,5 @@ Rough target: about 8 rooms, 4 sound features (e.g. clock, fan, rain, radiator) 
   - `DECISIONS.md`
   - `CREDITS.md`
   - `PLAYTEST.md`, which lists what the user should listen for and judge, known issues, and suggested next steps for the joint session
+
+You may also stop execution of the goal, if you detect an issue with feasability or security.

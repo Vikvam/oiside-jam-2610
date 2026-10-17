@@ -1,0 +1,4 @@
+.godot/
+*.import
+rescuer_config.cfg
+proxy/__pycache__/
