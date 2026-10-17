@@ -182,6 +182,7 @@ func ring_in() -> void:
 func bind(g: Game) -> void:
 	game = g
 	danger = 0.0
+	thinking = false
 	g.event.connect(_on_event)
 
 
