@@ -2,6 +2,11 @@
 
 A party-line horror game for a jam. You're hiding in an old house with a murderer. Your sister knows a secret way out and is talking you there over the phone. But every phone in the house is on the same line, and **he's listening on another extension.**
 
+| | |
+|---|---|
+| ![Title](docs/title.png) | ![Blueprint](docs/blueprint.png) |
+| ![Ink & Paper, Czech](docs/ink_cs.png) | ![Phosphor CRT, post-game reveal](docs/phosphor_reveal.png) |
+
 See [DESIGN.md](DESIGN.md) for the original concept, [DECISIONS.md](DECISIONS.md) for what was built and why, and [PLAYTEST.md](PLAYTEST.md) for what to try.
 
 ## Run
