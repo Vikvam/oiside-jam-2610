@@ -145,7 +145,10 @@ static func build_system(g) -> String:
 	s += "Background sounds on the line are mixed from every open extension. '[click: another extension picks up]' means someone, probably him, is now listening. "
 	s += "Hang-up clicks can be faked. Taps: one tap = yes, two taps = no. The player may lie on purpose to lure him away — if it sounds like a lie, play along.\n"
 	s += "Rooms without a phone: the player can't talk from there.\n"
-	s += "The player sees a floor plan with every room's name, doors and sound icons, but not the objects of rooms they haven't visited. "
+	if g.explore_mode:
+		s += "The player sees a floor plan with every room's name and doors, but only knows the sounds and objects of rooms they have visited. "
+	else:
+		s += "The player sees a floor plan with every room's name, doors and sound icons, but not the objects of rooms they haven't visited. "
 	s += "Describing a room by its sounds ('the room with the clock and the fan') is as unsafe as naming it — he knows the sounds too.\n"
 	s += "After '[click: another extension picks up]' with no hang-up since, assume he IS listening: say almost nothing, or ask a yes/no question, or use a nickname. "
 	s += "If you hear '[a man's voice on the line ...]', he is sure where the player is — tell them to move, now, without naming where.\n"

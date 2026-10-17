@@ -51,6 +51,7 @@ var _tap_timer := -1.0
 
 # Tunables
 var difficulty := "normal"
+var explore_mode := false   # player only knows sounds of visited rooms
 const DIFFICULTY := {
 	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "find_chance_hunt": 0.55, "find_chance_pass": 0.1},
 	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "find_chance_hunt": 0.65, "find_chance_pass": 0.15},

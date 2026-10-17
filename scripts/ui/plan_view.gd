@@ -11,6 +11,7 @@ const DOOR_W := 0.9
 var game: Game
 var show_debug := false
 var show_guess := true
+var explore_mode := false   # A/B: sound icons only for rooms you've been in
 var guess := ""
 var hover := ""
 var ripples: Array = []   # {pos, t, col, r}
@@ -225,7 +226,10 @@ func _draw() -> void:
 		if id == game.player_room:
 			name_col = Style.c("accent")
 		draw_string(font, rc.position + Vector2(10, 22), h.rooms[id].name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, name_col)
-		_draw_icons(id, rc)
+		if not explore_mode or game.visited.has(id) or game.over:
+			_draw_icons(id, rc)
+		else:
+			draw_string(font, Vector2(rc.position.x + 14, rc.end.y - 12), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, dim)
 		if game.visited.has(id):
 			var y := rc.position.y + 40.0
 			for o in h.rooms[id].objects:

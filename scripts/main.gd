@@ -24,6 +24,8 @@ var pause_layer: CanvasLayer
 var paused := false
 var backend := "mock"
 var difficulty := "normal"
+var explore_mode := false
+var hints_on := true
 var running := false
 var _intro_queue: Array = []
 var _intro_t := 0.0
@@ -65,6 +67,7 @@ func _dev_args() -> void:
 	if a.has("style"):
 		Style.current = a.style
 		_apply_style()
+		_refresh_title_buttons()
 	if a.has("seed"):
 		seed(int(a.seed))
 	if a.has("backend"):
@@ -98,6 +101,8 @@ func _load_settings() -> void:
 	Style.current = _settings.get_value("ui", "style", "blueprint")
 	backend = _settings.get_value("ui", "backend", "mock")
 	difficulty = _settings.get_value("ui", "difficulty", "normal")
+	explore_mode = _settings.get_value("ui", "explore", false)
+	hints_on = _settings.get_value("ui", "hints", true)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
 	if rc.load("res://rescuer_config.cfg") == OK or rc.load("user://rescuer_config.cfg") == OK:
@@ -109,6 +114,8 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "style", Style.current)
 	_settings.set_value("ui", "backend", backend)
 	_settings.set_value("ui", "difficulty", difficulty)
+	_settings.set_value("ui", "explore", explore_mode)
+	_settings.set_value("ui", "hints", hints_on)
 	_settings.save("user://settings.cfg")
 
 
@@ -261,6 +268,27 @@ func _build_title() -> void:
 			difficulty = df[0]
 			_refresh_title_buttons())
 		row3.add_child(b)
+	var row4 := HBoxContainer.new()
+	row4.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row4)
+	var lab4 := Label.new()
+	lab4.text = "Plan:"
+	row4.add_child(lab4)
+	for pm in [[false, "all room sounds known"], [true, "learn sounds by exploring"]]:
+		var b := Button.new()
+		b.text = pm[1]
+		b.toggle_mode = true
+		b.name = "plan_" + ("explore" if pm[0] else "full")
+		b.pressed.connect(func():
+			explore_mode = pm[0]
+			_refresh_title_buttons())
+		row4.add_child(b)
+	var hb := CheckButton.new()
+	hb.name = "hints_toggle"
+	hb.text = "hints"
+	hb.button_pressed = hints_on
+	hb.toggled.connect(func(v): hints_on = v)
+	row4.add_child(hb)
 	var start := Button.new()
 	start.text = "Pick up the phone"
 	start.custom_minimum_size = Vector2(260, 44)
@@ -277,6 +305,8 @@ func _refresh_title_buttons() -> void:
 		n.button_pressed = n.name == "backend_" + backend
 	for n in title_layer.find_children("diff_*", "Button", true, false):
 		n.button_pressed = n.name == "diff_" + difficulty
+	for n in title_layer.find_children("plan_*", "Button", true, false):
+		n.button_pressed = n.name == ("plan_explore" if explore_mode else "plan_full")
 
 
 func _build_over() -> void:
@@ -466,11 +496,15 @@ func _start_game() -> void:
 		game.rescuer.queue_free()
 	game = Game.new()
 	game.difficulty = difficulty
+	game.explore_mode = explore_mode
 	game.setup(randi() % 100000)
 	game.murderer.timer += 12.0  # let her finish the intro
 	game.rescuer = _make_rescuer(game)
 	game.event.connect(_on_game_event)
 	plan.bind(game)
+	plan.explore_mode = explore_mode
+	phone.hints = hints_on
+	phone._hinted.clear()
 	phone.bind(game)
 	room_panel.bind(game)
 	sfx.bind(game)
