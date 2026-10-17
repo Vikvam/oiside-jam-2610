@@ -133,10 +133,41 @@ func one_shot(name: String, bus := "Master", db := 0.0, pitch := 1.0) -> void:
 	p.finished.connect(p.queue_free)
 
 
-func steps(n: int, heavy: bool, bus: String, db: float, gap := 0.5) -> void:
+func steps(n: int, heavy: bool, bus: String, db: float, gap := 0.5, pan := 0.0) -> void:
 	for i in n:
 		get_tree().create_timer(i * gap + randf() * 0.05).timeout.connect(func():
-			one_shot("step_heavy" if heavy else "step_light", bus, db, randf_range(0.9, 1.1)))
+			if pan == 0.0:
+				one_shot("step_heavy" if heavy else "step_light", bus, db, randf_range(0.9, 1.1))
+			else:
+				one_shot_panned("step_heavy" if heavy else "step_light", bus, db, pan))
+
+
+## Stereo position for a door direction: west = left, east = right.
+static func pan_for(dir: String) -> float:
+	return {"west": -0.8, "east": 0.8, "north": -0.15, "south": 0.15}.get(dir, 0.0)
+
+
+## A one-shot placed left/right with an AudioStreamPlayer2D relative to the
+## screen centre (the default 2D listener).
+func one_shot_panned(name: String, bus: String, db: float, pan: float) -> void:
+	if not active:
+		return
+	var st = s[name]
+	if st is Array:
+		st = st[randi() % st.size()]
+	var p := AudioStreamPlayer2D.new()
+	p.stream = st
+	p.bus = bus
+	p.volume_db = db
+	p.pitch_scale = randf_range(0.9, 1.1)
+	p.max_distance = 100000.0
+	p.attenuation = 0.0
+	p.panning_strength = 1.0
+	var vp := get_viewport().get_visible_rect().size
+	p.position = vp * 0.5 + Vector2(pan * vp.x * 0.5, 0)
+	add_child(p)
+	p.play()
+	p.finished.connect(p.queue_free)
 
 
 ## The call connecting: two ringback tones, then her receiver clicks.
@@ -187,13 +218,13 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"footsteps":
 			var gap := 0.32 if d.running else 0.55
 			if d.dist == 1:
-				steps(4, true, "Walls", 0.0, gap)
+				steps(4, true, "Walls", 0.0, gap, pan_for(d.dir))
 				danger = 1.0
 			elif d.dist == 2:
-				steps(4, true, "Walls", -12.0, gap)
+				steps(4, true, "Walls", -12.0, gap, pan_for(d.dir) * 0.8)
 				danger = maxf(danger, 0.6)
 			else:
-				steps(4, true, "Walls", -22.0, gap)
+				steps(4, true, "Walls", -22.0, gap, pan_for(d.dir) * 0.6)
 				danger = maxf(danger, 0.35)
 		"player_move_start":
 			steps(4 if not d.sneak else 3, false, "Room", -16.0 if not d.sneak else -28.0, d.dur / 4.0)
@@ -211,7 +242,7 @@ func _on_event(t: String, d: Dictionary) -> void:
 				one_shot("crash", "Room", 0.0)
 				danger = 1.0
 		"presence":
-			one_shot("breath", "Walls", -6.0, 0.8)
+			one_shot_panned("breath", "Walls", -6.0, pan_for(d.dir))
 			danger = maxf(danger, 0.75)
 		"murderer_in_room":
 			one_shot("breath", "Room", -4.0, 0.85)

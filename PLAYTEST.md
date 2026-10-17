@@ -43,7 +43,7 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 | **His imitation of her** (hard only) | Line bus, pitch ×0.82 | Is it subtly "off" but not obvious? | same, `kind == "fake"` |
 | **Your room**: clock / fan / rain / radiator | Room bus, per-feature dB | Recognisable? Balanced? | `Synth.clock_loop` etc.; `Sfx.FEATURE_DB` |
 | **His room through the line** | Line bus, `FEATURE_DB` −12 dB | Can you tell "a second clock, out of step" by ear? | `line_amb` target in `_process` |
-| **His footsteps** | Walls bus (low-pass 500 Hz + reverb) | Scary? Is the distance readable (0 / −12 / −22 dB)? Running vs walking (0.32 s vs 0.55 s gap)? | `sfx.gd` `"footsteps"` |
+| **His footsteps** | Walls bus (low-pass 500 Hz + reverb), **panned by door direction** (west = left, east = right) | Scary? Is the distance readable (0 / −12 / −22 dB)? Running vs walking (0.32 s vs 0.55 s gap)? Does the panning help? | `sfx.gd` `"footsteps"`, `pan_for` |
 | **Clicks** (his pickup/hang-up, yours) | Line / Room | Distinct enough to make you jump? | `Synth.receiver_click` |
 | **Breathing** | Line bus | Creepy or silly? | `Synth.breath` |
 | **Heartbeat** | Master, by *perceived* danger | Too much? | `_process` heart volume |
