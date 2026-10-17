@@ -134,6 +134,33 @@ func _dev_args() -> void:
 				game.murderer.room = game.house.neighbors(game.player_room)[0]
 				game.murderer._start_listen()
 				game.on_murderer_imitate(Loc.t("imitate_say", [Loc.dir("north")])))
+		if a.has("clicktest"):
+			get_tree().create_timer(2.0).timeout.connect(func():
+				var target: String = game.house.neighbors(game.player_room)[0]
+				var pos: Vector2 = plan.get_global_rect().position + plan._c(target)
+				for pressed in [true, false]:
+					var ev := InputEventMouseButton.new()
+					ev.button_index = MOUSE_BUTTON_LEFT
+					ev.pressed = pressed
+					ev.position = pos
+					ev.global_position = pos
+					Input.parse_input_event(ev)
+					await get_tree().process_frame
+				print("clicktest plan: target=%s moving_to=%s" % [target, game.moving_to])
+				await get_tree().create_timer(3.0).timeout
+				# Now press the first door button in the room panel.
+				var btns := room_panel.doors_box.get_children().filter(func(c): return c is Button and not c is CheckButton and not c.disabled)
+				var b: Button = btns[0]
+				var bp: Vector2 = b.get_global_rect().get_center()
+				for pressed in [true, false]:
+					var ev2 := InputEventMouseButton.new()
+					ev2.button_index = MOUSE_BUTTON_LEFT
+					ev2.pressed = pressed
+					ev2.position = bp
+					ev2.global_position = bp
+					Input.parse_input_event(ev2)
+					await get_tree().process_frame
+				print("clicktest button '%s': moving_to=%s" % [b.text, game.moving_to]))
 		if a.has("keytest"):
 			get_tree().create_timer(2.0).timeout.connect(func():
 				var ev := InputEventKey.new()
