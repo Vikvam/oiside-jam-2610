@@ -117,7 +117,10 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"player_tap":
 			add_line("sound", "tap")
 		"rescuer_says":
-			add_line("her", d.text, false)
+			if game.player_on_line():
+				add_line("her", d.text, false)
+			else:
+				add_line("sound", "her voice buzzes from the receiver on the hook — you can't make it out")
 		"murderer_says":
 			add_line("him", d.text, false)
 			hint("taunt", "He's sure where you are. Move. Now.")

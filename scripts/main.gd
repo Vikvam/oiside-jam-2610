@@ -80,6 +80,16 @@ func _dev_args() -> void:
 			var BotScript = load("res://tests/sim.gd")
 			autobot = BotScript.Bot.new(game, a.autoplay if a.autoplay != "1" else "smart")
 			game.event.connect(autobot.on_event)
+		if a.has("hidetest"):
+			get_tree().create_timer(3.0).timeout.connect(func():
+				game.find_chance_pass = 0.0
+				game.find_chance_stay = 0.0
+				game.hang_up()
+				game.hidden = true
+				game.emit("hidden", {"on": true})
+				var n: String = game.house.neighbors(game.player_room)[0]
+				game.murderer.room = n
+				game.murderer._go(game.player_room, "phone"))
 		if a.has("speed"):
 			Engine.time_scale = float(a.speed)
 		if a.has("say"):
@@ -586,7 +596,7 @@ func _process(dt: float) -> void:
 		mat.set_shader_parameter("danger", 0.0)
 		mat.set_shader_parameter("hidden", 0.0)
 		return
-	if _intro_queue.size() > 0:
+	if _intro_queue.size() > 0 and game.player_on_line():
 		_intro_t -= dt
 		if _intro_t <= 0.0 and not phone.lines.any(func(l): return l.shown < l.text.length()):
 			var line: String = _intro_queue.pop_front()
