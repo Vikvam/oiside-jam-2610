@@ -287,6 +287,25 @@ static func drone() -> PackedFloat32Array:
 	return normalize(b, 0.5)
 
 
+## The hidden door: a long creak, then a gust of cold air.
+static func escape() -> PackedFloat32Array:
+	var sec := 3.0
+	var b := blank(sec)
+	var phase := 0.0
+	for i in b.size():
+		var t := float(i) / RATE
+		if t < 1.2:
+			var f := 180.0 + 260.0 * (t / 1.2) + 30.0 * sin(t * 40.0)
+			phase += f / RATE
+			b[i] = sin(TAU * phase) * 0.35 * sin(PI * t / 1.2) * (0.6 + 0.4 * sin(t * 90.0))
+	var wind := lowpass(lowpass(noise(sec), 900.0), 600.0)
+	for i in b.size():
+		var t := float(i) / RATE
+		var env := clampf((t - 0.9) / 0.6, 0.0, 1.0) * clampf((sec - t) / 1.2, 0.0, 1.0)
+		b[i] += wind[i] * 6.0 * env
+	return fade_out(normalize(b, 0.85), 0.3)
+
+
 ## European ringback: 425 Hz, one second on.
 static func ringback() -> PackedFloat32Array:
 	var b := blank(1.0)

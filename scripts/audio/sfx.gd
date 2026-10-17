@@ -97,6 +97,7 @@ func _generate() -> void:
 	s.bell = Synth.to_wav(Synth.bell(392.0))
 	s.crash = Synth.to_wav(Synth.crash())
 	s.ring = Synth.to_wav(Synth.ringback())
+	s.escape = Synth.to_wav(Synth.escape())
 	s.drone = Synth.to_wav(Synth.drone(), true)
 	s.toggle = Synth.to_wav(Synth.fade_out(Synth.tick(800.0, 0.08), 0.02))
 	# Her voice: a handful of vowel syllables around a female-ish pitch.
@@ -117,7 +118,7 @@ func _loop_player(name: String, bus: String) -> AudioStreamPlayer:
 
 
 func one_shot(name: String, bus := "Master", db := 0.0, pitch := 1.0) -> void:
-	if not active and name != "crash":
+	if not active and name not in ["crash", "escape"]:
 		return
 	var st = s[name]
 	if st is Array:
@@ -204,6 +205,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 				get_tree().create_timer(i * 1.4).timeout.connect(func():
 					one_shot("bell", "Room" if here else "Walls", -6.0 if here else -12.0))
 		"exit_try":
+			if d.ok:
+				one_shot("escape", "Room", -2.0)
 			if not d.ok:
 				one_shot("crash", "Room", 0.0)
 				danger = 1.0
