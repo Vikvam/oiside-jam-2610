@@ -871,6 +871,10 @@ func _process(dt: float) -> void:
 	header_label.text = "%s     %s%s" % [Loc.t("header"), Loc.t("call_time", [int(game.time) / 60, int(game.time) % 60]), cursor]
 	if autobot != null and not game.over:
 		autobot.tick(dt)
+	if _soak_left > 0 and game.time > 1200.0 and not game.over:
+		var m := game.murderer
+		print("soak STUCK: player=%s hidden=%s receiver=%s busy='%s' moving=%s | murderer room=%s state=%s goal=%s/%s cands=%s exit_known=%s" % [game.player_room, game.hidden, game.receiver_up, game.busy, game.moving_to, m.room, Murderer.S.keys()[m.state], m.goal, m.goal_room, m.candidates.keys(), m.exit_known])
+		game._end(false, "caught")
 	mat.set_shader_parameter("danger", sfx.danger)
 	mat.set_shader_parameter("on_line", 1.0 if game.player_on_line() else 0.0)
 	var hv: float = mat.get_shader_parameter("hidden") if mat.get_shader_parameter("hidden") != null else 0.0
