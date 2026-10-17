@@ -793,6 +793,7 @@ func _process(dt: float) -> void:
 	var mat := post.material as ShaderMaterial
 	phone.active = running and not paused
 	sfx.active = running and not paused
+	sfx.title_mood = title_layer.visible
 	if not running or game == null or paused:
 		mat.set_shader_parameter("danger", 0.0)
 		mat.set_shader_parameter("hidden", 0.0)

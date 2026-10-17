@@ -22,6 +22,7 @@ var _voice_i := 0
 var _char_n := 0
 var danger := 0.0              # perceived danger 0..1, decays
 var active := true             # false on the title / while paused: everything fades
+var title_mood := false        # on the title: just rain against the window and the drone
 var master_db := 0.0
 ## Per-feature loudness in your room (the clock loop is sparse, so it gets more gain).
 const FEATURE_DB := {"clock": -1.0, "fan": -11.0, "rain": -9.0, "radiator": -8.0}
@@ -222,6 +223,11 @@ func _on_event(t: String, d: Dictionary) -> void:
 
 
 func _process(dt: float) -> void:
+	if title_mood:
+		for p in room_amb.values() + line_amb.values() + [hiss, heart]:
+			_fade(p, -24.0 if p == room_amb.rain else -80.0, dt)
+		_fade(drone, DRONE_DB_CALM - 4.0 if DRONE_ON else -80.0, dt * 0.5)
+		return
 	if game == null:
 		return
 	if not active or game.over:
