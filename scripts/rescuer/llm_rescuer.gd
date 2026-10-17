@@ -132,20 +132,20 @@ static func build_system(g) -> String:
 			if to != "":
 				doors.append("%s door → %s" % [d, h.rooms[to].name])
 		var feats: Array = r.features.map(func(f): return House.FEATURE_LABEL[f])
-		var cs_name := " / Czech: %s" % House.CS_ROOMS[rid][0] if Loc.lang == "cs" else ""
+		var cs_name := " / Czech: %s" % House.cs_room(rid)[0] if Loc.lang == "cs" else ""
 		s += "- %s%s (id: %s). %s. Sounds: %s. Doors: %s.\n" % [r.name, cs_name, rid, "Has a phone" if r.phone else "NO phone", ", ".join(feats) if not feats.is_empty() else "none", "; ".join(doors)]
 		for o in r.objects:
 			var line := "    · %s" % o.name
 			if Loc.lang == "cs":
-				line += " (Czech: %s)" % House.CS_OBJECTS[o.id][0]
+				line += " (Czech: %s)" % House.cs_obj(o.id)[0]
 			if o.has("nick"):
 				if Loc.lang == "cs":
-					line += " — childhood nickname \"%s\" (%s)" % [House.CS_OBJECTS[o.id][3], House.CS_OBJECTS[o.id][4]]
+					line += " — childhood nickname \"%s\" (%s)" % [House.cs_obj(o.id)[3], House.cs_obj(o.id)[4]]
 				else:
 					line += " — childhood nickname \"%s\" (%s)" % [o.nick, o.memory]
 			s += line + "\n"
 	var od := h.object_def(g.exit_obj)
-	s += "\nTHE WAY OUT: the %s in the %s — %s. The player must stand in that room and search that exact object. " % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, "")]
+	s += "\nTHE WAY OUT: the %s in the %s — %s. The player must stand in that room and search that exact object. " % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, House.EXTRA_FLAVOR.get(g.exit_obj, ""))]
 	s += "They get only 3 tries in total and a wrong try makes a loud crash that gives away their room.\n\n"
 	s += "WHAT YOU HEAR: only the line. You do NOT know where the player is — work it out from what they say and from the background sounds. "
 	s += "Background sounds on the line are mixed from every open extension. '[click: another extension picks up]' means someone, probably him, is now listening. "

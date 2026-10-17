@@ -27,6 +27,7 @@ func _init() -> void:
 	g = Game.new()
 	g.difficulty = a[2] if a.size() > 2 else "normal"
 	g.rearranged = OS.get_environment("REARRANGE") != ""
+	g.large = OS.get_environment("LARGE") != ""
 	g.setup(int(a[1]))
 	g.rescuer = MockRescuer.new(g)
 	g.murderer.timer += 12.0

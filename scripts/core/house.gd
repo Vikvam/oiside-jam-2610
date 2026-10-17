@@ -172,6 +172,87 @@ const EXIT_FLAVOR := {
 	"meat_hook": "pull the meat hook down and the back wall opens",
 }
 
+## The large house adds a fourth column.
+const EXTRA_ROOMS := [
+	{
+		"id": "billiard", "name": "Billiard Room", "rect": [12, 0, 4, 3], "phone": true,
+		"features": ["fan"],
+		"objects": [
+			{"id": "billiard_table", "name": "billiard table", "keys": ["billiard", "billiards", "pool", "felt"],
+				"desc": "A billiard table. One ball left on the felt: the eight."},
+			{"id": "cue_rack", "name": "cue rack", "keys": ["cue", "cues", "rack"],
+				"desc": "A rack of cues. One is snapped in half."},
+			{"id": "dartboard", "name": "dartboard", "keys": ["dartboard", "darts", "dart"],
+				"desc": "A dartboard, bristling with old darts.", "nick": "the Cyclops",
+				"memory": "The dartboard... the Cyclops. You two never once hit its eye."},
+		],
+	},
+	{
+		"id": "music", "name": "Music Room", "rect": [12, 3, 4, 3], "phone": false,
+		"features": ["clock", "rain"],
+		"objects": [
+			{"id": "gramophone", "name": "gramophone", "keys": ["gramophone", "phonograph", "record", "records"],
+				"desc": "A gramophone with a cracked record on it.", "nick": "the Singing Box",
+				"memory": "The gramophone... the Singing Box. It only ever played one waltz."},
+			{"id": "harp", "name": "harp", "keys": ["harp", "strings"],
+				"desc": "A tall harp with three strings missing."},
+			{"id": "music_stand", "name": "music stand", "keys": ["sheet", "sheets", "score"],
+				"desc": "A music stand. The sheet on it is blank."},
+		],
+	},
+	{
+		"id": "bathroom", "name": "Bathroom", "rect": [12, 6, 4, 3], "phone": true,
+		"features": ["fan", "radiator"],
+		"objects": [
+			{"id": "bathtub", "name": "clawfoot bathtub", "keys": ["bathtub", "bath", "tub"],
+				"desc": "A clawfoot bathtub with a grey ring around it."},
+			{"id": "medicine_cabinet", "name": "medicine cabinet", "keys": ["medicine", "pills", "bottles"],
+				"desc": "A medicine cabinet full of brown bottles."},
+			{"id": "laundry_chute", "name": "laundry chute", "keys": ["chute", "laundry", "linen"],
+				"desc": "The little door of a laundry chute."},
+		],
+	},
+]
+const EXTRA_DOORS := [["nursery", "billiard"], ["kitchen", "music"], ["pantry", "bathroom"], ["billiard", "music"], ["music", "bathroom"]]
+const EXTRA_FLAVOR := {
+	"billiard_table": "the billiard table's slate top slides aside over a stairwell",
+	"cue_rack": "pull the broken cue and the rack swings open",
+	"dartboard": "behind the Cyclops is a hole just big enough to crawl through",
+	"gramophone": "the gramophone cabinet has no back — it opens into the wall",
+	"harp": "the harp's pedestal hides a floor hatch",
+	"music_stand": "the music stand's base is a lever for a floor panel",
+	"bathtub": "under the bathtub, the floor drops into the old cistern",
+	"medicine_cabinet": "the medicine cabinet is a door to a service shaft",
+	"laundry_chute": "the laundry chute goes all the way down — and out",
+}
+const CS_EXTRA_ROOMS := {
+	"billiard": ["Kulečníkový sál", "v kulečníkovém sále", "do kulečníkového sálu", ["kulecnik*", "billiard*"]],
+	"music": ["Hudební salonek", "v hudebním salonku", "do hudebního salonku", ["hudeb*"]],
+	"bathroom": ["Koupelna", "v koupelně", "do koupelny", ["koupel*"]],
+}
+const CS_EXTRA_OBJECTS := {
+	"billiard_table": ["kulečníkový stůl", "Kulečníkový stůl. Na suknu zbyla jediná koule: osmička.", ["kulecnik*", "sukn*"]],
+	"cue_rack": ["stojan s tágy", "Stojan s tágy. Jedno je zlomené vejpůl.", ["tag*", "tago"]],
+	"dartboard": ["terč na šipky", "Terč, ze kterého trčí staré šipky.", ["terc*", "sipk*"], "Kyklop", "Terč… Kyklop. Ani jednou jste se mu netrefili do oka."],
+	"gramophone": ["gramofon", "Gramofon s prasklou deskou.", ["gramofon*", "desk*"], "Zpívající skříňka", "Gramofon… Zpívající skříňka. Hrál pořád jen jeden valčík."],
+	"harp": ["harfa", "Vysoká harfa, chybějí jí tři struny.", ["harf*", "strun*"]],
+	"music_stand": ["notový stojan", "Notový stojan. List na něm je prázdný.", ["noty", "notov*", "partitur*"]],
+	"bathtub": ["vana na nožičkách", "Vana na lvích nožičkách se šedým okrajem.", ["vana", "vane", "vanu", "vanou"]],
+	"medicine_cabinet": ["lékárnička", "Lékárnička plná hnědých lahviček.", ["lekarn*", "prasky", "leky", "lahvic*"]],
+	"laundry_chute": ["shoz na prádlo", "Dvířka shozu na prádlo.", ["shoz*", "prad*"]],
+}
+const CS_EXTRA_FLAVOR := {
+	"billiard_table": "břidlicová deska kulečníku se odsune nad schodiště",
+	"cue_rack": "zatáhni za zlomené tágo a stojan se otevře",
+	"dartboard": "za Kyklopem je díra, kterou se dá prolézt",
+	"gramophone": "skříňka gramofonu nemá zadní stěnu — vede do zdi",
+	"harp": "podstavec harfy zakrývá poklop v podlaze",
+	"music_stand": "noha notového stojanu je páka k panelu v podlaze",
+	"bathtub": "pod vanou se podlaha propadá do staré cisterny",
+	"medicine_cabinet": "lékárnička jsou dvířka do servisní šachty",
+	"laundry_chute": "shoz na prádlo vede až úplně dolů — a ven",
+}
+
 ## Czech data. Keys ending in * are stems (prefix match on diacritics-folded words).
 const CS_ROOMS := {
 	"library": ["Knihovna", "v knihovně", "do knihovny", ["knihovn*"]],
@@ -248,43 +329,45 @@ const CS_EXIT_FLAVOR := {
 
 
 func room_name(id: String) -> String:
-	return CS_ROOMS[id][0] if Loc.lang == "cs" else rooms[id].name
+	return cs_room(id)[0] if Loc.lang == "cs" else rooms[id].name
 
 
 ## "in the Library" / "v knihovně"
 func room_in(id: String) -> String:
-	return CS_ROOMS[id][1] if Loc.lang == "cs" else "in the " + rooms[id].name
+	return cs_room(id)[1] if Loc.lang == "cs" else "in the " + rooms[id].name
 
 
 ## "into the Library" / "do knihovny"
 func room_to(id: String) -> String:
-	return CS_ROOMS[id][2] if Loc.lang == "cs" else "the " + rooms[id].name
+	return cs_room(id)[2] if Loc.lang == "cs" else "the " + rooms[id].name
 
 
 func obj_name(oid: String) -> String:
-	return CS_OBJECTS[oid][0] if Loc.lang == "cs" else object_def(oid).name
+	return cs_obj(oid)[0] if Loc.lang == "cs" else object_def(oid).name
 
 
 func obj_desc(oid: String) -> String:
-	return CS_OBJECTS[oid][1] if Loc.lang == "cs" else object_def(oid).desc
+	return cs_obj(oid)[1] if Loc.lang == "cs" else object_def(oid).desc
 
 
 func obj_nick(oid: String) -> String:
 	var o := object_def(oid)
 	if not o.has("nick"):
 		return ""
-	return CS_OBJECTS[oid][3] if Loc.lang == "cs" else o.nick
+	return cs_obj(oid)[3] if Loc.lang == "cs" else o.nick
 
 
 func obj_memory(oid: String) -> String:
 	var o := object_def(oid)
 	if not o.has("memory"):
 		return ""
-	return CS_OBJECTS[oid][4] if Loc.lang == "cs" else o.memory
+	return cs_obj(oid)[4] if Loc.lang == "cs" else o.memory
 
 
 func exit_flavor(oid: String) -> String:
-	return CS_EXIT_FLAVOR.get(oid, "") if Loc.lang == "cs" else EXIT_FLAVOR.get(oid, "")
+	if Loc.lang == "cs":
+		return CS_EXIT_FLAVOR.get(oid, CS_EXTRA_FLAVOR.get(oid, ""))
+	return EXIT_FLAVOR.get(oid, EXTRA_FLAVOR.get(oid, ""))
 
 var rooms := {}          # id -> room dict
 var room_ids: Array[String] = []
@@ -294,13 +377,30 @@ var object_room := {}    # object id -> room id
 var _dist := {}          # id -> {id: int}
 
 
-func _init() -> void:
-	for r in ROOMS:
+func _init(large := false) -> void:
+	var defs: Array = ROOMS + (EXTRA_ROOMS if large else [])
+	for r in defs:
 		rooms[r.id] = r.duplicate(true)
 		room_ids.append(r.id)
 		for o in r.objects:
 			object_room[o.id] = r.id
-	_build(DOORS)
+	_build(DOORS + (EXTRA_DOORS if large else []))
+
+
+## Plan size in units (12 x 9, or 16 x 9 for the large house).
+func size_units() -> Vector2:
+	var s := Vector2.ZERO
+	for id in room_ids:
+		s = s.max(rect(id).end)
+	return s
+
+
+static func cs_room(id: String) -> Array:
+	return CS_ROOMS[id] if CS_ROOMS.has(id) else CS_EXTRA_ROOMS[id]
+
+
+static func cs_obj(oid: String) -> Array:
+	return CS_OBJECTS[oid] if CS_OBJECTS.has(oid) else CS_EXTRA_OBJECTS[oid]
 
 
 func _build(door_list: Array) -> void:
@@ -351,11 +451,11 @@ func rearrange() -> void:
 	for i in mini(randi_range(2, 3), spare.size()):
 		chosen.append(spare[i])
 	_build(chosen)
-	# Phones: 6 of 9 rooms.
+	# Phones: two thirds of the rooms.
 	var ids := room_ids.duplicate()
 	ids.shuffle()
 	for i in ids.size():
-		rooms[ids[i]].phone = i < 6
+		rooms[ids[i]].phone = i < ids.size() * 2 / 3
 	# Sounds: random, every room has at least one.
 	var odds := {"clock": 0.45, "fan": 0.35, "rain": 0.5, "radiator": 0.4}
 	for id in room_ids:

@@ -39,6 +39,7 @@ var difficulty := "gentle"
 var explore_mode := false
 var hints_on := true
 var rearranged := false
+var large := false
 var running := false
 var _intro_queue: Array = []
 var _intro_t := 0.0
@@ -101,6 +102,8 @@ func _dev_args() -> void:
 		_set_lang(a.lang)
 	if a.has("rearranged"):
 		rearranged = true
+	if a.has("large"):
+		large = true
 	if a.has("play"):
 		_start_game()
 		if a.has("debug"):
@@ -145,6 +148,7 @@ func _load_settings() -> void:
 	explore_mode = _settings.get_value("ui", "explore", false)
 	hints_on = _settings.get_value("ui", "hints", true)
 	rearranged = _settings.get_value("ui", "rearranged", false)
+	large = _settings.get_value("ui", "large", false)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
 	if rc.load("res://rescuer_config.cfg") == OK or rc.load("user://rescuer_config.cfg") == OK:
@@ -162,6 +166,7 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "explore", explore_mode)
 	_settings.set_value("ui", "hints", hints_on)
 	_settings.set_value("ui", "rearranged", rearranged)
+	_settings.set_value("ui", "large", large)
 	_settings.save("user://settings.cfg")
 
 
@@ -181,7 +186,7 @@ func _build_game_ui() -> void:
 	margin.add_child(h)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 10)
-	left.custom_minimum_size.x = 12 * PlanView.U + 8
+	left.custom_minimum_size.x = PlanView.BOX.x + 8
 	left.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	h.add_child(left)
 	var header := Label.new()
@@ -193,7 +198,7 @@ func _build_game_ui() -> void:
 	left.add_child(plan)
 	room_panel = RoomPanel.new()
 	room_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	room_panel.custom_minimum_size.x = 12 * PlanView.U + 8
+	room_panel.custom_minimum_size.x = PlanView.BOX.x + 8
 	room_panel.clip_contents = true
 	room_panel.move_requested.connect(func(r, sn): if game: game.move_to(r, sn))
 	left.add_child(room_panel)
@@ -333,6 +338,12 @@ func _build_title() -> void:
 			explore_mode = pm[0]
 			_refresh_title_buttons())
 		row4.add_child(b)
+	var lb := CheckButton.new()
+	lb.text = Loc.t("large")
+	lb.tooltip_text = Loc.t("large_tip")
+	lb.button_pressed = large
+	lb.toggled.connect(func(v): large = v)
+	row4.add_child(lb)
 	var rb := CheckButton.new()
 	rb.text = Loc.t("rearranged")
 	rb.tooltip_text = Loc.t("rearranged_tip")
@@ -592,6 +603,7 @@ func _start_game() -> void:
 	game.difficulty = difficulty
 	game.explore_mode = explore_mode
 	game.rearranged = rearranged
+	game.large = large
 	game.setup(randi() % 100000)
 	game.murderer.timer += 15.0  # let the call connect and her finish the intro
 	game.rescuer = _make_rescuer(game)

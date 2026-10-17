@@ -31,6 +31,8 @@ const S := {
 	"plan_explore": ["learn sounds by exploring", "zvuky zjišťuješ průzkumem"],
 	"hints": ["hints", "nápovědy"],
 	"rearranged": ["rearranged house", "přestavěný dům"],
+	"large": ["large house", "velký dům"],
+	"large_tip": ["12 rooms instead of 9: longer, harder to find, harder to be found.", "12 místností místo 9: delší hra, těžší hledání pro oba."],
 	"rearranged_tip": ["Every call: new doors, new phones, new sounds.", "Při každém hovoru: jiné dveře, telefony i zvuky."],
 	"start": ["Pick up the phone", "Zvednout telefon"],
 	"again": ["Call again", "Zavolat znovu"],

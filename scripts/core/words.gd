@@ -22,6 +22,7 @@ const ROOM_WORDS := {
 	"parlor": "parlor", "parlour": "parlor", "lounge": "parlor", "hall": "hall", "hallway": "hall",
 	"entrance": "hall", "foyer": "hall", "kitchen": "kitchen", "conservatory": "conservatory",
 	"greenhouse": "conservatory", "dining": "dining", "pantry": "pantry", "larder": "pantry",
+	"billiard": "billiard", "billiards": "billiard", "music": "music", "bathroom": "bathroom", "toilet": "bathroom",
 }
 
 
@@ -72,9 +73,10 @@ static func rooms_named(text: String) -> Array:
 		var r: String = ROOM_WORDS.get(w, "")
 		if r != "" and r not in out:
 			out.append(r)
-	for rid in House.CS_ROOMS:
-		if rid not in out and _any(toks, House.CS_ROOMS[rid][3]):
-			out.append(rid)
+	for table in [House.CS_ROOMS, House.CS_EXTRA_ROOMS]:
+		for rid in table:
+			if rid not in out and _any(toks, table[rid][3]):
+				out.append(rid)
 	return out
 
 
@@ -97,7 +99,7 @@ static func objects_named(text: String, house: House, known_rooms = null) -> Arr
 			continue
 		for o in house.rooms[rid].objects:
 			var keys: Array = o.keys.duplicate()
-			keys.append_array(House.CS_OBJECTS[o.id][2])
+			keys.append_array(House.cs_obj(o.id)[2])
 			if _any(toks, keys):
 				out.append({"obj": o.id, "room": rid})
 	return out
@@ -112,7 +114,7 @@ static func nicknames_named(text: String, house: House) -> Array:
 		for o in house.rooms[rid].objects:
 			if not o.has("nick"):
 				continue
-			for nick in [o.nick, House.CS_OBJECTS[o.id][3]]:
+			for nick in [o.nick, House.cs_obj(o.id)[3]]:
 				var n := " " + " ".join(tokens(nick)) + " "
 				var bare := n.replace(" the ", " ").replace(" mr ", " ").replace(" pan ", " ").replace(" stary ", " ")
 				if low.contains(n) or (bare.strip_edges().length() > 3 and low.contains(bare)):

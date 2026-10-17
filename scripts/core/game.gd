@@ -55,6 +55,7 @@ var _tap_timer := -1.0
 var difficulty := "normal"
 var explore_mode := false   # player only knows sounds of visited rooms
 var rearranged := false     # random doors/phones/sounds each game
+var large := false          # 12-room house
 const DIFFICULTY := {
 	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "find_chance_hunt": 0.55, "find_chance_pass": 0.1},
 	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "find_chance_hunt": 0.65, "find_chance_pass": 0.15},
@@ -77,6 +78,8 @@ func setup(seed_value := -1) -> void:
 		seed(seed_value)
 	else:
 		randomize()
+	if large:
+		house = House.new(true)
 	if rearranged:
 		house.rearrange()
 	for r in house.room_ids:

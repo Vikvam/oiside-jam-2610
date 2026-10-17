@@ -5,7 +5,9 @@ extends Control
 
 signal room_clicked(room: String, sneak: bool)
 
-const U := 52.0           # pixels per plan unit
+const BOX := Vector2(624, 468)  # pixel box the plan must fit in
+var U := 52.0                   # pixels per plan unit (recomputed per house)
+var origin := Vector2(4, 4)     # top-left of the drawn plan (centred in BOX)
 const DOOR_W := 0.9
 
 var game: Game
@@ -26,12 +28,15 @@ var _reveal_t0 := 0.0
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(12 * U, 9 * U) + Vector2(8, 8)
+	custom_minimum_size = BOX + Vector2(8, 8)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 func bind(g: Game) -> void:
 	game = g
+	var units := g.house.size_units()
+	U = minf(BOX.x / units.x, BOX.y / units.y)
+	origin = Vector2(4, 4) + (BOX - units * U) * 0.5
 	guess = ""
 	ripples.clear()
 	g.event.connect(_on_event)
@@ -40,8 +45,8 @@ func bind(g: Game) -> void:
 func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"player_move_start":
-			_walk_from = _c(d.from) + Vector2(0, 16)
-			_walk_to = _c(d.to) + Vector2(0, 16)
+			_walk_from = _c(d.from) + Vector2(0, U * 0.3)
+			_walk_to = _c(d.to) + Vector2(0, U * 0.3)
 			_walk_door = _door_point(d.from, d.to)
 			_walk_t = 0.0
 			_walk_dur = d.dur
@@ -71,7 +76,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 				ripple(_c(r), Style.c("dim"), 0.35, 1.2 * U)
 
 
-func ripple(pos: Vector2, col: Color, strength: float, radius := 2.2 * U) -> void:
+func ripple(pos: Vector2, col: Color, strength: float, radius := -1.0) -> void:
+	if radius < 0.0:
+		radius = 2.2 * U
 	ripples.append({"pos": pos, "t": 0.0, "col": col, "s": strength, "r": radius})
 
 
@@ -88,12 +95,12 @@ func _process(dt: float) -> void:
 
 
 func _c(room: String) -> Vector2:
-	return game.house.center(room) * U + Vector2(4, 4)
+	return game.house.center(room) * U + origin
 
 
 func _rect(room: String) -> Rect2:
 	var r := game.house.rect(room)
-	return Rect2(r.position * U + Vector2(4, 4), r.size * U)
+	return Rect2(r.position * U + origin, r.size * U)
 
 
 func _door_point(a: String, b: String) -> Vector2:
@@ -169,16 +176,16 @@ func _draw() -> void:
 	var wall: Color = Style.c("wall")
 	var dim: Color = Style.c("dim")
 	var grid: Color = Style.c("grid")
-	var size_px := Vector2(12 * U, 9 * U)
+	var size_px := game.house.size_units() * U
 	if Style.c("grid_on"):
 		var step := U * 0.5
-		var x := 4.0
-		while x <= size_px.x + 4.0:
-			draw_line(Vector2(x, 4), Vector2(x, size_px.y + 4), grid, 1.0)
+		var x := origin.x
+		while x <= size_px.x + origin.x:
+			draw_line(Vector2(x, origin.y), Vector2(x, size_px.y + origin.y), grid, 1.0)
 			x += step
-		var y := 4.0
-		while y <= size_px.y + 4.0:
-			draw_line(Vector2(4, y), Vector2(size_px.x + 4, y), grid, 1.0)
+		var y := origin.y
+		while y <= size_px.y + origin.y:
+			draw_line(Vector2(origin.x, y), Vector2(size_px.x + origin.x, y), grid, 1.0)
 			y += step
 	var reachable := []
 	if game.can_act():
@@ -229,10 +236,10 @@ func _draw() -> void:
 			# Hand-lettered: each label slightly crooked.
 			var ang := sin(float(id.hash() % 100)) * 0.05
 			draw_set_transform(rc.position + Vector2(10, 22), ang, Vector2.ONE)
-			draw_string(font, Vector2.ZERO, h.room_name(id), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 16, name_col)
+			draw_string(font, Vector2.ZERO, h.room_name(id), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, maxi(12, int(16 * U / 52.0)), name_col)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		else:
-			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 14, name_col)
+			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, maxi(10, int(14 * U / 52.0)), name_col)
 		if not explore_mode or game.visited.has(id) or game.over:
 			_draw_icons(id, rc)
 		else:
@@ -252,7 +259,7 @@ func _draw() -> void:
 		if h.rooms[id].phone:
 			_icon_phone(rc.position + Vector2(rc.size.x - 22, 18), dim if id != game.player_room else Style.c("text"))
 	# Compass
-	_draw_compass(Vector2(size_px.x - 30, size_px.y - 34))
+	_draw_compass(origin + Vector2(size_px.x - 34, size_px.y - 38))
 	_draw_flourish(size_px, font)
 	# Ripples
 	for r in ripples:
@@ -277,7 +284,7 @@ func _draw() -> void:
 		var er := _c(game.exit_room) + Vector2(-30, 26)
 		draw_string(font, er, Loc.t("exit"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
 	# Player
-	var pp := _c(game.player_room) + Vector2(0, 16)
+	var pp := _c(game.player_room) + Vector2(0, U * 0.3)
 	if game.moving_to != "":
 		var f := clampf(_walk_t / _walk_dur, 0.0, 1.0)
 		pp = _walk_from.lerp(_walk_door, f * 2.0) if f < 0.5 else _walk_door.lerp(_walk_to, (f - 0.5) * 2.0)
@@ -346,7 +353,7 @@ func _draw_flourish(size_px: Vector2, font: Font) -> void:
 	match Style.current:
 		"ink":
 			# Coffee rings left by someone who drew this plan at night.
-			for ring in [[Vector2(size_px.x * 0.78, size_px.y * 0.2), 38.0], [Vector2(size_px.x * 0.12, size_px.y * 0.86), 30.0]]:
+			for ring in [[origin + Vector2(size_px.x * 0.78, size_px.y * 0.2), 38.0], [origin + Vector2(size_px.x * 0.12, size_px.y * 0.86), 30.0]]:
 				var c := Color("6b4a2b")
 				for k in 3:
 					c.a = 0.10 - k * 0.025
@@ -356,7 +363,7 @@ func _draw_flourish(size_px: Vector2, font: Font) -> void:
 			var c: Color = Style.c("dim")
 			var txt := "%s  ·  %s  ·  1:100" % [Loc.t("plan_block1"), Loc.t("plan_block2")]
 			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
-			var p := Vector2(size_px.x - w - 8, 1)
+			var p := Vector2(origin.x + size_px.x - w - 4, origin.y - 3)
 			draw_rect(Rect2(p - Vector2(4, 8), Vector2(w + 8, 11)), Style.c("bg"))
 			draw_string(font, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, c)
 
