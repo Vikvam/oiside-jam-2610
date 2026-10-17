@@ -50,7 +50,6 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 ## 4. Known issues / limitations
 
 - Balance is based on bots and my hand-play only.
-- If you talk during her intro, her replies interleave with the remaining intro lines.
 - The mock rescuer is simple. It gives one direction per turn, and its guess can go stale (it believes you followed its directions). It plays along with a lie once per eavesdrop.
 - Web export is untested. `SystemFont` falls back to Godot's default font there, and the proxy sends CORS headers.
 
@@ -69,6 +68,9 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 8. **Hard: won in 1:28.** He was standing next door in the Kitchen at the start. Since he never starts in the exit room, I deduced the Pantry. I sneaked the long way round, hid, and then asked her for the object from the Dining Room while he listened. Object names from rooms he hasn't searched are safe, and she named the meat hook.
 
 9. **Large house, normal: caught.** A lie ("im in the library") sent him running across the house, and the fake hang-up tell showed. But the mock's stale guess pointed me to the wrong room, and two brute-force crashes brought him running back. Fixed: the mock now rejects impossible positions (no phone there, or the sounds don't fit). *Brute force with him 2–3 rooms away is death. That's good.*
+
+10. **Rearranged house, normal: won (1:41).** I escaped him twice, each time by leaving a room just before he entered. Her stale guess gave me wrong directions, which led to the tap-confirmation fix.
+11. **Normal: caught.** After he'd searched most rooms, my pickup click alone narrowed him to 2 rooms. He ran at me while I was still typing. Fair, and fully explained by his notebook.
 
 **Haiku rescuer:**
 - Full bot game: in character and cautious, using yes/no tap questions.

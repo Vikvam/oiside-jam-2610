@@ -678,6 +678,12 @@ func _start_game() -> void:
 
 
 func _on_game_event(t: String, d: Dictionary) -> void:
+	if t == "player_says" and _intro_queue.size() > 0:
+		# They talk over her intro: she cuts it short with the essentials.
+		_intro_queue.clear()
+		var short := Loc.t("intro_short")
+		game.line_log.append({"who": "rescuer", "text": short})
+		phone.add_line("her", short, false)
 	if t == "game_over" and _soak_left > 0:
 		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
 		_soak_left -= 1
