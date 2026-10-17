@@ -21,13 +21,15 @@ On the title screen, pick:
 - how sharp **he** is
 - the **plan mode**: all sounds known, or learned by exploring
 - **hints**
+- the **house**: large (12 rooms), and/or rearranged (new doors, phones and sounds every call)
 - the **language**: English or Čeština
 
 ### In game
 
 | Input | What |
 |---|---|
-| Click a neighbouring room / door buttons | walk (shift-click, or the toggle, to **sneak**: slower, rarely heard) |
+| Click a neighbouring room / door buttons / arrows or WASD | walk (shift, or the toggle, to **sneak**: slower, rarely heard). The keys work when the text field isn't focused (Esc leaves it, Enter returns) |
+| H | hide |
 | Type + Enter | whisper into the receiver (only while on the line, in a room with a phone) |
 | Ctrl+T / Tap | tap the receiver (1 = yes, 2 = no) |
 | Ctrl+H / Hang up · Pick up | the receiver |

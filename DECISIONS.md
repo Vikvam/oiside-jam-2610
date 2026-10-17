@@ -138,3 +138,5 @@ A reviewer agent found 11 issues, all fixed:
   - *Why:* DESIGN.md asked "Do they try to imitate the rescuer?". This answers it without making normal play unfair.
 - **The offline voice plays along with lies.** If you name a room while he's on the line, she backs you up once ("Okay. Stay in the Library…"). He hears her too, which makes the lure stronger.
 - **Post-game:** your route is drawn on the map next to his, and a "Look at the call" toggle lets you reread the transcript.
+- **Large house** (title toggle): a fourth column with the Billiard Room, Music Room and Bathroom, with full EN/CS content and two more nicknames ("the Cyclops", "the Singing Box"). The plan scales and centres itself automatically. In simulations games last longer, and a silent player survives about 14 minutes.
+- **Keyboard play:** arrows/WASD walk, Shift sneaks, H hides, Enter focuses the whisper field, and Esc leaves it. The text field is focused when a call starts, because typing is the main verb.

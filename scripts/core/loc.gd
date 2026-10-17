@@ -13,8 +13,8 @@ const S := {
 	"title_quote": ["„To ti neřeknu, protože nás odposlouchává.“ — “I won't tell you: he's listening.”", "„To ti neřeknu, protože nás odposlouchává.“"],
 	"header": ["I WON'T TELL YOU  ·  to ti neřeknu", "TO TI NEŘEKNU  ·  I won't tell you"],
 	"title_body": [
-		"You are hiding in an old house with a murderer. You found a wired phone and called someone who grew up here — she knows a [b]secret way out[/b].\n\nBut every room's phone is on [b]the same line[/b], and he can pick up any extension and listen. He knows the layout and the room names. He only knows what's [i]inside[/i] rooms he has already searched. He can hear the clock, the fan, the rain behind your voice.\n\n[b]Talk carefully. Lie if you must.[/b] Click a neighbouring room to walk (shift: sneak). Search objects to find the hidden exit — three tries, and wrong ones are loud.\n\n[color=#888888]F2: switch look · F3: show the murderer (cheat) · F4: show her guess · F11: fullscreen · Esc: hold[/color]",
-		"Schováváš se ve starém domě s vrahem. Našel jsi drátový telefon a zavolal někomu, kdo tu vyrůstal — ona zná [b]tajný východ[/b].\n\nJenže všechny telefony v domě jsou na [b]jedné lince[/b] a on může zvednout kterýkoli z nich a poslouchat. Zná půdorys i názvy místností. Co je [i]uvnitř[/i], ví jen u místností, které už prohledal. Za tvým hlasem slyší hodiny, větrák, déšť.\n\n[b]Mluv opatrně. Lži, když musíš.[/b] Klikni na sousední místnost a jdi (shift: plížit se). Prohledávej předměty a najdi tajný východ — tři pokusy, a ty špatné jsou hlasité.\n\n[color=#888888]F2: vzhled · F3: ukázat vraha (cheat) · F4: její odhad · F11: celá obrazovka · Esc: pauza[/color]",
+		"You are hiding in an old house with a murderer. You found a wired phone and called someone who grew up here — she knows a [b]secret way out[/b].\n\nBut every room's phone is on [b]the same line[/b], and he can pick up any extension and listen. He knows the layout and the room names. He only knows what's [i]inside[/i] rooms he has already searched. He can hear the clock, the fan, the rain behind your voice.\n\n[b]Talk carefully. Lie if you must.[/b] Click a neighbouring room to walk (shift: sneak). Search objects to find the hidden exit — three tries, and wrong ones are loud.\n\n[color=#888888]Arrows/WASD: walk (Shift: sneak) · H: hide · Enter: whisper · F2: look · F3: show the murderer (cheat) · F4: her guess · F11: fullscreen · Esc: hold[/color]",
+		"Schováváš se ve starém domě s vrahem. Našel jsi drátový telefon a zavolal někomu, kdo tu vyrůstal — ona zná [b]tajný východ[/b].\n\nJenže všechny telefony v domě jsou na [b]jedné lince[/b] a on může zvednout kterýkoli z nich a poslouchat. Zná půdorys i názvy místností. Co je [i]uvnitř[/i], ví jen u místností, které už prohledal. Za tvým hlasem slyší hodiny, větrák, déšť.\n\n[b]Mluv opatrně. Lži, když musíš.[/b] Klikni na sousední místnost a jdi (shift: plížit se). Prohledávej předměty a najdi tajný východ — tři pokusy, a ty špatné jsou hlasité.\n\n[color=#888888]Šipky/WASD: chůze (Shift: plížení) · H: schovat · Enter: šeptat · F2: vzhled · F3: ukázat vraha (cheat) · F4: její odhad · F11: celá obrazovka · Esc: pauza[/color]",
 	],
 	"look": ["Look:", "Vzhled:"],
 	"her_voice": ["Her voice:", "Její hlas:"],
@@ -45,7 +45,7 @@ const S := {
 	"quit_title": ["Quit to title", "Zpět do menu"],
 	"her_voice_line": ["her voice: %s", "její hlas: %s"],
 	# ---- phone panel
-	"whisper": ["Whisper into the receiver… (Enter)", "Šeptej do sluchátka… (Enter)"],
+	"whisper": ["Whisper into the receiver… (Enter · Esc = walk with arrows/WASD)", "Šeptej do sluchátka… (Enter · Esc = chůze šipkami/WASD)"],
 	"need_line": ["(you need to be on the line)", "(musíš být na lince)"],
 	"tap_btn": ["Tap  [Ctrl+T]", "Ťuknout  [Ctrl+T]"],
 	"hang_btn": ["Hang up  [Ctrl+H]", "Zavěsit  [Ctrl+H]"],

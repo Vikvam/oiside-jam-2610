@@ -48,6 +48,10 @@ func _ready() -> void:
 	input.placeholder_text = "Whisper into the receiver… (Enter)"
 	input.max_length = 160
 	input.text_submitted.connect(_on_submit)
+	input.gui_input.connect(func(ev):
+		if ev is InputEventKey and ev.pressed and ev.keycode == KEY_ESCAPE:
+			input.release_focus()
+			input.accept_event())
 	v.add_child(input)
 	var row := HBoxContainer.new()
 	v.add_child(row)
@@ -97,6 +101,9 @@ func _toggle_hook() -> void:
 
 
 func _on_submit(t: String) -> void:
+	if t.strip_edges() == "":
+		input.release_focus()  # empty Enter hands the keys back to walking
+		return
 	if game and active and game.say(t):
 		input.clear()
 

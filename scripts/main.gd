@@ -625,6 +625,7 @@ func _start_game() -> void:
 		if o.has("memory"):
 			phone.add_line("memory", game.house.obj_memory(o.id))
 	phone.hint("start")
+	phone.input.call_deferred("grab_focus")
 	_intro_queue = INTRO[Loc.lang].duplicate()
 	_intro_t = 4.6
 	sfx.ring_in()
@@ -697,6 +698,22 @@ func _show_over() -> void:
 
 
 func _unhandled_input(e: InputEvent) -> void:
+	if e is InputEventKey and e.pressed and not e.echo and running and not paused and game and not e.ctrl_pressed:
+		var dirs := {KEY_UP: "north", KEY_W: "north", KEY_DOWN: "south", KEY_S: "south", KEY_LEFT: "west", KEY_A: "west", KEY_RIGHT: "east", KEY_D: "east"}
+		if dirs.has(e.keycode):
+			var to := game.house.step(game.player_room, dirs[e.keycode])
+			if to != "":
+				game.move_to(to, e.shift_pressed or room_panel.sneak)
+			get_viewport().set_input_as_handled()
+			return
+		if e.keycode == KEY_H:
+			game.hide()
+			get_viewport().set_input_as_handled()
+			return
+		if e.keycode == KEY_ENTER or e.keycode == KEY_KP_ENTER:
+			phone.input.grab_focus()
+			get_viewport().set_input_as_handled()
+			return
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
 			KEY_ESCAPE:
