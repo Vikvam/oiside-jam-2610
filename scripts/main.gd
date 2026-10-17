@@ -683,7 +683,7 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 		_intro_queue.clear()
 		var short := Loc.t("intro_short")
 		game.line_log.append({"who": "rescuer", "text": short})
-		phone.add_line("her", short, false)
+		phone.add_line.call_deferred("her", short, false)  # after your own line
 	if t == "game_over" and _soak_left > 0:
 		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
 		_soak_left -= 1
