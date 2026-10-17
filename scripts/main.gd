@@ -594,6 +594,8 @@ func _process(dt: float) -> void:
 			game.transcript.append({"t": game.time, "who": "rescuer", "text": line})
 			phone.add_line("her", line, false)
 			_intro_t = 0.6
+			if _intro_queue.is_empty():
+				phone.hint("first", "Type to whisper. Tell her something about your room he hasn't seen yet — an object, a memory — and ask the way.")
 	game.tick(dt)
 	if autobot != null and not game.over:
 		autobot.tick(dt)

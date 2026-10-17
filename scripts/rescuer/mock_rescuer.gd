@@ -97,7 +97,9 @@ func _compose() -> String:
 		if said_cautious:
 			return ""
 		said_cautious = true
-		return "Shh. Someone else is on the line. Tap twice when they're gone."
+		return _pick(["Shh. Someone else is on the line. Tap twice when they're gone.",
+			"Wait. I heard a click. He's listening. Two taps when it's clear.",
+			"Quiet. We're not alone. Tap twice when he's gone."])
 	if guess == "" and bg_cands.size() > 1:
 		# Ask about a sound that splits the candidates.
 		for f in House.FEATURES:
@@ -107,26 +109,37 @@ func _compose() -> String:
 					n += 1
 			if n > 0 and n < bg_cands.size():
 				pending_q = {"feature": f, "cands": bg_cands.duplicate()}
-				return "Listen. Is there a %s somewhere in that room, even if it's quiet now? One tap yes, two no." % {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"}[f]
+				var thing: String = {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"}[f]
+				return _pick(["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.",
+					"I can't tell where you are. Is there a %s near you? Tap once for yes, twice for no."]) % thing
 	if guess == "":
 		if picked_up:
-			return "I'm here. Where are you? Don't name the room. Tell me something you can see."
-		return "I can't place you. Describe one thing near you. Not the room."
+			return _pick(["I'm here. Where are you? Don't name the room. Tell me something you can see.",
+				"You're back. Tell me something you can see — not the room's name."])
+		return _pick(["I can't place you. Describe one thing near you. Not the room.",
+			"Where are you? Something small. Something only we'd know, if you can."])
+	var od := h.object_def(game.exit_obj)
+	var what: String = od.nick if od.has("nick") else "the " + od.name
+	var asks_which := low.contains("which") or low.contains("what") or low.contains("where is") or low.contains("?")
 	if guess != game.exit_room:
 		var p: Array = h.path(guess, game.exit_room)
 		var dir := h.door_to(guess, p[0])
 		expect_next = p[0]
 		if p.size() == 1:
-			var od0 := h.object_def(game.exit_obj)
-			var what: String = od0.nick if od0.has("nick") else "the " + od0.name
-			if not h.rooms[game.exit_room].phone:
-				return "Take the %s door. No phone in there, so listen: it's %s." % [dir, what]
-			return "Good. Take the %s door. It's in the next room." % dir
-		return "Okay. From there, take the %s door. Then call me again." % dir
-	var od := h.object_def(game.exit_obj)
+			if not h.rooms[game.exit_room].phone or asks_which:
+				return _pick(["Take the %s door. No phone in there, so listen: it's %s.",
+					"Through the %s door. Then %s. Only that."]) % [dir, what]
+			return _pick(["Good. Take the %s door. It's in the next room.", "Almost. The %s door — it's right there."]) % dir
+		return _pick(["Okay. From there, take the %s door. Then call me again.",
+			"The %s door. Go. Call me from the next phone.",
+			"Take the %s door. Quietly."]) % dir
 	if od.has("nick"):
-		return "You're there. It's %s. You know what I mean." % od.nick
-	return "You're in the right room. Check the %s." % od.name
+		return _pick(["You're there. It's %s. You know what I mean.", "That's the room. %s. Remember?"]) % od.nick
+	return _pick(["You're in the right room. Check the %s.", "This is it. The %s. Go."]) % od.name
+
+
+func _pick(options: Array) -> String:
+	return options[randi() % options.size()]
 
 
 func _from_background(bg: String) -> Array:
