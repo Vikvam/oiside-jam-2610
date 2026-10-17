@@ -11,8 +11,9 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 | **Line hiss** (receiver up) | Line bus (300–3400 Hz + lo-fi) | Is it phone-like, and is it too loud? | `sfx.gd` `_process` hiss `-20` dB; `Synth.hiss_loop` |
 | **Her "voice"** (formant mumble per ~3 letters) | Line bus | Cute? Creepy? Annoying? Female-ish? | `sfx.gd` `on_voice_char` (every 3rd letter, pitch); vowel table in `_generate` |
 | **His voice** (taunts) | Line bus, pitch ×0.53 | Does it read as a low male voice? | same, `kind == "him"` |
-| **Your room**: clock / fan / rain / radiator | Room bus, −9 dB | Recognisable? Balanced? | `Synth.clock_loop` etc.; `_process` target dB |
-| **His room through the line** | Line bus, −20 dB | Can you tell "a second clock, out of step" by ear? | `line_amb` target in `_process` |
+| **His imitation of her** (hard only) | Line bus, pitch ×0.82 | Is it subtly "off" but not obvious? | same, `kind == "fake"` |
+| **Your room**: clock / fan / rain / radiator | Room bus, per-feature dB | Recognisable? Balanced? | `Synth.clock_loop` etc.; `Sfx.FEATURE_DB` |
+| **His room through the line** | Line bus, `FEATURE_DB` −12 dB | Can you tell "a second clock, out of step" by ear? | `line_amb` target in `_process` |
 | **His footsteps** | Walls bus (low-pass 500 Hz + reverb) | Scary? Is the distance readable (0 / −12 / −22 dB)? Running vs walking (0.32 s vs 0.55 s gap)? | `sfx.gd` `"footsteps"` |
 | **Clicks** (his pickup/hang-up, yours) | Line / Room | Distinct enough to make you jump? | `Synth.receiver_click` |
 | **Breathing** | Line bus | Creepy or silly? | `Synth.breath` |
@@ -25,24 +26,31 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 ## 2. Please judge (taste calls)
 
 - **Visual style:** Blueprint, Phosphor CRT or Ink & Paper (F2 cycles). Which one, or a mix?
-- **Difficulty:** is "patient" (normal) fair? Bots lose most games, but bots are dumb. Values are in `Game.DIFFICULTY`.
+- **Difficulty:** the default is "slow-witted" (gentle). Is "patient" (normal) fair? Bots lose most games, but bots are dumb. Values are in `Game.DIFFICULTY`.
+- **The coiled phone cord** (drawn while you're on the line): charming, or clutter?
+- **Large house / rearranged house:** should either be the default?
 - **Her guess box** (F4): helpful, or does it break immersion?
 - **Hints** (blue "»" lines): too many, or too few?
 - **Taunts:** "Tick. Tock." when he's sure. Fun or too much of a giveaway?
-- **The plan shows all sound icons.** Too easy? The alternative is that only visited rooms show them.
-- **Game length.** I estimate 3–6 minutes per game.
+- **The plan shows all sound icons.** Too easy? The alternative is the "learn sounds by exploring" toggle.
+- **Game length.** My hand-played games lasted 1–2 minutes (small house). The large house is longer.
 
-- **Czech texts** (title → Čeština): I'm not a native speaker. Please proofread `scripts/core/loc.gd`, `House.CS_*` in `house.gd`, `MockRescuer.L` and the intro in `main.gd`. Nicknames: Pan Knoflík, Kapitán, Starý Řehoř, Duchovka, Pípův palác.
+- **Czech texts** (title → Čeština): I'm not a native speaker. Please proofread `scripts/core/loc.gd`, `House.CS_*` in `house.gd`, `MockRescuer.L` and the intro in `main.gd`. Nicknames: Pan Knoflík, Kapitán, Starý Řehoř, Duchovka, Pípův palác, Kyklop, Zpívající skříňka.
 
 ## 3. Verified by me
 
-- Headless simulations of the core loop (`tests/sim.gd`), thousands of bot games.
+- Headless simulations of the core loop (`tests/sim.gd`), thousands of bot games, including large and rearranged houses.
+- A GUI soak test (`--soak=N`) that autoplays random combinations of language, style, difficulty and house, with no script errors.
+- 9 hand-played text-mode games (section 5).
+- The API code path (Anthropic Messages format), against a local fake endpoint: headers, model, parsing.
+- Keyboard input, with synthetic key events.
 - Screenshots of all three styles, the title, the game-over notebook and the line scope.
 - The Haiku rescuer through the local proxy, end to end in the game (≈5–6 s per reply). A full LLM bot game is in section 5.
 
 ## 4. Known issues / limitations
 
-- Balance is based on bots only.
+- Balance is based on bots and my hand-play only.
+- If you talk during her intro, her replies interleave with the remaining intro lines.
 - The mock rescuer is simple. It gives one direction per turn, and its guess can go stale (it believes you followed its directions). It plays along with a lie once per eavesdrop.
 - Web export is untested. `SystemFont` falls back to Godot's default font there, and the proxy sends CORS headers.
 
