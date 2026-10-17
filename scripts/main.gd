@@ -28,6 +28,7 @@ var _intro_queue: Array = []
 var _intro_t := 0.0
 var _settings := ConfigFile.new()
 var cfg := {}
+var autobot = null
 
 
 func _ready() -> void:
@@ -71,6 +72,12 @@ func _dev_args() -> void:
 		_start_game()
 		if a.has("debug"):
 			plan.show_debug = true
+		if a.has("autoplay"):
+			var BotScript = load("res://tests/sim.gd")
+			autobot = BotScript.Bot.new(game, a.autoplay if a.autoplay != "1" else "smart")
+			game.event.connect(autobot.on_event)
+		if a.has("speed"):
+			Engine.time_scale = float(a.speed)
 		if a.has("say"):
 			get_tree().create_timer(float(a.get("say_at", "2"))).timeout.connect(func(): game.say(a.say))
 	if a.has("over"):
@@ -535,6 +542,8 @@ func _process(dt: float) -> void:
 			phone.add_line("her", line, false)
 			_intro_t = 0.6
 	game.tick(dt)
+	if autobot != null and not game.over:
+		autobot.tick(dt)
 	mat.set_shader_parameter("danger", sfx.danger)
 	mat.set_shader_parameter("on_line", 1.0 if game.player_on_line() else 0.0)
 	var hv: float = mat.get_shader_parameter("hidden") if mat.get_shader_parameter("hidden") != null else 0.0

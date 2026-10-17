@@ -23,6 +23,7 @@ var _busy_done: Callable
 var receiver_up := true
 var hidden := false
 var _seek_timer := 0.0
+var _presence_timer := 0.0
 var attempts_left := 3
 var tried := {}           # obj id -> true
 var visited := {}         # rooms the player has seen
@@ -63,6 +64,7 @@ var player_walk := 2.0
 var player_sneak := 4.5
 var toggle_time := 2.0
 var try_time := 1.5
+var wrong_freeze := 3.0
 var strike_interval := 75.0
 
 
@@ -81,11 +83,14 @@ func setup(seed_value := -1) -> void:
 	var phones := house.phone_rooms()
 	player_room = phones[randi() % phones.size()]
 	visited[player_room] = true
-	# Exit: at least two rooms away from the start.
+	# Exit: three rooms away from the start if possible, else two.
 	var far := []
-	for r in house.room_ids:
-		if house.distance(player_room, r) >= 2:
-			far.append(r)
+	for min_d in [3, 2]:
+		for r in house.room_ids:
+			if house.distance(player_room, r) >= min_d:
+				far.append(r)
+		if not far.is_empty():
+			break
 	exit_room = far[randi() % far.size()]
 	var objs: Array = house.rooms[exit_room].objects
 	exit_obj = objs[randi() % objs.size()].id
@@ -233,6 +238,7 @@ func pick_up() -> bool:
 	receiver_up = true
 	emit("receiver", {"up": true})
 	_line_note("[the player's extension picks up]")
+	murderer.on_line_noise("Someone picked up")
 	if murderer.on_line:
 		emit("line_quiet_presence", {})
 	_bg_timer = 2.0
@@ -321,6 +327,9 @@ func try_exit(obj: String) -> bool:
 			_line_note("[a loud crash on the line]")
 		if attempts_left <= 0:
 			_end(false, "noise")
+			return
+		# You freeze while the crash echoes through the house.
+		_start_busy("Frozen — listening to the echo...", wrong_freeze, func(): pass)
 	)
 	return true
 
@@ -338,8 +347,11 @@ func on_murderer_entered(r: String) -> void:
 	var d := house.distance(player_room, r)
 	if r == player_room:
 		if hidden and moving_to == "":
-			var targeted: bool = murderer.goal == "hunt" and murderer.goal_room == r
-			var chance := find_chance_hunt if targeted else find_chance_pass
+			var chance := find_chance_pass
+			if murderer.goal_room == r and murderer.goal == "hunt":
+				chance = find_chance_hunt
+			elif murderer.goal_room == r and murderer.goal == "sweep":
+				chance = (find_chance_hunt + find_chance_pass) * 0.5
 			if randf() >= chance:
 				_seek_timer = 5.0
 				emit("murderer_in_room", {})
@@ -457,6 +469,8 @@ func tick(dt: float) -> void:
 			var first := not visited.has(player_room)
 			visited[player_room] = true
 			emit("player_arrive", {"room": player_room, "from": from, "first": first})
+			_presence_timer = 0.0
+			_check_presence(true)
 			murderer.on_player_step(player_room, sneaking)
 			if murderer.room == player_room:
 				_end(false, "walked_in")
@@ -488,6 +502,9 @@ func tick(dt: float) -> void:
 			_emit_backgrounds()
 	_tick_world(dt)
 	murderer.tick(dt)
+	_presence_timer -= dt
+	if _presence_timer <= 0.0:
+		_check_presence(false)
 	if hidden and not over and murderer.room == player_room:
 		_seek_timer -= dt
 		if _seek_timer <= 0.0:
@@ -496,6 +513,17 @@ func tick(dt: float) -> void:
 				_end(false, "caught")
 			else:
 				emit("murderer_in_room", {"still": true})
+
+
+func _check_presence(arrived: bool) -> void:
+	## Standing still next door? You hear him behind that door.
+	_presence_timer = randf_range(5.0, 8.0)
+	if over or moving_to != "" or murderer.state == Murderer.S.MOVE:
+		return
+	if house.distance(player_room, murderer.room) != 1:
+		return
+	if arrived or randf() < 0.6:
+		emit("presence", {"dir": house.door_to(player_room, murderer.room)})
 
 
 func _emit_backgrounds() -> void:

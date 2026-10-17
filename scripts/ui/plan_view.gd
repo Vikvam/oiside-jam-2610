@@ -52,6 +52,10 @@ func _on_event(t: String, d: Dictionary) -> void:
 				var to := game.house.step(game.player_room, d.dir)
 				var at := _door_point(game.player_room, to) if to != "" else _c(game.player_room)
 				ripple(at, col, 0.9 if d.dist == 2 else 0.5, (2.4 if d.dist == 2 else 1.6) * U)
+		"presence":
+			var to := game.house.step(game.player_room, d.dir)
+			if to != "":
+				ripple(_door_point(game.player_room, to), Style.c("danger"), 0.7, 1.2 * U)
 		"exit_try":
 			if not d.ok:
 				ripple(_c(game.player_room), Style.c("accent"), 1.0, 5.0 * U)

@@ -176,6 +176,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 				add_line("narr", "Something gives way. Cold air. A way out.")
 			else:
 				add_line("danger", "Nothing — and it made a terrible noise. %d tries left." % d.attempts_left)
+		"presence":
+			add_line("danger", ["Behind the %s door: a floorboard creaks. Someone is standing there.", "A slow breath behind the %s door. Very close.", "Something shifts its weight behind the %s door."].pick_random() % d.dir)
+			hint("presence", "He's in the next room, standing still. Don't go through that door.")
 		"hidden":
 			add_line("narr", "You squeeze into the darkest corner and hold still." if d.on else "You come out of hiding.")
 		"murderer_in_room":

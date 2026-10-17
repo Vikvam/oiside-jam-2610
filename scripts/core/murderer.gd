@@ -29,7 +29,7 @@ var dirty := false        # new evidence since the current plan
 var listening := false    # hears the line
 var on_line := false      # the player can hear its breathing/background
 var listen_overlap := 0.0
-var heard_bg := []        # last background it identified
+var heard_bg = null       # last background it identified (null = nothing yet)
 var last_phone := ""
 var last_listen_at := {}  # room -> time
 var breath_timer := 5.0
@@ -41,8 +41,10 @@ var taunt_chance := 0.5
 # Tunables (exposed so A/B settings can poke them)
 var walk_time := 4.0
 var hunt_time := 2.6
-var listen_min := 18.0
-var listen_max := 28.0
+var listen_min := 12.0
+var listen_max := 20.0
+var just_listened := false
+var gained := false        # new evidence during the current listen
 var hunt_threshold := 2
 var identify_time := 5.0
 var fake_hangup_chance := 0.3
@@ -87,6 +89,7 @@ func _set_candidates(rs: Array, why: String, strong := true) -> void:
 	exact.clear()
 	if strong:
 		lead_time = game.time
+		gained = true
 	dirty = true
 	if why != "":
 		note("%s → %s" % [why, _cand_str()])
@@ -227,7 +230,7 @@ func _shift(dirs: Array, why: String) -> void:
 func _hear_background() -> void:
 	var bg: Array = game.player_active_features()
 	bg.sort()
-	if bg == heard_bg:
+	if heard_bg != null and bg == heard_bg:
 		return
 	heard_bg = bg
 	var out := []
@@ -253,7 +256,11 @@ func _hear_background() -> void:
 	if out.is_empty():
 		_intersect(house.phone_rooms(), "Heard %s behind them. Doesn't fit anything I know" % label)
 		return
-	_intersect(out, "Heard %s behind their voice" % label)
+	var narrowed := 0
+	for r in out:
+		if candidates.has(r):
+			narrowed += 1
+	_intersect(out, "Heard %s behind their voice" % label, narrowed <= 3)
 	exact.clear()
 	for r in ex:
 		if candidates.has(r):
@@ -368,6 +375,20 @@ func _decide() -> void:
 		note("Let's see what's so special about the %s." % house.rooms[t].name)
 		_go(t, "suspect")
 		return
+	# Listened and learned nothing? Go and look around instead.
+	if just_listened and not gained:
+		just_listened = false
+		var pool := []
+		for r in candidates:
+			if house.distance(room, r) <= 2 and r != room:
+				pool.append(r)
+		if not pool.is_empty():
+			var unseen := pool.filter(func(r): return not seen.has(r))
+			var t: String = (unseen if not unseen.is_empty() else pool).pick_random()
+			note("Nothing on the line. I'll go look in the %s." % house.rooms[t].name)
+			_go(t, "sweep")
+			return
+	just_listened = false
 	# Go listen at a phone. Prefer one not used recently.
 	var phones := []
 	for p in house.phone_rooms():
@@ -428,7 +449,7 @@ func _arrive_guard() -> void:
 		listening = true
 		on_line = true
 		listen_overlap = 0.0
-		heard_bg = []
+		heard_bg = null
 		game.on_murderer_pickup()
 
 
@@ -443,10 +464,11 @@ func _stop_listening() -> void:
 
 func _start_listen() -> void:
 	state = S.LISTEN
+	gained = false
 	listening = true
 	on_line = true
 	listen_overlap = 0.0
-	heard_bg = []
+	heard_bg = null
 	last_phone = room
 	last_listen_at[room] = game.time
 	timer = randf_range(listen_min, listen_max)
@@ -494,6 +516,7 @@ func _tick_listen(dt: float) -> void:
 	timer -= dt
 	var leave := timer <= 0.0 or candidates.size() <= hunt_threshold or (dirty and not suspects.is_empty())
 	if leave:
+		just_listened = true
 		if candidates.size() <= hunt_threshold and randf() < taunt_chance:
 			game.on_murderer_taunt(_taunt())
 		on_line = false

@@ -78,6 +78,9 @@ class Bot:
 				for h in hits:
 					if h.room == g.player_room:
 						plan_obj = h.obj
+			"presence":
+				danger_room = g.house.step(g.player_room, d.dir)
+				danger_t = 10.0
 			"line_click":
 				if policy in ["careful", "smart"] and d.kind == "pickup":
 					hiding = randf_range(6.0, 12.0)

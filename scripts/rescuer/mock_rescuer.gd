@@ -117,6 +117,10 @@ func _compose() -> String:
 		var dir := h.door_to(guess, p[0])
 		expect_next = p[0]
 		if p.size() == 1:
+			var od0 := h.object_def(game.exit_obj)
+			var what: String = od0.nick if od0.has("nick") else "the " + od0.name
+			if not h.rooms[game.exit_room].phone:
+				return "Take the %s door. No phone in there, so listen: it's %s." % [dir, what]
 			return "Good. Take the %s door. It's in the next room." % dir
 		return "Okay. From there, take the %s door. Then call me again." % dir
 	var od := h.object_def(game.exit_obj)

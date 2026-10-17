@@ -183,6 +183,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 			if not d.ok:
 				one_shot("crash", "Room", 0.0)
 				danger = 1.0
+		"presence":
+			one_shot("breath", "Walls", -6.0, 0.8)
+			danger = maxf(danger, 0.75)
 		"murderer_in_room":
 			one_shot("breath", "Room", -4.0, 0.85)
 			if not d.get("still", false):
