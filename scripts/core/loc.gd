@@ -45,7 +45,7 @@ const S := {
 	"quit_title": ["Quit to title", "Zpět do menu"],
 	"her_voice_line": ["her voice: %s", "její hlas: %s"],
 	# ---- phone panel
-	"whisper": ["Whisper into the receiver… (Enter · Esc = walk with arrows/WASD)", "Šeptej do sluchátka… (Enter · Esc = chůze šipkami/WASD)"],
+	"whisper": ["Whisper… (Enter)  ·  Esc: walk with arrows", "Šeptej… (Enter)  ·  Esc: chůze šipkami"],
 	"need_line": ["(you need to be on the line)", "(musíš být na lince)"],
 	"tap_btn": ["Tap  [Ctrl+T]", "Ťuknout  [Ctrl+T]"],
 	"hang_btn": ["Hang up  [Ctrl+H]", "Zavěsit  [Ctrl+H]"],

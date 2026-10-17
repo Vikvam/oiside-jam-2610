@@ -102,6 +102,8 @@ static func parse_reply(text: String, house: House) -> Dictionary:
 	# Keep her terse even if the model rambles; strip stage directions.
 	var rx := RegEx.create_from_string("\\*[^*]*\\*|\\([^)]*\\)")
 	say = rx.sub(say, "", true).strip_edges()
+	while say.contains("  "):
+		say = say.replace("  ", " ")
 	if say.length() > 240:
 		say = say.left(240).rsplit(" ", true, 1)[0] + "…"
 	var guess := str(d.get("guess_room", "")).to_lower().strip_edges()
