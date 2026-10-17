@@ -78,7 +78,8 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 - After a prompt tweak she's direct when the line is clear: *"Go through the east door… Search the shelf of jam jars, and only that."*
 - Imposter test: *"That was not me. Do not move on that voice. Tap once if you can hear me."*
 - Czech full game: *"Hýbej se. Hned, potichu, a nemluv."* in reply to his taunt.
-- About 15 calls used in total, all logged in `proxy/calls.log`.
+- Full GUI game on the latest build (12 calls, 5–8 s each). Typical lines: *"Don't say what you see. Are you standing by the piano? One tap yes, two no."* · *"Two taps, so you're not in the kitchen. Stay still. Tap once if you can see Old Gregor."* When she thinks the line is clear, she names rooms freely ("go south into the pantry"). That's risky, but it's what the prompt asks for.
+- **About 30 Haiku calls in total**, all logged in `proxy/calls.log`. I stopped there to stay within the budget.
 
 **Open question:** a good game lasts 1.5–3 minutes. That's short and replayable. Is that right for the jam, or do we want a bigger house?
 
