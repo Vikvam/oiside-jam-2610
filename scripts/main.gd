@@ -32,7 +32,7 @@ var header_label: Label
 var pause_layer: CanvasLayer
 var paused := false
 var backend := "mock"
-var difficulty := "normal"
+var difficulty := "gentle"
 var explore_mode := false
 var hints_on := true
 var running := false
@@ -41,6 +41,15 @@ var _intro_t := 0.0
 var _settings := ConfigFile.new()
 var cfg := {}
 var autobot = null
+var _autoplay_policy := ""
+var _soak_left := 0
+var _soak_stats := {}
+
+
+func _attach_bot() -> void:
+	var BotScript = load("res://tests/sim.gd")
+	autobot = BotScript.Bot.new(game, _autoplay_policy)
+	game.event.connect(autobot.on_event)
 
 
 func _ready() -> void:
@@ -88,9 +97,10 @@ func _dev_args() -> void:
 		if a.has("debug"):
 			plan.show_debug = true
 		if a.has("autoplay"):
-			var BotScript = load("res://tests/sim.gd")
-			autobot = BotScript.Bot.new(game, a.autoplay if a.autoplay != "1" else "smart")
-			game.event.connect(autobot.on_event)
+			_autoplay_policy = a.autoplay if a.autoplay != "1" else "smart"
+			_attach_bot()
+		if a.has("soak"):
+			_soak_left = int(a.soak)
 		if a.has("hidetest"):
 			get_tree().create_timer(3.0).timeout.connect(func():
 				game.find_chance_pass = 0.0
@@ -121,7 +131,7 @@ func _load_settings() -> void:
 	_settings.load("user://settings.cfg")
 	Style.current = _settings.get_value("ui", "style", "blueprint")
 	backend = _settings.get_value("ui", "backend", "mock")
-	difficulty = _settings.get_value("ui", "difficulty", "normal")
+	difficulty = _settings.get_value("ui", "difficulty", "gentle")
 	Loc.lang = _settings.get_value("ui", "lang", "en")
 	explore_mode = _settings.get_value("ui", "explore", false)
 	hints_on = _settings.get_value("ui", "hints", true)
@@ -567,6 +577,23 @@ func _start_game() -> void:
 
 
 func _on_game_event(t: String, d: Dictionary) -> void:
+	if t == "game_over" and _soak_left > 0:
+		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
+		_soak_left -= 1
+		print("soak: %s lang=%s style=%s diff=%s explore=%s t=%.0f" % [game.end_reason, Loc.lang, Style.current, difficulty, explore_mode, game.time])
+		if _soak_left == 0:
+			print("soak done: ", _soak_stats)
+			get_tree().quit()
+			return
+		get_tree().create_timer(0.5).timeout.connect(func():
+			Style.current = Style.ORDER.pick_random()
+			Loc.lang = ["en", "cs"].pick_random()
+			difficulty = ["gentle", "normal", "hard"].pick_random()
+			explore_mode = randf() < 0.5
+			_apply_style()
+			_start_game()
+			_attach_bot())
+		return
 	if t == "game_over":
 		get_tree().create_timer(1.6).timeout.connect(_show_over)
 	elif t == "murderer_log" and plan.show_debug:
