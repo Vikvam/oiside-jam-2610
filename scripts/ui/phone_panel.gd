@@ -285,10 +285,13 @@ func _process(dt: float) -> void:
 
 
 func _render() -> void:
-	var col := func(k: String) -> String: return (Style.c(k) as Color).to_html(false)
 	var out := ""
-	for l in lines:
+	var fresh_from := lines.size() - 10  # older lines fade back
+	for idx in lines.size():
+		var l: Dictionary = lines[idx]
 		var txt: String = l.text.substr(0, l.shown).replace("[", "[lb]")
+		var a := "8c" if idx < fresh_from and not game.over else ""
+		var col := func(k: String) -> String: return (Style.c(k) as Color).to_html(false) + a
 		match l.kind:
 			"you":
 				out += "[color=#%s]%s[/color] %s\n" % [col.call("you"), Loc.t("you"), txt]
@@ -297,7 +300,7 @@ func _render() -> void:
 			"danger":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("danger"), txt]
 			"fake":
-				var tint := (Style.c("her") as Color).lerp(Style.c("danger"), 0.18).to_html(false)
+				var tint := (Style.c("her") as Color).lerp(Style.c("danger"), 0.18).to_html(false) + a
 				out += "[color=#%s]%s[/color] [color=#%s][i]%s[/i][/color]\n" % [col.call("dim"), Loc.t("her"), tint, txt]
 			"him":
 				out += "[color=#%s][b]???:[/b] [i]%s[/i][/color]\n" % [col.call("danger"), txt]
