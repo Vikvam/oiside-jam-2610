@@ -367,6 +367,12 @@ func on_murderer_hangup() -> void:
 		emit("line_click", {"text": "Click. An extension hung up.", "kind": "hangup"})
 
 
+func on_murderer_taunt(text: String) -> void:
+	_line_note("[a man's voice on the line, low]: " + text)
+	if player_on_line():
+		emit("murderer_says", {"text": text})
+
+
 func on_murderer_fake_hangup() -> void:
 	if player_on_line() and randf() < 0.5:
 		emit("line_fake_tell", {})

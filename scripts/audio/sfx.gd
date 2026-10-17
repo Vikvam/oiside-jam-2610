@@ -127,7 +127,9 @@ func bind(g: Game) -> void:
 	g.event.connect(_on_event)
 
 
-func on_voice_char(c: String) -> void:
+func on_voice_char(c: String, kind := "her") -> void:
+	if kind not in ["her", "him"]:
+		return
 	# A syllable every few letters; spaces and punctuation are pauses.
 	if c == " " or c in ".,!?—…-":
 		_char_n = 0
@@ -138,8 +140,8 @@ func on_voice_char(c: String) -> void:
 	var p: AudioStreamPlayer = voices[_voice_i]
 	_voice_i = (_voice_i + 1) % voices.size()
 	p.stream = s.syll[randi() % s.syll.size()]
-	p.pitch_scale = randf_range(0.92, 1.1)
-	p.volume_db = -6.0
+	p.pitch_scale = randf_range(0.92, 1.1) if kind == "her" else randf_range(0.5, 0.56)
+	p.volume_db = -6.0 if kind == "her" else -3.0
 	p.play()
 
 

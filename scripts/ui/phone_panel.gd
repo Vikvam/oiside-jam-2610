@@ -2,10 +2,11 @@ class_name PhonePanel
 extends PanelContainer
 ## The line: transcript, typing, tapping, hanging up.
 
-signal voice_char(c: String)
+signal voice_char(c: String, kind: String)
 
 var game: Game
 var log_view: RichTextLabel
+var scope: LineScope
 var status: Label
 var thinking: Label
 var input: LineEdit
@@ -17,6 +18,8 @@ var _acc := 0.0
 var _think_t := 0.0
 var _is_thinking := false
 var _dirty := true
+var hints := true
+var _hinted := {}
 
 
 func _ready() -> void:
@@ -30,6 +33,8 @@ func _ready() -> void:
 	head.add_child(status)
 	thinking = Label.new()
 	head.add_child(thinking)
+	scope = LineScope.new()
+	v.add_child(scope)
 	log_view = RichTextLabel.new()
 	log_view.bbcode_enabled = true
 	log_view.scroll_following = true
@@ -63,6 +68,7 @@ func _ready() -> void:
 
 func bind(g: Game) -> void:
 	game = g
+	scope.bind(g)
 	lines.clear()
 	_dirty = true
 	g.event.connect(_on_event)
@@ -71,6 +77,12 @@ func bind(g: Game) -> void:
 func add_line(kind: String, text: String, instant := true) -> void:
 	lines.append({"kind": kind, "text": text, "shown": text.length() if instant else 0})
 	_dirty = true
+
+
+func hint(key: String, text: String) -> void:
+	if hints and not _hinted.has(key):
+		_hinted[key] = true
+		add_line("hint", "» " + text)
 
 
 func _toggle_hook() -> void:
@@ -106,15 +118,21 @@ func _on_event(t: String, d: Dictionary) -> void:
 			add_line("sound", "tap")
 		"rescuer_says":
 			add_line("her", d.text, false)
+		"murderer_says":
+			add_line("him", d.text, false)
+			hint("taunt", "He's sure where you are. Move. Now.")
 		"rescuer_thinking":
 			_is_thinking = d.on
 		"line_click":
 			add_line("danger", d.text)
+			if d.kind == "pickup":
+				hint("click", "That's him on another extension. He hears every word — and the sounds of your room. Hang up, go quiet, or lie.")
 		"line_breath":
 			add_line("danger", "…slow breathing on the line. Not yours.")
 		"line_quiet_presence":
 			add_line("danger", "The line sounds… open. As if someone is already listening.")
 		"line_background":
+			hint("bg", "Those are the sounds of HIS room. Check the plan icons: which phone room sounds like that?")
 			var labels: Array = d.features.map(func(f): return House.FEATURE_LABEL[f])
 			if labels.is_empty():
 				add_line("danger", "Behind the other extension: dead silence.")
@@ -123,6 +141,7 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"receiver":
 			add_line("sound", "you pick up the receiver" if d.up else "you hang up")
 		"footsteps":
+			hint("steps", "Footsteps come with a direction. Move away — or Hide. Walking makes noise too (sneak is quieter).")
 			var kind := "Running footsteps" if d.running else "Heavy footsteps"
 			if d.dist == 1:
 				add_line("danger", "%s — right behind the %s door!" % [kind, d.dir])
@@ -133,6 +152,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"player_arrive":
 			var r: Dictionary = game.house.rooms[d.room]
 			add_line("narr", "You slip into the %s.%s" % [r.name, "" if r.phone else " There is no phone here."])
+			if r.phone and not game.receiver_up:
+				hint("pickup", "There's a phone here. Pick up (Ctrl+H) to talk to her again — but first think about what this room sounds like.")
 			if d.first:
 				for o in r.objects:
 					if o.has("memory"):
@@ -182,7 +203,9 @@ func _process(dt: float) -> void:
 			if l.shown < l.text.length():
 				var c: String = l.text[l.shown]
 				l.shown += 1
-				voice_char.emit(c)
+				voice_char.emit(c, l.kind)
+				if c != " ":
+					scope.voice()
 				advanced = true
 				_dirty = true
 				break
@@ -232,6 +255,10 @@ func _render() -> void:
 				out += "[color=#%s]HER:[/color] [color=#%s]%s[/color]\n" % [col.call("dim"), col.call("her"), txt]
 			"danger":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("danger"), txt]
+			"him":
+				out += "[color=#%s][b]???:[/b] [i]%s[/i][/color]\n" % [col.call("danger"), txt]
+			"hint":
+				out += "[color=#%s][font_size=13]%s[/font_size][/color]\n" % [col.call("hint"), txt]
 			"memory":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("accent"), txt]
 			"sound":

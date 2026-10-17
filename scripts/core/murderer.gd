@@ -35,6 +35,8 @@ var last_listen_at := {}  # room -> time
 var breath_timer := 5.0
 
 var log: Array = []       # [{t, text}]
+var last_evidence := ""   # what most recently narrowed things down
+var taunt_chance := 0.5
 
 # Tunables (exposed so A/B settings can poke them)
 var walk_time := 4.0
@@ -75,6 +77,8 @@ func _reset_candidates() -> void:
 
 func _set_candidates(rs: Array, why: String, strong := true) -> void:
 	var before := candidates.size()
+	if why != "":
+		last_evidence = why
 	candidates.clear()
 	for r in rs:
 		candidates[r] = true
@@ -450,6 +454,27 @@ func _start_listen() -> void:
 	game.on_murderer_pickup()
 
 
+func _taunt() -> String:
+	var e := last_evidence.to_lower()
+	if e.contains("clock"):
+		return ["Tick. Tock.", "Lovely clock you've got there."].pick_random()
+	if e.contains("fan"):
+		return "Such a noisy fan."
+	if e.contains("rain"):
+		return "Hear that rain? So do I."
+	if e.contains("radiator"):
+		return "Old pipes. They always give you away."
+	if e.contains("voice said"):
+		return "Thank you, sweetheart. Very helpful."
+	if e.contains("prey"):
+		return "You talk too much."
+	if e.contains("footsteps"):
+		return "Creaky floors in this house."
+	if e.contains("touched"):
+		return "You should leave things as you found them."
+	return ["Stay right there.", "I'm coming."].pick_random()
+
+
 func _tick_listen_ears(dt: float) -> void:
 	if game.player_on_line():
 		listen_overlap += dt
@@ -469,6 +494,8 @@ func _tick_listen(dt: float) -> void:
 	timer -= dt
 	var leave := timer <= 0.0 or candidates.size() <= hunt_threshold or (dirty and not suspects.is_empty())
 	if leave:
+		if candidates.size() <= hunt_threshold and randf() < taunt_chance:
+			game.on_murderer_taunt(_taunt())
 		on_line = false
 		game.on_murderer_hangup()
 		if randf() < fake_hangup_chance and candidates.size() > hunt_threshold:

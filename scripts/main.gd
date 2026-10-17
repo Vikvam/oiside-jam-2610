@@ -131,7 +131,7 @@ func _build_game_ui() -> void:
 	left.add_child(room_panel)
 	phone = PhonePanel.new()
 	phone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	phone.voice_char.connect(func(c): sfx.on_voice_char(c))
+	phone.voice_char.connect(func(c, k): sfx.on_voice_char(c, k))
 	h.add_child(phone)
 
 
@@ -414,6 +414,7 @@ func _start_game() -> void:
 	for o in r.objects:
 		if o.has("memory"):
 			phone.add_line("memory", o.memory)
+	phone.hint("start", "Her guess of where you are shows as a dashed box. The icons in each room are the sounds it makes: clock, fan, window (rain), radiator; the handset = a phone.")
 	_intro_queue = INTRO.duplicate()
 	_intro_t = 1.0
 	if backend != "mock":

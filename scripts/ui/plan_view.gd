@@ -38,8 +38,8 @@ func bind(g: Game) -> void:
 func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"player_move_start":
-			_walk_from = _c(d.from)
-			_walk_to = _c(d.to)
+			_walk_from = _c(d.from) + Vector2(0, 16)
+			_walk_to = _c(d.to) + Vector2(0, 16)
 			_walk_door = _door_point(d.from, d.to)
 			_walk_t = 0.0
 			_walk_dur = d.dur
@@ -203,6 +203,18 @@ func _draw() -> void:
 			name_col = Style.c("accent")
 		draw_string(font, rc.position + Vector2(10, 22), h.rooms[id].name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, name_col)
 		_draw_icons(id, rc)
+		if game.visited.has(id):
+			var y := rc.position.y + 40.0
+			for o in h.rooms[id].objects:
+				var txt: String = o.nick if o.has("nick") else o.name
+				var oc: Color = Style.c("dim")
+				if game.tried.has(o.id):
+					txt = "✗ " + txt
+					oc.a = 0.5
+				else:
+					txt = "· " + txt
+				draw_string(font, Vector2(rc.position.x + 12, y), txt, HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 20, 11, oc)
+				y += 14.0
 		if h.rooms[id].phone:
 			_icon_phone(rc.position + Vector2(rc.size.x - 22, 18), dim if id != game.player_room else Style.c("text"))
 	# Compass
@@ -227,7 +239,7 @@ func _draw() -> void:
 		var er := _c(game.exit_room) + Vector2(-30, 26)
 		draw_string(font, er, "EXIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
 	# Player
-	var pp := _c(game.player_room)
+	var pp := _c(game.player_room) + Vector2(0, 16)
 	if game.moving_to != "":
 		var f := clampf(_walk_t / _walk_dur, 0.0, 1.0)
 		pp = _walk_from.lerp(_walk_door, f * 2.0) if f < 0.5 else _walk_door.lerp(_walk_to, (f - 0.5) * 2.0)
