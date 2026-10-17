@@ -5,6 +5,7 @@ uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 uniform int mode = 0;
 uniform float danger = 0.0;      // 0..1, red/amber pulse at the edges
 uniform float on_line = 0.0;     // 0..1, extra static when the line is open
+uniform float hidden = 0.0;      // 0..1, tunnel vision while hiding
 uniform vec4 danger_color : source_color = vec4(1.0, 0.25, 0.2, 1.0);
 
 float hash(vec2 p) {
@@ -83,6 +84,9 @@ void fragment() {
 		vig = mix(0.7, 1.0, vig);
 	}
 	col *= vig;
+	// hiding: everything but a small window goes dark
+	float tunnel = smoothstep(0.18, 0.62, length(c * vec2(1.0, 1.3)));
+	col *= 1.0 - hidden * tunnel * 0.85;
 	// danger pulse at edges
 	float edge = smoothstep(0.25, 0.75, length(c * vec2(1.0, 1.25)));
 	float pulse = 0.65 + 0.35 * sin(TIME * 6.0);

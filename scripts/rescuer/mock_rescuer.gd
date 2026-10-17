@@ -10,6 +10,8 @@ var guess := ""
 var expect_next := ""     # room the player should be in after following us
 var cautious := false
 var said_cautious := false
+var pending_q := {}       # {feature, cands} — asked "tap once if you hear X"
+var bg_cands: Array = []
 var _pending := -1.0
 var _reply := ""
 var _read := 0            # line_log index already processed
@@ -56,6 +58,20 @@ func _compose() -> String:
 	var low := player_text.to_lower()
 	if cautious and (low.contains("clear") or low.contains("gone") or low.contains("2 taps") or low.contains("hung up")):
 		cautious = false
+	# Answer to our tap question?
+	if not pending_q.is_empty():
+		var yes := low.contains("[1 tap") or low.contains("yes")
+		var no := low.contains("[2 taps") or low.contains("no")
+		if yes or no:
+			var keep := []
+			for r in pending_q.cands:
+				if h.has_feature(r, pending_q.feature) == yes:
+					keep.append(r)
+			pending_q = {}
+			if keep.size() == 1:
+				guess = keep[0]
+			else:
+				bg_cands = keep
 	if picked_up and expect_next != "":
 		guess = expect_next
 		expect_next = ""
@@ -75,11 +91,23 @@ func _compose() -> String:
 			var cands := _from_background(bg)
 			if cands.size() == 1:
 				guess = cands[0]
+			elif cands.size() > 1:
+				bg_cands = cands
 	if cautious:
 		if said_cautious:
 			return ""
 		said_cautious = true
 		return "Shh. Someone else is on the line. Tap twice when they're gone."
+	if guess == "" and bg_cands.size() > 1:
+		# Ask about a sound that splits the candidates.
+		for f in House.FEATURES:
+			var n := 0
+			for r in bg_cands:
+				if h.has_feature(r, f):
+					n += 1
+			if n > 0 and n < bg_cands.size():
+				pending_q = {"feature": f, "cands": bg_cands.duplicate()}
+				return "Listen. Is there a %s somewhere in that room, even if it's quiet now? One tap yes, two no." % {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"}[f]
 	if guess == "":
 		if picked_up:
 			return "I'm here. Where are you? Don't name the room. Tell me something you can see."
@@ -105,8 +133,10 @@ func _from_background(bg: String) -> Array:
 	feats.sort()
 	var out := []
 	for r in game.house.phone_rooms():
-		var exp: Array = game.expected_features(r, {})
-		exp.sort()
-		if exp == feats:
+		var ok := true
+		for f in feats:
+			if not game.house.has_feature(r, f):
+				ok = false
+		if ok:
 			out.append(r)
 	return out

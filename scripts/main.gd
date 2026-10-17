@@ -19,6 +19,8 @@ var post: ColorRect
 var title_layer: CanvasLayer
 var over_layer: CanvasLayer
 var over_text: RichTextLabel
+var pause_layer: CanvasLayer
+var paused := false
 var backend := "mock"
 var difficulty := "normal"
 var running := false
@@ -40,8 +42,13 @@ func _ready() -> void:
 	_build_post()
 	_build_title()
 	_build_over()
+	_build_pause()
 	_apply_style()
 	_show_title()
+	# Draw the house behind the title screen.
+	var demo := Game.new()
+	demo.setup(1)
+	plan.bind(demo)
 	_dev_args()
 
 
@@ -292,6 +299,41 @@ func _build_over() -> void:
 	row.add_child(menu)
 
 
+func _build_pause() -> void:
+	pause_layer = CanvasLayer.new()
+	pause_layer.layer = 12
+	pause_layer.visible = false
+	add_child(pause_layer)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.6)
+	pause_layer.add_child(dim)
+	var v := _panel_box(pause_layer, Vector2(360, 0))
+	var l := Label.new()
+	l.text = "ON HOLD"
+	l.add_theme_font_size_override("font_size", 28)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
+	var hint := Label.new()
+	hint.text = "(he's on hold too)"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(hint)
+	for b in [["Resume", func(): _set_paused(false)], ["Next look (F2)", func():
+			Style.next_style()
+			_apply_style()], ["Quit to title", func():
+			_set_paused(false)
+			_show_title()]]:
+		var btn := Button.new()
+		btn.text = b[0]
+		btn.pressed.connect(b[1])
+		v.add_child(btn)
+
+
+func _set_paused(on: bool) -> void:
+	paused = on and running
+	pause_layer.visible = paused
+
+
 # ---------------------------------------------------------------- style
 
 func _apply_style() -> void:
@@ -359,7 +401,7 @@ func _apply_style() -> void:
 	pbg.bg_color = Color(text, 0.1)
 	th.set_stylebox("background", "ProgressBar", pbg)
 	ui.theme = th
-	for layer in [title_layer, over_layer]:
+	for layer in [title_layer, over_layer, pause_layer]:
 		if layer:
 			for c in layer.get_children():
 				if c is Control:
@@ -462,6 +504,9 @@ func _show_over() -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
+			KEY_ESCAPE:
+				if running and not over_layer.visible:
+					_set_paused(not paused)
 			KEY_F2:
 				Style.next_style()
 				_apply_style()
@@ -477,8 +522,9 @@ func _unhandled_input(e: InputEvent) -> void:
 
 func _process(dt: float) -> void:
 	var mat := post.material as ShaderMaterial
-	if not running or game == null:
+	if not running or game == null or paused:
 		mat.set_shader_parameter("danger", 0.0)
+		mat.set_shader_parameter("hidden", 0.0)
 		return
 	if _intro_queue.size() > 0:
 		_intro_t -= dt
@@ -491,3 +537,5 @@ func _process(dt: float) -> void:
 	game.tick(dt)
 	mat.set_shader_parameter("danger", sfx.danger)
 	mat.set_shader_parameter("on_line", 1.0 if game.player_on_line() else 0.0)
+	var hv: float = mat.get_shader_parameter("hidden") if mat.get_shader_parameter("hidden") != null else 0.0
+	mat.set_shader_parameter("hidden", move_toward(hv, 1.0 if game.hidden else 0.0, dt * 2.0))

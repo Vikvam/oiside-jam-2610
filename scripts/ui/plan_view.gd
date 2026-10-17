@@ -194,6 +194,22 @@ func _draw() -> void:
 	var ww: float = Style.c("wall_width")
 	for id in h.room_ids:
 		_draw_walls(id, wall, ww)
+	# Door swings (architectural quarter arcs)
+	var arc_col := wall
+	arc_col.a = 0.45
+	for d in House.DOORS:
+		var dp := _door_point(d[0], d[1])
+		var half := DOOR_W * U * 0.5
+		var ra := _rect(d[0])
+		var vertical := absf(dp.x - ra.end.x) < 4.0 or absf(dp.x - ra.position.x) < 4.0
+		if vertical:
+			var hinge := dp + Vector2(0, -half)
+			draw_arc(hinge, half * 2.0, PI * 0.5, PI * 0.5 - (PI * 0.5 if dp.x > ra.get_center().x else -PI * 0.5), 10, arc_col, 1.0, true)
+			draw_line(hinge, hinge + Vector2(0, half * 2.0), arc_col, 1.0)
+		else:
+			var hinge := dp + Vector2(-half, 0)
+			draw_arc(hinge, half * 2.0, 0.0, PI * 0.5 if dp.y > ra.get_center().y else -PI * 0.5, 10, arc_col, 1.0, true)
+			draw_line(hinge, hinge + Vector2(half * 2.0, 0), arc_col, 1.0)
 	# Labels + icons
 	var font := get_theme_default_font()
 	for id in h.room_ids:
