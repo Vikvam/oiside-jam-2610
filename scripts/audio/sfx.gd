@@ -12,6 +12,10 @@ var room_amb := {}             # feature -> player (your room)
 var line_amb := {}             # feature -> player (the other extension)
 var hiss: AudioStreamPlayer
 var heart: AudioStreamPlayer
+var drone: AudioStreamPlayer
+## Mood drone loudness (calm / in danger). Set DRONE_DB_CALM to -80 to disable.
+const DRONE_DB_CALM := -30.0
+const DRONE_DB_DANGER := -20.0
 var voices: Array = []
 var _voice_i := 0
 var _char_n := 0
@@ -30,6 +34,7 @@ func _ready() -> void:
 		line_amb[f] = _loop_player(f, "Line")
 	hiss = _loop_player("hiss", "Line")
 	heart = _loop_player("heart", "Master")
+	drone = _loop_player("drone", "Master")
 	for i in 4:
 		var p := AudioStreamPlayer.new()
 		p.bus = "Line"
@@ -90,6 +95,7 @@ func _generate() -> void:
 	s.bell = Synth.to_wav(Synth.bell(392.0))
 	s.crash = Synth.to_wav(Synth.crash())
 	s.ring = Synth.to_wav(Synth.ringback())
+	s.drone = Synth.to_wav(Synth.drone(), true)
 	s.toggle = Synth.to_wav(Synth.fade_out(Synth.tick(800.0, 0.08), 0.02))
 	# Her voice: a handful of vowel syllables around a female-ish pitch.
 	var vowels := [[800.0, 1200.0], [500.0, 1900.0], [330.0, 2300.0], [520.0, 950.0], [380.0, 900.0], [650.0, 1700.0]]
@@ -218,7 +224,7 @@ func _process(dt: float) -> void:
 	if game == null:
 		return
 	if not active or game.over:
-		for p in room_amb.values() + line_amb.values() + [hiss, heart]:
+		for p in room_amb.values() + line_amb.values() + [hiss, heart, drone]:
 			_fade(p, -80.0, dt)
 		return
 	danger = maxf(0.0, danger - dt * 0.12)
@@ -235,6 +241,7 @@ func _process(dt: float) -> void:
 		_fade(line_amb[f], FEATURE_DB[f] - 12.0 if f in theirs else -80.0, dt)
 	_fade(heart, lerpf(-40.0, -4.0, danger) if danger > 0.05 else -80.0, dt * 2.0)
 	heart.pitch_scale = lerpf(0.9, 1.35, danger)
+	_fade(drone, lerpf(DRONE_DB_CALM, DRONE_DB_DANGER, danger), dt * 0.5)
 
 
 func _fade(p: AudioStreamPlayer, target: float, dt: float) -> void:

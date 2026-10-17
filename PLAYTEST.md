@@ -19,6 +19,8 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 | **Heartbeat** | Master, by *perceived* danger | Too much? | `_process` heart volume |
 | **Wrong exit crash** | Room | Loud enough to feel like a mistake? | `Synth.crash` |
 | **Clock strike** (every 75 s) | Room or Walls | Nice bell or annoying? | `Synth.bell` |
+| **Mood drone** (55 Hz, slowly beating, louder with danger) | Master | Adds dread, or just mud? | `Sfx.DRONE_DB_CALM/DANGER` (−80 turns it off), `Synth.drone` |
+| **Ringback** at the start (425 Hz) | Line | Does it set the scene? | `Synth.ringback`, `Sfx.ring_in` |
 
 ## 2. Please judge (taste calls)
 

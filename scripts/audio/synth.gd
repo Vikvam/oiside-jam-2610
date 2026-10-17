@@ -270,6 +270,23 @@ static func crash() -> PackedFloat32Array:
 	return fade_out(normalize(b, 0.95), 0.2)
 
 
+## Low, slowly beating drone for mood. Seamless 8 s loop (all partials
+## complete whole cycles in 8 s).
+static func drone() -> PackedFloat32Array:
+	var sec := 8.0
+	var b := blank(sec)
+	var parts := [[55.0, 0.5], [55.125, 0.45], [82.5, 0.25], [110.25, 0.12], [164.875, 0.06]]
+	for i in b.size():
+		var t := float(i) / RATE
+		var v := 0.0
+		for p in parts:
+			v += sin(TAU * p[0] * t) * p[1]
+		# slow swell
+		v *= 0.75 + 0.25 * sin(TAU * t / sec)
+		b[i] = v
+	return normalize(b, 0.5)
+
+
 ## European ringback: 425 Hz, one second on.
 static func ringback() -> PackedFloat32Array:
 	var b := blank(1.0)
