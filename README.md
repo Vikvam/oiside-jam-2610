@@ -39,8 +39,19 @@ On the title screen, pick:
 | F2 | cycle the visual style |
 | F3 | cheat/debug: show the murderer, his candidate rooms, the exit and his thoughts |
 | F4 | show or hide her guess of where you are |
+| F1 | how to play (a cheat sheet of who hears what) |
 | F11 | fullscreen |
 | Esc | put the call on hold (pause) |
+
+## Export (later)
+
+`export_presets.cfg` has Linux, Windows and Web presets. They exclude tests, the proxy, docs and `rescuer_config.cfg`, so your API key never ships. Install the Godot 4.7.2 export templates, then run:
+
+```sh
+godot --headless --path . --export-release "Linux" build/linux/IWontTellYou.x86_64
+```
+
+For Web, the LLM voice needs an endpoint that allows CORS; the bundled proxy does.
 
 ## Her voice: Claude Haiku through the local proxy
 
