@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="18" fill="#0b2340"/>
+  <g stroke="#16406b" stroke-width="1">
+    <path d="M0 32H128M0 64H128M0 96H128M32 0V128M64 0V128M96 0V128"/>
+  </g>
+  <!-- handset -->
+  <path d="M30 50 Q64 30 98 50" stroke="#e6f0ff" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <ellipse cx="30" cy="56" rx="12" ry="9" fill="#e6f0ff"/>
+  <ellipse cx="98" cy="56" rx="12" ry="9" fill="#e6f0ff"/>
+  <!-- cord -->
+  <path d="M64 44 C 60 70, 72 74, 64 86 S 60 100, 70 108" stroke="#ffd23f" stroke-width="3" fill="none"/>
+  <!-- a red ear on the line -->
+  <circle cx="98" cy="96" r="13" fill="none" stroke="#ff5a4e" stroke-width="3"/>
+  <path d="M98 87 a6 6 0 1 1 -3 11" stroke="#ff5a4e" stroke-width="3" fill="none"/>
+</svg>

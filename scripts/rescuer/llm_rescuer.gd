@@ -148,7 +148,10 @@ static func build_system(g) -> String:
 	s += "The player sees a floor plan with every room's name, doors and sound icons, but not the objects of rooms they haven't visited. "
 	s += "Describing a room by its sounds ('the room with the clock and the fan') is as unsafe as naming it — he knows the sounds too.\n"
 	s += "After '[click: another extension picks up]' with no hang-up since, assume he IS listening: say almost nothing, or ask a yes/no question, or use a nickname. "
-	s += "If you hear '[a man's voice on the line ...]', he is sure where the player is — tell them to move, now, without naming where.\n\n"
+	s += "If you hear '[a man's voice on the line ...]', he is sure where the player is — tell them to move, now, without naming where.\n"
+	s += "If NO other extension has picked up since the last hang-up, he is probably not listening right now: that is the moment to be clear and efficient — "
+	s += "give the next compass direction or the exact spot (prefer a nickname over an object name). Don't waste safe moments on questions you can already answer.\n"
+	s += "The exit room %s a phone.%s\n\n" % ["HAS" if h.rooms[g.exit_room].phone else "has NO", "" if h.rooms[g.exit_room].phone else " So tell the player which object to search BEFORE they walk in — they can't call you from in there."]
 	s += "HOW TO TALK: whispered, scared, focused. Max 2 short sentences, under 30 words. No stage directions, no emojis. "
 	s += "Prefer nicknames, yes/no questions the player can answer with taps, and compass directions from where you think they are. "
 	s += "Avoid saying room names or object names when he might be listening. Ask before you guide if you are unsure where they are. "

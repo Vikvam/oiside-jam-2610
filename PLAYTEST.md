@@ -43,9 +43,22 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 - No pause menu (Esc does nothing).
 - Web export is untested. `SystemFont` falls back to Godot's default font there, and the proxy sends CORS headers.
 
-## 5. LLM game log
+## 5. What I learned from testing
 
-(filled in below after the test run)
+**Hand-played text-mode games** (`tests/play_cli.gd`, normal difficulty):
+1. **Won in 55 s**, but it was too easy. The exit was only 2 rooms away, and brute-forcing objects was free. Fixed: the exit is 3 away, and a wrong try freezes you.
+2. **Walked into him with no warning.** He was standing still next door. Fixed: presence cues.
+3. **Caught by a sweep** after a 4 s footsteps warning that I wasted. Fair.
+4. **Caught with no warning.** He set off from the room next door. Fixed: footsteps when he sets off.
+5. **Won.** I worked out the exit from where he set off, silenced rooms, and read a real hang-up (his sounds vanished from the line). My "the room east of me" plus her "east door" sent him running the wrong way, and he was behind the Pantry door when I got out. *This is the game working as designed.*
+
+**Haiku rescuer:**
+- Full bot game: in character and cautious, using yes/no tap questions.
+- Spotted a lie: *"Was that for his ears? One tap for yes."*
+- After a prompt tweak she's direct when the line is clear: *"Go through the east door… Search the shelf of jam jars, and only that."*
+- About 12 calls used in total, all logged in `proxy/calls.log`.
+
+**Open question:** a good game lasts 1.5–3 minutes. That's short and replayable. Is that right for the jam, or do we want a bigger house?
 
 ## 6. Suggested next steps for the joint session
 

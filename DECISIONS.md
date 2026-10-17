@@ -35,7 +35,13 @@ Non-trivial choices made during the autonomous phase. Each entry: what, why, and
   - clicks and taps on the line (the player is at a phone)
   - touched clocks, fans or windows he finds ("someone was here")
   - loud crashes
-- **Cycle:** go to a phone (not one used recently) → listen 18–28 s → hunt if ≤2 candidates → otherwise move to another phone.
+- **Cycle:** go to a phone (not one used recently) → listen 12–20 s → hunt if ≤2 candidates. After a *fruitless* listen he **sweeps**: he walks to a nearby candidate room to look, then goes back to listening. *Why:* the first full LLM game showed him hogging the line for 2+ minutes by hopping between phones. That was boring, and it isn't the listen-or-search dilemma from DESIGN.md. Sweeps free the line and put him on the prowl. A player who stays silent and hidden is now found after ~6 minutes on average, which works as a soft time limit.
+- **You always get a cue before he can reach you:**
+  - footsteps when he sets off from within 2 rooms
+  - footsteps when he enters a room within 2 (within 3 if he's running to hunt)
+  - a direction with every cue
+  - **presence cues** (creaks, breathing behind a specific door) when he stands still next door
+  - *Why:* two of my hand-played games ended with walking into him with zero warning.
 - **Deaf while walking:** his own boots mask your footsteps. *Why:* without this he simply chased by ear and won ~95% of simulated games.
 - **The rescuer's words make rooms "suspects".** He thoroughly searches suspects (5 s), and if the exit is there he finds it, then **guards it**, listening on that room's phone if it has one. A fresh, exact lead lures him away for a moment, so lying is your weapon in the finale.
 - **Fake hang-up** (25% on normal): a click, but he keeps listening for 5–8 s. The tell is that his room's background stays on the line, and half the time a text hint appears.
@@ -56,7 +62,8 @@ All of the verbs from DESIGN.md are implemented:
 
 **Added: Hide.** If he only passes through, there's a low chance he finds you; if he came for your room specifically, the chance is high; a small chance per 5 s while he lingers. *Why:* accidental patrol run-ins were unfun deaths with no counterplay, and hiding while footsteps enter the room is a great horror beat.
 
-- **Exit rules:** 3 tries in total. A wrong try is a loud crash, and he learns your exact room. The third wrong try is a loss ("too much noise").
+- **Exit rules:** 3 tries in total. A wrong try is a loud crash: he learns your exact room, and you **freeze for 3 s** while it echoes. The third wrong try is a loss ("too much noise"). *Why the freeze:* with 3 objects per room, brute force was free. Now it's a real gamble if he isn't far away.
+- **The exit is 3 rooms from the start when possible** (otherwise 2). He never starts in the exit room, and an attentive player can use that.
 
 ## Rescuer
 
@@ -89,3 +96,9 @@ Three presets (`Game.DIFFICULTY`): gentle "slow-witted", normal "patient", and h
 - the chances he finds you hidden
 
 Bot simulations are only a rough guide. The bots are much dumber than a human (`tests/sim.gd`).
+
+## Testing method
+
+- `tests/sim.gd`: thousands of headless bot games. The bots are poor players, so only trends matter.
+- `tests/play_cli.gd`: **I played games by hand** in text mode, perceiving only what the player perceives. I won 2 of 5 games. The 2 unfair deaths (no warning) led to the cue fixes above. Wins came from deduction, silencing rooms, reading the fake hang-up tell, and lucky misdirection from overheard words.
+- `tests/llm_game.gd`: a full real-time game with the Haiku rescuer (4 calls), plus scripted prompt checks via `tests/dump_prompt.gd` and curl.

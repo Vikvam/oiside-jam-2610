@@ -62,6 +62,9 @@ func _buses() -> void:
 	rev.room_size = 0.7
 	rev.wet = 0.25
 	AudioServer.add_bus_effect(walls, rev)
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -0.5
+	AudioServer.add_bus_effect(0, lim)
 	var room := AudioServer.get_bus_index("Room")
 	var rrev := AudioEffectReverb.new()
 	rrev.room_size = 0.35
