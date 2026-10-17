@@ -1,5 +1,7 @@
 # Jam page draft
 
+Media: `docs/gameplay.gif` (4 MB), `docs/gameplay.mp4`, and screenshots in `docs/*.png`. Regenerate with `godot --path . -- --play --autoplay=smart --frames=DIR --from=10 --count=90`, then ffmpeg (see git log).
+
 ## English
 
 **I Won't Tell You** (*To ti neřeknu*)

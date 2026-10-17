@@ -186,6 +186,14 @@ func _dev_args() -> void:
 	if a.has("over"):
 		get_tree().create_timer(float(a.get("at", "3")) - 3.0, true, false, true).timeout.connect(func():
 			game._end(false, "caught"))
+	if a.has("frames"):
+		# --frames=DIR --from=S --count=N : save N frames, one every 0.1 s
+		await get_tree().create_timer(float(a.get("from", "5")), true, false, true).timeout
+		for i in int(a.get("count", "60")):
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("%s/f%04d.png" % [a.frames, i])
+			await get_tree().create_timer(0.1, true, false, true).timeout
+		get_tree().quit()
 	if a.has("shot"):
 		await get_tree().create_timer(float(a.get("at", "3")), true, false, true).timeout
 		await RenderingServer.frame_post_draw
