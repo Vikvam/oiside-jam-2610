@@ -45,8 +45,8 @@ func bind(g: Game) -> void:
 func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"player_move_start":
-			_walk_from = _c(d.from) + Vector2(0, U * 0.3)
-			_walk_to = _c(d.to) + Vector2(0, U * 0.3)
+			_walk_from = _c(d.from) + Vector2(0, U * 0.55)
+			_walk_to = _c(d.to) + Vector2(0, U * 0.55)
 			_walk_door = _door_point(d.from, d.to)
 			_walk_t = 0.0
 			_walk_dur = d.dur
@@ -245,7 +245,8 @@ func _draw() -> void:
 		else:
 			draw_string(font, Vector2(rc.position.x + 14, rc.end.y - 12), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, dim)
 		if game.visited.has(id):
-			var y := rc.position.y + 40.0
+			var y := rc.position.y + 22.0 + maxf(12.0, U * 0.33)
+			var fs := 11 if U >= 45.0 else 10
 			for o in h.rooms[id].objects:
 				var txt: String = h.obj_nick(o.id) if o.has("nick") else h.obj_name(o.id)
 				var oc: Color = Style.c("dim")
@@ -254,8 +255,8 @@ func _draw() -> void:
 					oc.a = 0.5
 				else:
 					txt = "· " + txt
-				draw_string(font, Vector2(rc.position.x + 12, y), txt, HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 20, 11, oc)
-				y += 14.0
+				draw_string(font, Vector2(rc.position.x + 12, y), txt, HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 20, fs, oc)
+				y += maxf(11.0, U * 0.27)
 		if h.rooms[id].phone:
 			_icon_phone(rc.position + Vector2(rc.size.x - 22, 18), dim if id != game.player_room else Style.c("text"))
 	# Compass
@@ -284,7 +285,7 @@ func _draw() -> void:
 		var er := _c(game.exit_room) + Vector2(-30, 26)
 		draw_string(font, er, Loc.t("exit"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
 	# Player
-	var pp := _c(game.player_room) + Vector2(0, U * 0.3)
+	var pp := _c(game.player_room) + Vector2(0, U * 0.55)
 	if game.moving_to != "":
 		var f := clampf(_walk_t / _walk_dur, 0.0, 1.0)
 		pp = _walk_from.lerp(_walk_door, f * 2.0) if f < 0.5 else _walk_door.lerp(_walk_to, (f - 0.5) * 2.0)
