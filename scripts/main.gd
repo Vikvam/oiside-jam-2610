@@ -637,7 +637,7 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 	if t == "game_over" and _soak_left > 0:
 		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
 		_soak_left -= 1
-		print("soak: %s lang=%s style=%s diff=%s explore=%s t=%.0f" % [game.end_reason, Loc.lang, Style.current, difficulty, explore_mode, game.time])
+		print("soak: %s lang=%s style=%s diff=%s explore=%s large=%s rearr=%s t=%.0f" % [game.end_reason, Loc.lang, Style.current, difficulty, explore_mode, large, rearranged, game.time])
 		if _soak_left == 0:
 			print("soak done: ", _soak_stats)
 			get_tree().quit()
@@ -647,6 +647,8 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 			Loc.lang = ["en", "cs"].pick_random()
 			difficulty = ["gentle", "normal", "hard"].pick_random()
 			explore_mode = randf() < 0.5
+			large = randf() < 0.5
+			rearranged = randf() < 0.5
 			_apply_style()
 			_start_game()
 			_attach_bot())
