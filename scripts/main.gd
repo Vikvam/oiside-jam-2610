@@ -123,6 +123,24 @@ func _dev_args() -> void:
 				var n: String = game.house.neighbors(game.player_room)[0]
 				game.murderer.room = n
 				game.murderer._go(game.player_room, "phone"))
+		if a.has("keytest"):
+			get_tree().create_timer(2.0).timeout.connect(func():
+				var ev := InputEventKey.new()
+				ev.keycode = KEY_ESCAPE
+				ev.pressed = true
+				Input.parse_input_event(ev)
+				await get_tree().process_frame
+				print("keytest: focus after Esc = ", phone.input.has_focus(), " paused = ", paused)
+				var room0: String = game.player_room
+				for k in [KEY_RIGHT, KEY_DOWN, KEY_LEFT, KEY_UP]:
+					var e2 := InputEventKey.new()
+					e2.keycode = k
+					e2.pressed = true
+					Input.parse_input_event(e2)
+					await get_tree().process_frame
+					if game.moving_to != "":
+						break
+				print("keytest: from ", room0, " moving_to = ", game.moving_to))
 		if a.has("speed"):
 			Engine.time_scale = float(a.speed)
 		if a.has("say"):
