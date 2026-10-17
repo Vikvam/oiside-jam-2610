@@ -129,6 +129,11 @@ func _dev_args() -> void:
 				var n: String = game.house.neighbors(game.player_room)[0]
 				game.murderer.room = n
 				game.murderer._go(game.player_room, "phone"))
+		if a.has("imitatetest"):
+			get_tree().create_timer(14.0).timeout.connect(func():
+				game.murderer.room = game.house.neighbors(game.player_room)[0]
+				game.murderer._start_listen()
+				game.on_murderer_imitate(Loc.t("imitate_say", [Loc.dir("north")])))
 		if a.has("keytest"):
 			get_tree().create_timer(2.0).timeout.connect(func():
 				var ev := InputEventKey.new()

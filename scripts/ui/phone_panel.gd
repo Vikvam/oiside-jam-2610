@@ -32,6 +32,9 @@ func _ready() -> void:
 	v.add_child(head)
 	status = Label.new()
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status.clip_text = true  # long "also: …" lists must not widen the panel
+	status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	status.custom_minimum_size.x = 50
 	head.add_child(status)
 	thinking = Label.new()
 	head.add_child(thinking)
@@ -276,7 +279,8 @@ func _render() -> void:
 			"danger":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("danger"), txt]
 			"fake":
-				out += "[color=#%s]%s[/color] [color=#%s][i]%s[/i][/color]\n" % [col.call("dim"), Loc.t("her"), col.call("her"), txt]
+				var tint := (Style.c("her") as Color).lerp(Style.c("danger"), 0.18).to_html(false)
+				out += "[color=#%s]%s[/color] [color=#%s][i]%s[/i][/color]\n" % [col.call("dim"), Loc.t("her"), tint, txt]
 			"him":
 				out += "[color=#%s][b]???:[/b] [i]%s[/i][/color]\n" % [col.call("danger"), txt]
 			"hint":
