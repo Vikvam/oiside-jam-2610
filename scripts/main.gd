@@ -19,6 +19,7 @@ var post: ColorRect
 var title_layer: CanvasLayer
 var over_layer: CanvasLayer
 var over_text: RichTextLabel
+var over_panel: PanelContainer
 var pause_layer: CanvasLayer
 var paused := false
 var backend := "mock"
@@ -81,10 +82,10 @@ func _dev_args() -> void:
 		if a.has("say"):
 			get_tree().create_timer(float(a.get("say_at", "2"))).timeout.connect(func(): game.say(a.say))
 	if a.has("over"):
-		get_tree().create_timer(float(a.get("at", "3")) - 1.0).timeout.connect(func():
+		get_tree().create_timer(float(a.get("at", "3")) - 3.0, true, false, true).timeout.connect(func():
 			game._end(false, "caught"))
 	if a.has("shot"):
-		await get_tree().create_timer(float(a.get("at", "3"))).timeout
+		await get_tree().create_timer(float(a.get("at", "3")), true, false, true).timeout
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(a.shot)
 		get_tree().quit()
@@ -283,15 +284,29 @@ func _build_over() -> void:
 	over_layer.layer = 11
 	over_layer.visible = false
 	add_child(over_layer)
-	var dim := ColorRect.new()
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0, 0, 0, 0.6)
-	over_layer.add_child(dim)
-	var v := _panel_box(over_layer, Vector2(820, 560))
+	# Right-hand panel: the plan on the left stays visible for the reveal.
+	var panel := PanelContainer.new()
+	over_panel = panel
+	panel.anchor_left = 1.0
+	panel.anchor_right = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_bottom = 1.0
+	panel.offset_left = -616
+	panel.offset_right = -16
+	panel.offset_top = 16
+	panel.offset_bottom = -16
+	over_layer.add_child(panel)
+	var m := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		m.add_theme_constant_override("margin_" + side, 18)
+	panel.add_child(m)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	m.add_child(v)
 	over_text = RichTextLabel.new()
 	over_text.bbcode_enabled = true
 	over_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	over_text.custom_minimum_size = Vector2(760, 470)
+	over_text.scroll_following = false
 	v.add_child(over_text)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -413,6 +428,10 @@ func _apply_style() -> void:
 			for c in layer.get_children():
 				if c is Control:
 					c.theme = th
+	if over_panel:
+		var solid := panel.duplicate()
+		solid.bg_color = Color(Style.c("panel"), 1.0)
+		over_panel.add_theme_stylebox_override("panel", solid)
 	(post.material as ShaderMaterial).set_shader_parameter("mode", Style.c("post"))
 	(post.material as ShaderMaterial).set_shader_parameter("danger_color", Style.c("danger"))
 	if phone:

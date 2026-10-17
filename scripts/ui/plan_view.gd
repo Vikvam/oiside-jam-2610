@@ -21,6 +21,7 @@ var _walk_door := Vector2.ZERO
 var _walk_to := Vector2.ZERO
 var _walk_t := 0.0
 var _walk_dur := 1.0
+var _reveal_t0 := 0.0
 
 
 func _ready() -> void:
@@ -62,6 +63,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"rescuer_says", "rescuer_guess":
 			if d.get("guess", "") in game.house.rooms:
 				guess = d.guess
+		"game_over":
+			_reveal_t0 = _t
 		"clock_strike":
 			for r in d.rooms:
 				ripple(_c(r), Style.c("dim"), 0.35, 1.2 * U)
@@ -249,8 +252,11 @@ func _draw() -> void:
 			var col2 := col
 			col2.a *= 0.5
 			wcircle(r.pos, 8.0 + (f - 0.25) * r.r, col2, 1.5)
+	# Post-game reveal: his route, where he stood, the exit.
+	if game.over:
+		_draw_reveal(font)
 	# Murderer (debug)
-	if show_debug:
+	if show_debug and not game.over:
 		var mp := _c(game.murderer.room) + Vector2(0, 26)
 		var dc: Color = Style.c("danger")
 		draw_line(mp - Vector2(8, 8), mp + Vector2(8, 8), dc, 3.0)
@@ -278,6 +284,40 @@ func _draw() -> void:
 	if hover != "" and hover in reachable:
 		var hr := _rect(hover)
 		draw_string(font, hr.position + Vector2(10, hr.size.y - 34), "walk · shift: sneak", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
+
+
+func _draw_reveal(font: Font) -> void:
+	var dc: Color = Style.c("danger")
+	var trail: Array = game.murderer.trail
+	var pts := PackedVector2Array()
+	for i in trail.size():
+		var j := float(i) / maxf(1.0, trail.size() - 1.0)
+		var jitter := Vector2(sin(i * 1.7) * 10.0, cos(i * 2.3) * 10.0)
+		pts.append(_c(trail[i]) + jitter)
+	var shown := int(clampf(_t * 4.0 - _reveal_t0 * 4.0, 1.0, float(pts.size())))
+	for i in range(1, shown):
+		var a := pts[i - 1]
+		var b := pts[i]
+		var n := int(a.distance_to(b) / 8.0)
+		var c := dc
+		c.a = 0.35 + 0.65 * float(i) / pts.size()
+		for k in range(0, n, 2):
+			draw_line(a.lerp(b, float(k) / n), a.lerp(b, float(k + 1) / n), c, 2.0)
+	if pts.size() > 0:
+		var mp := pts[shown - 1]
+		draw_line(mp - Vector2(9, 9), mp + Vector2(9, 9), dc, 3.0)
+		draw_line(mp - Vector2(9, -9), mp + Vector2(9, -9), dc, 3.0)
+		draw_string(font, mp + Vector2(12, 4), "HIM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, dc)
+	# The exit
+	var ec := _c(game.exit_room) + Vector2(-34, -20)
+	var ac: Color = Style.c("accent")
+	var star := PackedVector2Array()
+	for i in 10:
+		var ang := -PI / 2.0 + TAU * i / 10.0
+		var rr := 10.0 if i % 2 == 0 else 4.5
+		star.append(ec + Vector2(cos(ang), sin(ang)) * rr)
+	draw_colored_polygon(star, ac)
+	draw_string(font, ec + Vector2(14, 5), game.house.object_def(game.exit_obj).name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, ac)
 
 
 func _dashed_rect(r: Rect2, col: Color) -> void:

@@ -13,6 +13,7 @@ var room := ""
 var state := S.THINK
 var timer := 4.0
 var path: Array = []
+var trail: Array = []     # rooms visited, in order (for the post-game reveal)
 var goal := ""            # phone / hunt / suspect / guard
 var goal_room := ""
 
@@ -57,6 +58,7 @@ func _init(g, start_room: String) -> void:
 	game = g
 	house = g.house
 	room = start_room
+	trail.append(room)
 	seen[room] = true
 	memory[room] = g.room_state_snapshot(room)
 	_reset_candidates()
@@ -403,6 +405,7 @@ func _decide() -> void:
 
 func _enter(r: String) -> void:
 	room = r
+	trail.append(r)
 	game.on_murderer_entered(r)
 	if game.over:
 		return
