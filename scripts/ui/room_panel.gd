@@ -45,6 +45,7 @@ func _ready() -> void:
 
 func bind(g: Game) -> void:
 	game = g
+	armed = ""
 	g.event.connect(_on_event)
 	rebuild()
 

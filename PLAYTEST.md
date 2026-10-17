@@ -53,11 +53,15 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 4. **Caught with no warning.** He set off from the room next door. Fixed: footsteps when he sets off.
 5. **Won.** I worked out the exit from where he set off, silenced rooms, and read a real hang-up (his sounds vanished from the line). My "the room east of me" plus her "east door" sent him running the wrong way, and he was behind the Pantry door when I got out. *This is the game working as designed.*
 
+6. **Won on gentle (default) in 1:44.** I lied ("I'm in the pantry"), but it was too late: he'd hung up mid-sentence. I waited silently while he listened next door, slipped past him by one second, and the mock named the object. His notebook shows a funny misdirection: her word "rocking **horse**" matched the *painting of a horse* he'd seen, so he went to inspect the Study.
+7. **Czech, normal: caught.** "jsem ve spizi" fooled him ("Kořist to zmínila → možná: Spíž"), but his route to the Pantry ran through the Kitchen I'd just entered. Leaving as he entered counted as caught. Fixed: you slip out if you're past the halfway point of the doorway.
+
 **Haiku rescuer:**
 - Full bot game: in character and cautious, using yes/no tap questions.
 - Spotted a lie: *"Was that for his ears? One tap for yes."*
 - After a prompt tweak she's direct when the line is clear: *"Go through the east door… Search the shelf of jam jars, and only that."*
-- About 12 calls used in total, all logged in `proxy/calls.log`.
+- Czech full game: *"Hýbej se. Hned, potichu, a nemluv."* in reply to his taunt.
+- About 15 calls used in total, all logged in `proxy/calls.log`.
 
 **Open question:** a good game lasts 1.5–3 minutes. That's short and replayable. Is that right for the jam, or do we want a bigger house?
 

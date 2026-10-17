@@ -85,7 +85,8 @@ func _set_candidates(rs: Array, why: String, strong := true, kind := "") -> void
 		last_evidence = kind
 	candidates.clear()
 	for r in rs:
-		candidates[r] = true
+		if r != room:  # he can see his own room is empty
+			candidates[r] = true
 	if candidates.is_empty():
 		_reset_candidates()
 	exact.clear()
@@ -95,8 +96,6 @@ func _set_candidates(rs: Array, why: String, strong := true, kind := "") -> void
 	dirty = true
 	if why != "":
 		note("%s → %s" % [why, _cand_str()])
-	elif candidates.size() != before:
-		dirty = true
 
 
 func _intersect(rs: Array, why: String, strong := true, kind := "") -> void:

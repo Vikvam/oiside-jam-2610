@@ -46,6 +46,7 @@ func _play(seed_value: int, policy: String, verbose: bool) -> Dictionary:
 			for e in g.murderer.log.slice(-4):
 				if "→" in e.text:
 					print("WHY ", e.text.split("→")[0].split("'")[0].left(40))
+	g.dispose()
 	return {"reason": reason, "t": g.time}
 
 

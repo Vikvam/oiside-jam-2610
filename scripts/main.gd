@@ -71,6 +71,7 @@ func _ready() -> void:
 	# Draw the house behind the title screen.
 	var demo := Game.new()
 	demo.setup(1)
+	randomize()  # setup() seeded the global RNG; don't make every first game identical
 	plan.bind(demo)
 	_dev_args()
 
@@ -549,8 +550,8 @@ func _make_rescuer(g: Game):
 
 func _start_game() -> void:
 	_save_settings()
-	if game and game.rescuer is Node:
-		game.rescuer.queue_free()
+	if game:
+		game.dispose()
 	game = Game.new()
 	game.difficulty = difficulty
 	game.explore_mode = explore_mode
@@ -599,7 +600,11 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 			_attach_bot())
 		return
 	if t == "game_over":
-		get_tree().create_timer(1.6).timeout.connect(_show_over)
+		running = false
+		var ended := game
+		get_tree().create_timer(1.6).timeout.connect(func():
+			if game == ended and not title_layer.visible:
+				_show_over())
 	elif t == "murderer_log" and plan.show_debug:
 		phone.add_line("sound", "☠ " + d.text)
 
@@ -649,6 +654,8 @@ func _unhandled_input(e: InputEvent) -> void:
 
 func _process(dt: float) -> void:
 	var mat := post.material as ShaderMaterial
+	phone.active = running and not paused
+	sfx.active = running and not paused
 	if not running or game == null or paused:
 		mat.set_shader_parameter("danger", 0.0)
 		mat.set_shader_parameter("hidden", 0.0)

@@ -60,7 +60,7 @@ All of the verbs from DESIGN.md are implemented:
 - hang up
 - "Here it is!" (search an object, with a confirm click)
 
-**Added: Hide.** If he only passes through, there's a low chance he finds you; if he came for your room specifically, the chance is high; a small chance per 5 s while he lingers. *Why:* accidental patrol run-ins were unfun deaths with no counterplay, and hiding while footsteps enter the room is a great horror beat.
+**Added: Hide.** If he only passes through, there's a low chance he finds you. If he came to hunt or search your room, the chance is high. If he's sweeping or coming to use your room's phone, it's in between. There's also a small chance per 5 s while he lingers. Searching or touching the room's sounds brings you out of hiding (and if he's in the room, he gets you). *Why:* accidental patrol run-ins were unfun deaths with no counterplay, and hiding while footsteps enter the room is a great horror beat.
 
 - **Exit rules:** 3 tries in total. A wrong try is a loud crash: he learns your exact room, and you **freeze for 3 s** while it echoes. The third wrong try is a loss ("too much noise"). *Why the freeze:* with 3 objects per room, brute force was free. Now it's a real gamble if he isn't far away.
 - **The exit is 3 rooms from the start when possible** (otherwise 2). He never starts in the exit room, and an attentive player can use that.
@@ -112,3 +112,15 @@ Bot simulations are only a rough guide. The bots are much dumber than a human (`
 - **Shared memories in Czech use "you two" plural** ("Oba jste přísahali…"), so the player's gender is never fixed.
 - **The LLM** gets the English system prompt plus a Czech section: whisper in informal Czech, using the Czech names and nicknames. Tested: *"Jdi jižními dveřmi do spíže. Prohledej police se zavařeninami, máš tři pokusy."*
 - **Bug found on the way:** the English dumbwaiter had the keyword "lift", which made its nickname "the ghost lift" unsafe. Removed.
+
+## Code review pass
+
+A reviewer agent found 11 issues, all fixed:
+- the murderer could get stuck "hunting" his own room
+- the first game after launch was always the same, because the demo house had seeded the RNG
+- the game-over panel could pop over the title or the next game
+- input and audio stayed live while paused or on the title
+- hidden-state buttons silently did nothing
+- a stale "crackle" indicator and a half-armed search carried into the next game
+- reference cycles leaked every finished game (fixed with `Game.dispose()`)
+- hide chances didn't match this document

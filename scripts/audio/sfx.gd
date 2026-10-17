@@ -16,6 +16,7 @@ var voices: Array = []
 var _voice_i := 0
 var _char_n := 0
 var danger := 0.0              # perceived danger 0..1, decays
+var active := true             # false on the title / while paused: everything fades
 var master_db := 0.0
 ## Per-feature loudness in your room (the clock loop is sparse, so it gets more gain).
 const FEATURE_DB := {"clock": -1.0, "fan": -11.0, "rain": -9.0, "radiator": -8.0}
@@ -107,6 +108,8 @@ func _loop_player(name: String, bus: String) -> AudioStreamPlayer:
 
 
 func one_shot(name: String, bus := "Master", db := 0.0, pitch := 1.0) -> void:
+	if not active and name != "crash":
+		return
 	var st = s[name]
 	if st is Array:
 		st = st[randi() % st.size()]
@@ -205,6 +208,10 @@ func _on_event(t: String, d: Dictionary) -> void:
 
 func _process(dt: float) -> void:
 	if game == null:
+		return
+	if not active or game.over:
+		for p in room_amb.values() + line_amb.values() + [hiss, heart]:
+			_fade(p, -80.0, dt)
 		return
 	danger = maxf(0.0, danger - dt * 0.12)
 	var mine := game.active_features(game.player_room) if game.moving_to == "" else []

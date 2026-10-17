@@ -199,6 +199,34 @@ func _unhide() -> void:
 		emit("hidden", {"on": false})
 
 
+## Coming out of hiding: fine, unless he is standing in the room.
+func _leave_hiding() -> bool:
+	if not hidden:
+		return true
+	if murderer.room == player_room:
+		_end(false, "caught")
+		return false
+	_unhide()
+	return true
+
+
+## Break reference cycles so finished games are freed.
+func dispose() -> void:
+	for c in event.get_connections():
+		event.disconnect(c.callable)
+	if murderer:
+		murderer.game = null
+	if rescuer != null and "game" in rescuer:
+		if rescuer is Node:
+			rescuer.queue_free()
+		else:
+			if "fallback" in rescuer and rescuer.fallback:
+				rescuer.fallback.game = null
+			rescuer.game = null
+	murderer = null
+	rescuer = null
+
+
 func hide() -> bool:
 	if not can_act() or hidden:
 		return false
@@ -251,7 +279,7 @@ func pick_up() -> bool:
 
 
 func hang_up() -> bool:
-	if not receiver_up:
+	if not receiver_up or over:
 		return false
 	receiver_up = false
 	off_line_since = time
@@ -287,7 +315,7 @@ func tap() -> bool:
 func toggle_feature(f: String) -> bool:
 	if not can_act():
 		return false
-	if hidden:
+	if not _leave_hiding():
 		return false
 	var key := "window" if f == "rain" else f
 	if not room_state[player_room].has(key) or not house.has_feature(player_room, "rain" if key == "window" else key):
@@ -312,7 +340,7 @@ func toggle_feature(f: String) -> bool:
 
 
 func try_exit(obj: String) -> bool:
-	if not can_act() or tried.has(obj) or attempts_left <= 0 or hidden:
+	if not can_act() or tried.has(obj) or attempts_left <= 0 or not _leave_hiding():
 		return false
 	var od := house.object_def(obj)
 	if od.is_empty() or house.object_room[obj] != player_room:
@@ -353,9 +381,9 @@ func on_murderer_entered(r: String) -> void:
 	if r == player_room:
 		if hidden and moving_to == "":
 			var chance := find_chance_pass
-			if murderer.goal_room == r and murderer.goal == "hunt":
+			if murderer.goal_room == r and murderer.goal in ["hunt", "suspect"]:
 				chance = find_chance_hunt
-			elif murderer.goal_room == r and murderer.goal == "sweep":
+			elif murderer.goal_room == r and murderer.goal in ["sweep", "phone"]:
 				chance = (find_chance_hunt + find_chance_pass) * 0.5
 			if randf() >= chance:
 				_seek_timer = 5.0

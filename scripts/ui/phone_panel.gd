@@ -20,6 +20,7 @@ var _think_t := 0.0
 var _is_thinking := false
 var _dirty := true
 var hints := true
+var active := true          # false while paused / on the title
 var _hinted := {}
 
 
@@ -68,6 +69,7 @@ func _ready() -> void:
 
 func bind(g: Game) -> void:
 	game = g
+	_is_thinking = false
 	scope.bind(g)
 	lines.clear()
 	_dirty = true
@@ -95,12 +97,12 @@ func _toggle_hook() -> void:
 
 
 func _on_submit(t: String) -> void:
-	if game and game.say(t):
+	if game and active and game.say(t):
 		input.clear()
 
 
 func _unhandled_key_input(e: InputEvent) -> void:
-	if game == null or not (e is InputEventKey) or not e.pressed or e.echo:
+	if game == null or not active or not (e is InputEventKey) or not e.pressed or e.echo:
 		return
 	if e.ctrl_pressed and e.keycode == KEY_T:
 		game.tap()
