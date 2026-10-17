@@ -30,6 +30,7 @@ var over_text: RichTextLabel
 var over_panel: PanelContainer
 var header_label: Label
 var peek_btn: Button
+var cord: Cord
 var flash: ColorRect
 var pause_layer: CanvasLayer
 var paused := false
@@ -200,6 +201,11 @@ func _build_game_ui() -> void:
 	phone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	phone.voice_char.connect(func(c, k): sfx.on_voice_char(c, k))
 	h.add_child(phone)
+	cord = Cord.new()
+	cord.plan = plan
+	cord.phone = phone
+	ui.add_child(cord)
+	ui.move_child(cord, 0)  # under the plan, like a cord under the paper
 
 
 func _build_post() -> void:
@@ -591,6 +597,7 @@ func _start_game() -> void:
 	game.rescuer = _make_rescuer(game)
 	game.event.connect(_on_game_event)
 	plan.bind(game)
+	cord.game = game
 	plan.explore_mode = explore_mode
 	phone.hints = hints_on
 	phone._hinted.clear()
