@@ -114,7 +114,13 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 
 ## 6. Suggested next steps for the joint session
 
-1. Play 3–4 games with the scripted voice, then 2 with Haiku. Tune difficulty.
-2. Audio pass (section 1).
-3. Pick a style, and polish it further.
-4. Plug in the real API endpoint (`rescuer_config.cfg`).
+1. **Play 3–4 games yourself** with the scripted voice: gentle first, then normal. Note every death that felt unfair and check his notebook.
+2. **Audio pass** (section 1). Every sound has one obvious knob. If something is bad, tell me how ("too harsh", "too quiet", "sounds like a toy"), and I'll retune the synthesis.
+3. **Pick a look.** Or keep all three, since the switch is cheap.
+4. **Plug in the real API** (`rescuer_config.cfg`), then play 1–2 games with her LLM voice.
+5. **Czech proofreading.**
+6. **Decide the defaults:** difficulty, large house, rearranged, hints, guess box.
+7. If there's time:
+   - export a build (templates needed)
+   - a short trailer GIF
+   - more nicknames or memories if the safe channel feels too thin
