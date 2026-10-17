@@ -270,6 +270,16 @@ static func crash() -> PackedFloat32Array:
 	return fade_out(normalize(b, 0.95), 0.2)
 
 
+## European ringback: 425 Hz, one second on.
+static func ringback() -> PackedFloat32Array:
+	var b := blank(1.0)
+	for i in b.size():
+		var t := float(i) / RATE
+		var env := minf(1.0, minf(t * 80.0, (1.0 - t) * 80.0))
+		b[i] = sin(TAU * 425.0 * t) * 0.6 * env
+	return b
+
+
 static func heartbeat() -> PackedFloat32Array:
 	var b := blank(1.0)
 	var beat := func(f: float) -> PackedFloat32Array:

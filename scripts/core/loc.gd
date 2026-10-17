@@ -59,6 +59,7 @@ const S := {
 	"st_hook": ["○ receiver on the hook", "○ sluchátko je zavěšené"],
 	"second_x": ["a second %s, out of step", "druhé %s, mimo rytmus"],
 	"tap": ["tap", "ťuk"],
+	"ringing": ["tuuut… tuuut… click.", "tůůů… tůůů… cvak."],
 	"click_pickup": ["Click. Someone else picked up an extension.", "Cvak. Někdo jiný zvedl telefon."],
 	"click_hangup": ["Click. An extension hung up.", "Cvak. Někdo zavěsil."],
 	"pickup_me": ["you pick up the receiver", "zvedáš sluchátko"],

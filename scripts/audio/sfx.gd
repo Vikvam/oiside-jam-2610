@@ -89,6 +89,7 @@ func _generate() -> void:
 	s.breath = Synth.to_wav(Synth.breath())
 	s.bell = Synth.to_wav(Synth.bell(392.0))
 	s.crash = Synth.to_wav(Synth.crash())
+	s.ring = Synth.to_wav(Synth.ringback())
 	s.toggle = Synth.to_wav(Synth.fade_out(Synth.tick(800.0, 0.08), 0.02))
 	# Her voice: a handful of vowel syllables around a female-ish pitch.
 	var vowels := [[800.0, 1200.0], [500.0, 1900.0], [330.0, 2300.0], [520.0, 950.0], [380.0, 900.0], [650.0, 1700.0]]
@@ -127,6 +128,13 @@ func steps(n: int, heavy: bool, bus: String, db: float, gap := 0.5) -> void:
 	for i in n:
 		get_tree().create_timer(i * gap + randf() * 0.05).timeout.connect(func():
 			one_shot("step_heavy" if heavy else "step_light", bus, db, randf_range(0.9, 1.1)))
+
+
+## The call connecting: two ringback tones, then her receiver clicks.
+func ring_in() -> void:
+	one_shot("ring", "Line", -10.0)
+	get_tree().create_timer(2.2).timeout.connect(func(): one_shot("ring", "Line", -10.0))
+	get_tree().create_timer(4.0).timeout.connect(func(): one_shot("click", "Line", -6.0))
 
 
 func bind(g: Game) -> void:

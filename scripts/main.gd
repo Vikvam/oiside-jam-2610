@@ -577,7 +577,7 @@ func _start_game() -> void:
 	game.explore_mode = explore_mode
 	game.rearranged = rearranged
 	game.setup(randi() % 100000)
-	game.murderer.timer += 12.0  # let her finish the intro
+	game.murderer.timer += 15.0  # let the call connect and her finish the intro
 	game.rescuer = _make_rescuer(game)
 	game.event.connect(_on_game_event)
 	plan.bind(game)
@@ -597,7 +597,9 @@ func _start_game() -> void:
 			phone.add_line("memory", game.house.obj_memory(o.id))
 	phone.hint("start")
 	_intro_queue = INTRO[Loc.lang].duplicate()
-	_intro_t = 1.0
+	_intro_t = 4.6
+	sfx.ring_in()
+	phone.add_line("sound", Loc.t("ringing"))
 	if backend != "mock":
 		phone.add_line("sound", Loc.t("her_voice_line", [Loc.t("be_" + backend)]))
 
