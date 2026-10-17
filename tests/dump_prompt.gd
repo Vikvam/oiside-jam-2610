@@ -21,7 +21,7 @@ func _init() -> void:
 			g.line_log.append({"who": "line", "text": a})
 		else:
 			g.line_log.append({"who": "player", "text": a})
-	var out := {"system": LlmRescuer.build_system(g), "prompt": LlmRescuer.build_prompt(g, "speech"),
+	var out := {"system": LlmRescuer.build_system(g), "prompt": LlmRescuer.build_prompt(g, OS.get_environment("REASON") if OS.get_environment("REASON") != "" else "speech"),
 		"truth": {"player": g.player_room, "exit": g.exit_room, "obj": g.exit_obj}}
 	var f := FileAccess.open(args[0], FileAccess.WRITE)
 	f.store_string(JSON.stringify(out))

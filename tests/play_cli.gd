@@ -26,6 +26,7 @@ func _init() -> void:
 		Loc.lang = a[3]
 	g = Game.new()
 	g.difficulty = a[2] if a.size() > 2 else "normal"
+	g.rearranged = OS.get_environment("REARRANGE") != ""
 	g.setup(int(a[1]))
 	g.rescuer = MockRescuer.new(g)
 	g.murderer.timer += 12.0
@@ -62,6 +63,7 @@ func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"rescuer_says": _p("HER: " + d.text)
 		"murderer_says": _p("??? (male voice): " + d.text)
+		"imposter_says": _p("HER(?) [no crackle before, slightly low]: " + d.text)
 		"line_click": _p("!! " + d.text)
 		"line_breath": _p("!! breathing on the line")
 		"line_quiet_presence": _p("!! the line sounds open, someone already listening")

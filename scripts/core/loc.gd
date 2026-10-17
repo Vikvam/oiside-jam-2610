@@ -34,6 +34,7 @@ const S := {
 	"rearranged_tip": ["Every call: new doors, new phones, new sounds.", "Při každém hovoru: jiné dveře, telefony i zvuky."],
 	"start": ["Pick up the phone", "Zvednout telefon"],
 	"again": ["Call again", "Zavolat znovu"],
+	"peek": ["Look at the call", "Ukázat hovor"],
 	"to_title": ["Title", "Menu"],
 	"hold": ["ON HOLD", "NA LINCE ČEKÁ"],
 	"hold_sub": ["(he's on hold too)", "(on čeká taky)"],

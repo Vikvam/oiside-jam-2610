@@ -28,6 +28,7 @@ var _presence_timer := 0.0
 var attempts_left := 3
 var tried := {}           # obj id -> true
 var visited := {}         # rooms the player has seen
+var trail: Array = []     # rooms the player walked through, in order
 var off_line_since := 0.0
 
 # World
@@ -88,6 +89,7 @@ func setup(seed_value := -1) -> void:
 	var phones := house.phone_rooms()
 	player_room = phones[randi() % phones.size()]
 	visited[player_room] = true
+	trail = [player_room]
 	# Exit: three rooms away from the start if possible, else two.
 	var far := []
 	for min_d in [3, 2]:
@@ -516,6 +518,7 @@ func tick(dt: float) -> void:
 			var from := player_room
 			player_room = moving_to
 			moving_to = ""
+			trail.append(player_room)
 			var first := not visited.has(player_room)
 			visited[player_room] = true
 			emit("player_arrive", {"room": player_room, "from": from, "first": first})

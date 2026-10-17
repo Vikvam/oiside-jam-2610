@@ -299,6 +299,15 @@ func _draw() -> void:
 
 
 func _draw_reveal(font: Font) -> void:
+	# Your route first (underneath), then his.
+	var yc: Color = Style.c("hint")
+	var mine: Array = game.trail
+	for i in range(1, mine.size()):
+		var a := _c(mine[i - 1]) + Vector2(cos(i * 1.3) * 8.0, 16 + sin(i * 1.9) * 6.0)
+		var b := _c(mine[i]) + Vector2(cos((i + 1) * 1.3) * 8.0, 16 + sin((i + 1) * 1.9) * 6.0)
+		var c := yc
+		c.a = 0.55
+		draw_line(a, b, c, 2.0, true)
 	var dc: Color = Style.c("danger")
 	var trail: Array = game.murderer.trail
 	var pts := PackedVector2Array()

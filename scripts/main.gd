@@ -404,6 +404,7 @@ func _build_over() -> void:
 	panel.offset_top = 16
 	panel.offset_bottom = -16
 	over_layer.add_child(panel)
+
 	var m := MarginContainer.new()
 	for side in ["left", "right", "top", "bottom"]:
 		m.add_theme_constant_override("margin_" + side, 18)
@@ -419,6 +420,13 @@ func _build_over() -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
+	var peek := Button.new()
+	peek.text = Loc.t("peek")
+	peek.toggle_mode = true
+	peek.toggled.connect(func(on):
+		over_text.visible = not on
+		over_panel.self_modulate.a = 0.0 if on else 1.0)
+	row.add_child(peek)
 	var again := Button.new()
 	again.text = Loc.t("again")
 	again.pressed.connect(_start_game)
@@ -660,6 +668,8 @@ func _show_over() -> void:
 		t += Loc.t("notebook_empty") + "\n"
 	over_text.text = t
 	over_layer.visible = true
+	over_text.visible = true
+	over_panel.self_modulate.a = 1.0
 
 
 func _unhandled_input(e: InputEvent) -> void:
