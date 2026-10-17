@@ -52,6 +52,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(204)
+        self.send_header("Content-Length", "0")
         self._cors()
         self.end_headers()
 
@@ -79,6 +80,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps({"error": str(e)}).encode()
             self.send_response(502)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
         self._cors()
         self.end_headers()
         self.wfile.write(body)

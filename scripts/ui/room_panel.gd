@@ -9,9 +9,9 @@ var game: Game
 var title: Label
 var busy_bar: ProgressBar
 var busy_label: Label
-var objects_box: HBoxContainer
-var actions_box: HBoxContainer
-var doors_box: HBoxContainer
+var objects_box: HFlowContainer
+var actions_box: HFlowContainer
+var doors_box: HFlowContainer
 var sneak_toggle: CheckButton
 var sneak := false
 var armed := ""
@@ -35,11 +35,11 @@ func _ready() -> void:
 	busy_bar.show_percentage = false
 	busy_bar.visible = false
 	head.add_child(busy_bar)
-	objects_box = HBoxContainer.new()
+	objects_box = HFlowContainer.new()
 	v.add_child(objects_box)
-	actions_box = HBoxContainer.new()
+	actions_box = HFlowContainer.new()
 	v.add_child(actions_box)
-	doors_box = HBoxContainer.new()
+	doors_box = HFlowContainer.new()
 	v.add_child(doors_box)
 
 

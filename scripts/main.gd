@@ -58,12 +58,14 @@ func _dev_args() -> void:
 		_apply_style()
 	if a.has("seed"):
 		seed(int(a.seed))
+	if a.has("backend"):
+		backend = a.backend
 	if a.has("play"):
 		_start_game()
 		if a.has("debug"):
 			plan.show_debug = true
 		if a.has("say"):
-			get_tree().create_timer(2.0).timeout.connect(func(): game.say(a.say))
+			get_tree().create_timer(float(a.get("say_at", "2"))).timeout.connect(func(): game.say(a.say))
 	if a.has("over"):
 		get_tree().create_timer(float(a.get("at", "3")) - 1.0).timeout.connect(func():
 			game._end(false, "caught"))
@@ -111,6 +113,8 @@ func _build_game_ui() -> void:
 	margin.add_child(h)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 10)
+	left.custom_minimum_size.x = 12 * PlanView.U + 8
+	left.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	h.add_child(left)
 	var header := Label.new()
 	header.name = "Header"
@@ -121,6 +125,8 @@ func _build_game_ui() -> void:
 	left.add_child(plan)
 	room_panel = RoomPanel.new()
 	room_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	room_panel.custom_minimum_size.x = 12 * PlanView.U + 8
+	room_panel.clip_contents = true
 	room_panel.move_requested.connect(func(r, sn): if game: game.move_to(r, sn))
 	left.add_child(room_panel)
 	phone = PhonePanel.new()

@@ -102,6 +102,7 @@ func setup(seed_value := -1) -> void:
 	apply_difficulty(difficulty)
 	murderer.timer = 15.0
 	receiver_up = true
+	_bg_timer = 2.0
 
 
 func apply_difficulty(level: String) -> void:
