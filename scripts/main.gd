@@ -326,6 +326,9 @@ func _build_title() -> void:
 		b.text = be[1]
 		b.toggle_mode = true
 		b.name = "backend_" + be[0]
+		b.tooltip_text = Loc.t("tip_" + be[0])
+		if be[0] == "api" and not cfg.has("url") and not cfg.has("key"):
+			b.text += " " + Loc.t("not_configured")
 		b.pressed.connect(func():
 			backend = be[0]
 			_refresh_title_buttons())
