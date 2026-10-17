@@ -136,3 +136,5 @@ A reviewer agent found 11 issues, all fixed:
   - the text is in italics
   - she hears it and warns you ("That wasn't me!")
   - *Why:* DESIGN.md asked "Do they try to imitate the rescuer?". This answers it without making normal play unfair.
+- **The offline voice plays along with lies.** If you name a room while he's on the line, she backs you up once ("Okay. Stay in the Library…"). He hears her too, which makes the lure stronger.
+- **Post-game:** your route is drawn on the map next to his, and a "Look at the call" toggle lets you reread the transcript.

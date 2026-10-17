@@ -13,6 +13,7 @@ var said_cautious := false
 var pending_q := {}       # {feature, cands} — asked "tap once if you hear X"
 var bg_cands: Array = []
 var imposter := false
+var played_along := false
 var _pending := -1.0
 var _reply := ""
 var _read := 0            # line_log index already processed
@@ -30,6 +31,7 @@ const L := {
 		"exit_obj": ["You're in the right room. Check the %s.", "This is it. The %s. Go."],
 		"the": "the ",
 		"imposter": ["That wasn't me! Don't go anywhere he tells you.", "That voice — it wasn't me. Stay put."],
+		"play_along": ["Okay. Stay %s. Don't move, I'm thinking.", "Right, %s. Hide there. Don't make a sound."],
 	},
 	"cs": {
 		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
@@ -44,6 +46,7 @@ const L := {
 		"exit_obj": ["Jsi ve správné místnosti. Zkus %s.", "Tady to je. %s. Jdi."],
 		"the": "",
 		"imposter": ["To jsem nebyla já! Nikam, kam ti řekne, nechoď.", "Ten hlas — to jsem nebyla já. Zůstaň, kde jsi."],
+		"play_along": ["Dobře. Zůstaň %s. Nehýbej se, přemýšlím.", "Jasně, %s. Schovej se tam. Ani muk."],
 	},
 }
 var min_delay := 1.2
@@ -80,6 +83,7 @@ func _compose() -> String:
 			if e.text.contains("another extension picks up"):
 				cautious = true
 				said_cautious = false
+				played_along = false
 			elif e.text.contains("imitating you"):
 				imposter = true
 			elif e.text.contains("an extension hangs up"):
@@ -132,6 +136,11 @@ func _compose() -> String:
 		imposter = false
 		return _pick(tx.imposter)
 	if cautious:
+		# A room named while he's listening is probably a lure: play along.
+		var lure := Words.rooms_named(player_text)
+		if not lure.is_empty() and not played_along:
+			played_along = true
+			return _pick(tx.play_along) % h.room_in(lure[0])
 		if said_cautious:
 			return ""
 		said_cautious = true

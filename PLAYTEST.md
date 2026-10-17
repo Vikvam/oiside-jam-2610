@@ -41,7 +41,7 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 ## 4. Known issues / limitations
 
 - Balance is based on bots only.
-- The mock rescuer is simple: one direction per turn, and it doesn't play along with lies.
+- The mock rescuer is simple. It gives one direction per turn, and its guess can go stale (it believes you followed its directions). It plays along with a lie once per eavesdrop.
 - Web export is untested. `SystemFont` falls back to Godot's default font there, and the proxy sends CORS headers.
 
 ## 5. What I learned from testing
@@ -56,10 +56,13 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 6. **Won on gentle (default) in 1:44.** I lied ("I'm in the pantry"), but it was too late: he'd hung up mid-sentence. I waited silently while he listened next door, slipped past him by one second, and the mock named the object. His notebook shows a funny misdirection: her word "rocking **horse**" matched the *painting of a horse* he'd seen, so he went to inspect the Study.
 7. **Czech, normal: caught.** "jsem ve spizi" fooled him ("Kořist to zmínila → možná: Spíž"), but his route to the Pantry ran through the Kitchen I'd just entered. Leaving as he entered counted as caught. Fixed: you slip out if you're past the halfway point of the doorway.
 
+8. **Hard: won in 1:28.** He was standing next door in the Kitchen at the start. Since he never starts in the exit room, I deduced the Pantry. I sneaked the long way round, hid, and then asked her for the object from the Dining Room while he listened. Object names from rooms he hasn't searched are safe, and she named the meat hook.
+
 **Haiku rescuer:**
 - Full bot game: in character and cautious, using yes/no tap questions.
 - Spotted a lie: *"Was that for his ears? One tap for yes."*
 - After a prompt tweak she's direct when the line is clear: *"Go through the east door… Search the shelf of jam jars, and only that."*
+- Imposter test: *"That was not me. Do not move on that voice. Tap once if you can hear me."*
 - Czech full game: *"Hýbej se. Hned, potichu, a nemluv."* in reply to his taunt.
 - About 15 calls used in total, all logged in `proxy/calls.log`.
 
