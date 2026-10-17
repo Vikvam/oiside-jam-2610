@@ -15,6 +15,34 @@ var bg_cands: Array = []
 var _pending := -1.0
 var _reply := ""
 var _read := 0            # line_log index already processed
+const L := {
+	"en": {
+		"cautious": ["Shh. Someone else is on the line. Tap twice when they're gone.", "Wait. I heard a click. He's listening. Two taps when it's clear.", "Quiet. We're not alone. Tap twice when he's gone."],
+		"ask_feat": ["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.", "I can't tell where you are. Is there a %s near you? Tap once for yes, twice for no."],
+		"things": {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"},
+		"pickup": ["I'm here. Where are you? Don't name the room. Tell me something you can see.", "You're back. Tell me something you can see — not the room's name."],
+		"unknown": ["I can't place you. Describe one thing near you. Not the room.", "Where are you? Something small. Something only we'd know, if you can."],
+		"last_nophone": ["Take the %s door. No phone in there, so listen: it's %s.", "Through the %s door. Then %s. Only that."],
+		"last": ["Good. Take the %s door. It's in the next room.", "Almost. The %s door — it's right there."],
+		"step": ["Okay. From there, take the %s door. Then call me again.", "The %s door. Go. Call me from the next phone.", "Take the %s door. Quietly."],
+		"exit_nick": ["You're there. It's %s. You know what I mean.", "That's the room. %s. Remember?"],
+		"exit_obj": ["You're in the right room. Check the %s.", "This is it. The %s. Go."],
+		"the": "the ",
+	},
+	"cs": {
+		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
+		"ask_feat": ["Poslouchej. Je v té místnosti %s, i když je teď potichu? Jedno ťuknutí ano, dvě ne.", "Nevím, kde jsi. Je u tebe %s? Ťukni jednou pro ano, dvakrát pro ne."],
+		"things": {"clock": "hodiny", "fan": "větrák", "rain": "okno", "radiator": "radiátor"},
+		"pickup": ["Jsem tady. Kde jsi? Neříkej název místnosti. Řekni mi něco, co vidíš.", "Jsi zpátky. Řekni mi, co vidíš — ne název místnosti."],
+		"unknown": ["Nevím, kde jsi. Popiš jednu věc u sebe. Ne místnost.", "Kde jsi? Něco malého. Něco, co víme jen my dva, jestli můžeš."],
+		"last_nophone": ["Jdi %s dveřmi. Tam není telefon, tak poslouchej: je to %s.", "Projdi %s dveřmi. Pak %s. Jen to."],
+		"last": ["Dobře. Jdi %s dveřmi. Je to hned vedle.", "Skoro. %s dveře — je to tam."],
+		"step": ["Dobře. Odtud jdi %s dveřmi. Pak mi zase zavolej.", "%s dveře. Jdi. Zavolej mi z dalšího telefonu.", "Jdi %s dveřmi. Potichu."],
+		"exit_nick": ["Jsi tam. Je to %s. Víš, co myslím.", "To je ta místnost. %s. Pamatuješ?"],
+		"exit_obj": ["Jsi ve správné místnosti. Zkus %s.", "Tady to je. %s. Jdi."],
+		"the": "",
+	},
+}
 var min_delay := 1.2
 var max_delay := 2.8
 
@@ -55,13 +83,14 @@ func _compose() -> String:
 				bg = e.text
 			elif e.text.contains("player's extension picks up"):
 				picked_up = true
-	var low := player_text.to_lower()
-	if cautious and (low.contains("clear") or low.contains("gone") or low.contains("2 taps") or low.contains("hung up")):
+	var low := Loc.fold(player_text)
+	var toks := Words.tokens(player_text)
+	if cautious and (low.contains("clear") or low.contains("gone") or low.contains("2 taps") or low.contains("hung up") or low.contains("pryc") or low.contains("cisto") or low.contains("zavesil")):
 		cautious = false
 	# Answer to our tap question?
 	if not pending_q.is_empty():
-		var yes := low.contains("[1 tap") or low.contains("yes")
-		var no := low.contains("[2 taps") or low.contains("no")
+		var yes := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
+		var no := low.contains("[2 taps") or "no" in toks or "ne" in toks or "nope" in toks
 		if yes or no:
 			var keep := []
 			for r in pending_q.cands:
@@ -93,13 +122,12 @@ func _compose() -> String:
 				guess = cands[0]
 			elif cands.size() > 1:
 				bg_cands = cands
+	var tx: Dictionary = L[Loc.lang]
 	if cautious:
 		if said_cautious:
 			return ""
 		said_cautious = true
-		return _pick(["Shh. Someone else is on the line. Tap twice when they're gone.",
-			"Wait. I heard a click. He's listening. Two taps when it's clear.",
-			"Quiet. We're not alone. Tap twice when he's gone."])
+		return _pick(tx.cautious)
 	if guess == "" and bg_cands.size() > 1:
 		# Ask about a sound that splits the candidates.
 		for f in House.FEATURES:
@@ -109,33 +137,28 @@ func _compose() -> String:
 					n += 1
 			if n > 0 and n < bg_cands.size():
 				pending_q = {"feature": f, "cands": bg_cands.duplicate()}
-				var thing: String = {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"}[f]
-				return _pick(["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.",
-					"I can't tell where you are. Is there a %s near you? Tap once for yes, twice for no."]) % thing
+				return _pick(tx.ask_feat) % tx.things[f]
 	if guess == "":
-		if picked_up:
-			return _pick(["I'm here. Where are you? Don't name the room. Tell me something you can see.",
-				"You're back. Tell me something you can see — not the room's name."])
-		return _pick(["I can't place you. Describe one thing near you. Not the room.",
-			"Where are you? Something small. Something only we'd know, if you can."])
+		return _pick(tx.pickup) if picked_up else _pick(tx.unknown)
 	var od := h.object_def(game.exit_obj)
-	var what: String = od.nick if od.has("nick") else "the " + od.name
-	var asks_which := low.contains("which") or low.contains("what") or low.contains("where is") or low.contains("?")
+	var what: String = h.obj_nick(game.exit_obj) if od.has("nick") else tx.the + h.obj_name(game.exit_obj)
+	var asks_which := low.contains("which") or low.contains("what") or low.contains("where is") or low.contains("?") or "ktery" in toks or "ktera" in toks or "co" in toks or "kde" in toks
 	if guess != game.exit_room:
 		var p: Array = h.path(guess, game.exit_room)
-		var dir := h.door_to(guess, p[0])
+		var dir := Loc.dir(h.door_to(guess, p[0]))
 		expect_next = p[0]
 		if p.size() == 1:
 			if not h.rooms[game.exit_room].phone or asks_which:
-				return _pick(["Take the %s door. No phone in there, so listen: it's %s.",
-					"Through the %s door. Then %s. Only that."]) % [dir, what]
-			return _pick(["Good. Take the %s door. It's in the next room.", "Almost. The %s door — it's right there."]) % dir
-		return _pick(["Okay. From there, take the %s door. Then call me again.",
-			"The %s door. Go. Call me from the next phone.",
-			"Take the %s door. Quietly."]) % dir
+				return _pick(tx.last_nophone) % [dir, what]
+			return _cap(_pick(tx.last) % dir)
+		return _cap(_pick(tx.step) % dir)
 	if od.has("nick"):
-		return _pick(["You're there. It's %s. You know what I mean.", "That's the room. %s. Remember?"]) % od.nick
-	return _pick(["You're in the right room. Check the %s.", "This is it. The %s. Go."]) % od.name
+		return _pick(tx.exit_nick) % h.obj_nick(game.exit_obj)
+	return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
+
+
+func _cap(t: String) -> String:
+	return t.left(1).to_upper() + t.substr(1)
 
 
 func _pick(options: Array) -> String:

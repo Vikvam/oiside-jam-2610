@@ -79,10 +79,10 @@ func _reset_candidates() -> void:
 			candidates[r] = true
 
 
-func _set_candidates(rs: Array, why: String, strong := true) -> void:
+func _set_candidates(rs: Array, why: String, strong := true, kind := "") -> void:
 	var before := candidates.size()
-	if why != "":
-		last_evidence = why
+	if kind != "":
+		last_evidence = kind
 	candidates.clear()
 	for r in rs:
 		candidates[r] = true
@@ -99,23 +99,23 @@ func _set_candidates(rs: Array, why: String, strong := true) -> void:
 		dirty = true
 
 
-func _intersect(rs: Array, why: String, strong := true) -> void:
+func _intersect(rs: Array, why: String, strong := true, kind := "") -> void:
 	var out := []
 	for r in rs:
 		if candidates.has(r):
 			out.append(r)
 	if out.is_empty():
 		out = rs  # contradiction: trust the newest evidence
-	_set_candidates(out, why, strong)
+	_set_candidates(out, why, strong, kind)
 
 
 func _cand_str() -> String:
 	var names := []
 	for r in candidates:
-		names.append(house.rooms[r].name)
+		names.append(house.room_name(r))
 	if names.size() >= house.room_ids.size() - 1:
-		return "could be anywhere"
-	return "maybe: " + ", ".join(names)
+		return Loc.t("m_anywhere")
+	return Loc.t("m_maybe", [", ".join(names)])
 
 
 func _expand() -> Array:
@@ -145,7 +145,7 @@ func on_player_step(dest: String, sneaking := false) -> void:
 				out.append(r)
 		if out.is_empty():
 			out = ring
-		_set_candidates(out, "Footsteps, %s" % ("right next door" if d <= 1 else "two rooms away"))
+		_set_candidates(out, Loc.t("m_steps1") if d <= 1 else Loc.t("m_steps2"), true, "steps")
 	else:
 		var near := house.rooms_within(room, 0 if (sneaking or state == S.MOVE) else 1)
 		var out := []
@@ -160,18 +160,18 @@ func on_player_step(dest: String, sneaking := false) -> void:
 
 
 func on_loud_noise(src: String, what: String) -> void:
-	_set_candidates([src], "A loud %s from the %s" % [what, house.rooms[src].name])
+	_set_candidates([src], Loc.t("m_crash", [house.room_name(src)]), true, "crash")
 
 
 func on_small_noise(src: String, what: String) -> void:
 	var d := house.distance(room, src)
 	if d <= 1 and not listening and state != S.MOVE:
-		_intersect(house.rooms_at(room, d), "A %s nearby" % what)
+		_intersect(house.rooms_at(room, d), Loc.t("m_click_near"), true, "steps")
 
 
 func on_line_noise(what: String) -> void:
 	if listening:
-		_intersect(house.phone_rooms(), "%s on the line. They're at a phone" % what, false)
+		_intersect(house.phone_rooms(), Loc.t("m_on_line", [Loc.t(what)]), false)
 
 
 func on_words(speaker: String, text: String) -> void:
@@ -181,21 +181,21 @@ func on_words(speaker: String, text: String) -> void:
 	for o in Words.objects_named(text, house, seen):
 		if o.room not in rooms:
 			rooms.append(o.room)
-		note("Heard '%s' — I know where that is: the %s" % [house.object_def(o.obj).name, house.rooms[o.room].name])
+		note(Loc.t("m_known_obj", [house.obj_name(o.obj), house.room_name(o.room)]))
 	var dirs := Words.directions(text)
 	if speaker == "player":
 		if not rooms.is_empty():
-			_intersect(rooms, "The prey mentioned it")
+			_intersect(rooms, Loc.t("m_prey_said"), true, "prey")
 		if not dirs.is_empty():
-			_shift(dirs, "The prey said '%s'" % ", ".join(dirs))
+			_shift(dirs, Loc.t("m_prey_dir", [", ".join(dirs.map(func(x): return Loc.t(x)))]), "prey")
 	else:
 		for r in rooms:
 			if not suspects.has(r) and not searched_thoroughly.has(r):
 				suspects[r] = true
 				dirty = true
-				note("The voice on the line pointed at the %s. Interesting." % house.rooms[r].name)
+				note(Loc.t("m_pointed", [house.room_name(r)]))
 		if not dirs.is_empty():
-			_shift(dirs, "The voice said '%s'" % ", ".join(dirs))
+			_shift(dirs, Loc.t("m_voice_dir", [", ".join(dirs.map(func(x): return Loc.t(x)))]), "voice")
 	# Feature words the player says about their own room narrow things too.
 	if speaker == "player":
 		var feats := Words.features_named(text)
@@ -209,12 +209,12 @@ func on_words(speaker: String, text: String) -> void:
 				if ok:
 					out.append(r)
 			if not out.is_empty() and out.size() < candidates.size():
-				_set_candidates(out, "They talked about a %s" % ", ".join(feats))
+				_set_candidates(out, Loc.t("m_talked_feat", [", ".join(feats.map(func(f): return Loc.feature(f)))]), true, "prey")
 
 
-func _shift(dirs: Array, why: String) -> void:
+func _shift(dirs: Array, why: String, kind := "") -> void:
 	if candidates.size() > 4:
-		note(why + " — useless while I don't know where they are.")
+		note(Loc.t("m_useless", [why]))
 		return
 	var cur: Array = candidates.keys()
 	for d in dirs:
@@ -226,7 +226,7 @@ func _shift(dirs: Array, why: String) -> void:
 		if nxt.is_empty():
 			break
 		cur = nxt
-	_set_candidates(cur, why)
+	_set_candidates(cur, why, true, kind)
 
 
 func _hear_background() -> void:
@@ -254,15 +254,15 @@ func _hear_background() -> void:
 			expect.sort()
 			if expect == bg:
 				ex.append(r)
-	var label := "silence" if bg.is_empty() else ", ".join(bg.map(func(f): return House.FEATURE_LABEL[f]))
+	var label := Loc.t("m_silence") if bg.is_empty() else ", ".join(bg.map(func(f): return Loc.feature(f)))
 	if out.is_empty():
-		_intersect(house.phone_rooms(), "Heard %s behind them. Doesn't fit anything I know" % label)
+		_intersect(house.phone_rooms(), Loc.t("m_bg_weird", [label]))
 		return
 	var narrowed := 0
 	for r in out:
 		if candidates.has(r):
 			narrowed += 1
-	_intersect(out, "Heard %s behind their voice" % label, narrowed <= 3)
+	_intersect(out, Loc.t("m_heard_bg", [label]), narrowed <= 3, bg[0] if bg.size() > 0 else "")
 	exact.clear()
 	for r in ex:
 		if candidates.has(r):
@@ -308,10 +308,10 @@ func tick(dt: float) -> void:
 				suspects.erase(room)
 				if room == game.exit_room:
 					exit_known = room
-					note("Found it. A hidden way out in the %s. Nobody leaves." % house.rooms[room].name)
+					note(Loc.t("m_found_exit", [house.room_in(room)]))
 					game.emit("murderer_found_exit", {"room": room})
 				else:
-					note("Nothing hidden in the %s." % house.rooms[room].name)
+					note(Loc.t("m_no_exit", [house.room_in(room)]))
 				state = S.THINK
 				timer = 0.5
 		S.GUARD:
@@ -326,7 +326,7 @@ func tick(dt: float) -> void:
 			if timer <= 0.0:
 				timer = 1.0
 				if candidates.size() == 1 and game.time - lead_time < 8.0 and not candidates.has(room):
-					note("A fresh lead. I'll leave the exit for a moment.")
+					note(Loc.t("m_fresh"))
 					_stop_listening()
 					_decide()
 
@@ -370,12 +370,12 @@ func _decide() -> void:
 	if candidates.size() <= hunt_threshold:
 		var pool: Array = exact.keys() if not exact.is_empty() else candidates.keys()
 		var t := _nearest(pool)
-		note("Going for the %s." % house.rooms[t].name)
+		note(Loc.t("m_going", [house.room_to(t)]))
 		_go(t, "hunt")
 		return
 	if not suspects.is_empty():
 		var t := _nearest(suspects.keys())
-		note("Let's see what's so special about the %s." % house.rooms[t].name)
+		note(Loc.t("m_special", [house.room_name(t)]))
 		_go(t, "suspect")
 		return
 	# Listened and learned nothing? Go and look around instead.
@@ -388,7 +388,7 @@ func _decide() -> void:
 		if not pool.is_empty():
 			var unseen := pool.filter(func(r): return not seen.has(r))
 			var t: String = (unseen if not unseen.is_empty() else pool).pick_random()
-			note("Nothing on the line. I'll go look in the %s." % house.rooms[t].name)
+			note(Loc.t("m_sweep", [house.room_in(t)]))
 			_go(t, "sweep")
 			return
 	just_listened = false
@@ -423,13 +423,13 @@ func _enter(r: String) -> void:
 		for k in snap:
 			if snap[k] != expected.get(k):
 				what.append(k)
-		_intersect(house.rooms_within(r, 2), "Someone touched the %s in the %s. They were here" % [", ".join(what), house.rooms[r].name])
+		_intersect(house.rooms_within(r, 2), Loc.t("m_touched", [", ".join(what.map(func(k): return Loc.t("k_" + k))), house.room_in(r)]), true, "touched")
 	memory[r] = snap
 	if first:
 		var names := []
 		for o in house.rooms[r].objects:
-			names.append(o.name)
-		note("Searched the %s: %s." % [house.rooms[r].name, ", ".join(names)])
+			names.append(house.obj_name(o.id))
+		note(Loc.t("m_searched", [house.room_name(r), ", ".join(names)]))
 
 
 func _arrive() -> void:
@@ -481,24 +481,18 @@ func _start_listen() -> void:
 
 
 func _taunt() -> String:
-	var e := last_evidence.to_lower()
-	if e.contains("clock"):
-		return ["Tick. Tock.", "Lovely clock you've got there."].pick_random()
-	if e.contains("fan"):
-		return "Such a noisy fan."
-	if e.contains("rain"):
-		return "Hear that rain? So do I."
-	if e.contains("radiator"):
-		return "Old pipes. They always give you away."
-	if e.contains("voice said"):
-		return "Thank you, sweetheart. Very helpful."
-	if e.contains("prey"):
-		return "You talk too much."
-	if e.contains("footsteps"):
-		return "Creaky floors in this house."
-	if e.contains("touched"):
-		return "You should leave things as you found them."
-	return ["Stay right there.", "I'm coming."].pick_random()
+	match last_evidence:
+		"clock", "fan", "rain", "radiator":
+			return Loc.t("m_t_" + last_evidence)
+		"voice":
+			return Loc.t("m_t_voice")
+		"prey":
+			return Loc.t("m_t_prey")
+		"steps":
+			return Loc.t("m_t_steps")
+		"touched":
+			return Loc.t("m_t_touched")
+	return Loc.t("m_t_any")
 
 
 func _tick_listen_ears(dt: float) -> void:
@@ -529,7 +523,7 @@ func _tick_listen(dt: float) -> void:
 			state = S.FAKE_HANGUP
 			on_line = true  # his room's background is still on the line: the tell
 			timer = randf_range(5.0, 8.0)
-			note("Pretended to hang up. Still listening.")
+			note(Loc.t("m_fake"))
 			game.on_murderer_fake_hangup()
 		else:
 			listening = false

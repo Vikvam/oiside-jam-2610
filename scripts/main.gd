@@ -1,12 +1,20 @@
 extends Node
 ## Builds the whole UI in code, runs the game loop, switches styles.
 
-const INTRO := [
-	"It's me. Don't say my name. Listen.",
-	"There's a way out of the house. He doesn't know about it. I'll get you there.",
-	"But every phone in that house is on one line. If he picks up an extension, he hears every word.",
-	"So don't tell me where you are. Not straight out. One tap means yes, two taps mean no.",
-]
+const INTRO := {
+	"en": [
+		"It's me. Don't say my name. Listen.",
+		"There's a way out of the house. He doesn't know about it. I'll get you there.",
+		"But every phone in that house is on one line. If he picks up an extension, he hears every word.",
+		"So don't tell me where you are. Not straight out. One tap means yes, two taps mean no.",
+	],
+	"cs": [
+		"To jsem já. Neříkej moje jméno. Poslouchej.",
+		"Z domu vede cesta ven. On o ní neví. Dostanu tě tam.",
+		"Ale všechny telefony v tom domě jsou na jedné lince. Když zvedne jiný telefon, slyší každé slovo.",
+		"Tak mi neříkej, kde jsi. Ne přímo. Jedno ťuknutí je ano, dvě jsou ne.",
+	],
+}
 
 var game: Game
 var sfx: Sfx
@@ -20,6 +28,7 @@ var title_layer: CanvasLayer
 var over_layer: CanvasLayer
 var over_text: RichTextLabel
 var over_panel: PanelContainer
+var header_label: Label
 var pause_layer: CanvasLayer
 var paused := false
 var backend := "mock"
@@ -72,6 +81,8 @@ func _dev_args() -> void:
 		seed(int(a.seed))
 	if a.has("backend"):
 		backend = a.backend
+	if a.has("lang"):
+		_set_lang(a.lang)
 	if a.has("play"):
 		_start_game()
 		if a.has("debug"):
@@ -111,6 +122,7 @@ func _load_settings() -> void:
 	Style.current = _settings.get_value("ui", "style", "blueprint")
 	backend = _settings.get_value("ui", "backend", "mock")
 	difficulty = _settings.get_value("ui", "difficulty", "normal")
+	Loc.lang = _settings.get_value("ui", "lang", "en")
 	explore_mode = _settings.get_value("ui", "explore", false)
 	hints_on = _settings.get_value("ui", "hints", true)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
@@ -124,6 +136,7 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "style", Style.current)
 	_settings.set_value("ui", "backend", backend)
 	_settings.set_value("ui", "difficulty", difficulty)
+	_settings.set_value("ui", "lang", Loc.lang)
 	_settings.set_value("ui", "explore", explore_mode)
 	_settings.set_value("ui", "hints", hints_on)
 	_settings.save("user://settings.cfg")
@@ -149,8 +162,8 @@ func _build_game_ui() -> void:
 	left.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	h.add_child(left)
 	var header := Label.new()
-	header.name = "Header"
-	header.text = "I WON'T TELL YOU  ·  to ti neřeknu"
+	header.text = Loc.t("header")
+	header_label = header
 	left.add_child(header)
 	plan = PlanView.new()
 	plan.room_clicked.connect(_on_room_clicked)
@@ -208,34 +221,25 @@ func _build_title() -> void:
 	var v := _panel_box(title_layer, Vector2(720, 0))
 	var t := Label.new()
 	t.name = "Title"
-	t.text = "I WON'T TELL YOU"
+	t.text = Loc.t("title")
 	t.add_theme_font_size_override("font_size", 40)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
 	var sub := Label.new()
-	sub.text = "„To ti neřeknu, protože nás odposlouchává.“"
+	sub.text = Loc.t("title_quote")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(sub)
 	var body := RichTextLabel.new()
 	body.bbcode_enabled = true
 	body.fit_content = true
 	body.custom_minimum_size = Vector2(660, 0)
-	body.text = (
-		"You are hiding in an old house with a murderer. You found a wired phone and called someone who grew up here — "
-		+ "she knows a [b]secret way out[/b].\n\n"
-		+ "But every room's phone is on [b]the same line[/b], and he can pick up any extension and listen. "
-		+ "He knows the layout and the room names. He only knows what's [i]inside[/i] rooms he has already searched. "
-		+ "He can hear the clock, the fan, the rain behind your voice.\n\n"
-		+ "[b]Talk carefully. Lie if you must.[/b] Click a neighbouring room to walk (shift: sneak). "
-		+ "Search objects to find the hidden exit — three tries, and wrong ones are loud.\n\n"
-		+ "[color=#888888]F2: switch look · F3: show the murderer (cheat) · F4: show her guess · F11: fullscreen[/color]"
-	)
+	body.text = Loc.t("title_body")
 	v.add_child(body)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
 	var lab := Label.new()
-	lab.text = "Look:"
+	lab.text = Loc.t("look")
 	row.add_child(lab)
 	for st in Style.ORDER:
 		var b := Button.new()
@@ -252,9 +256,9 @@ func _build_title() -> void:
 	row2.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row2)
 	var lab2 := Label.new()
-	lab2.text = "Her voice:"
+	lab2.text = Loc.t("her_voice")
 	row2.add_child(lab2)
-	for be in [["mock", "Scripted (offline)"], ["proxy", "Claude Haiku (local proxy)"], ["api", "API endpoint"]]:
+	for be in [["mock", Loc.t("be_mock")], ["proxy", Loc.t("be_proxy")], ["api", Loc.t("be_api")]]:
 		var b := Button.new()
 		b.text = be[1]
 		b.toggle_mode = true
@@ -267,9 +271,9 @@ func _build_title() -> void:
 	row3.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row3)
 	var lab3 := Label.new()
-	lab3.text = "He is:"
+	lab3.text = Loc.t("he_is")
 	row3.add_child(lab3)
-	for df in [["gentle", "slow-witted"], ["normal", "patient"], ["hard", "sharp-eared"]]:
+	for df in [["gentle", Loc.t("diff_gentle")], ["normal", Loc.t("diff_normal")], ["hard", Loc.t("diff_hard")]]:
 		var b := Button.new()
 		b.text = df[1]
 		b.toggle_mode = true
@@ -282,9 +286,9 @@ func _build_title() -> void:
 	row4.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row4)
 	var lab4 := Label.new()
-	lab4.text = "Plan:"
+	lab4.text = Loc.t("plan")
 	row4.add_child(lab4)
-	for pm in [[false, "all room sounds known"], [true, "learn sounds by exploring"]]:
+	for pm in [[false, Loc.t("plan_full")], [true, Loc.t("plan_explore")]]:
 		var b := Button.new()
 		b.text = pm[1]
 		b.toggle_mode = true
@@ -295,17 +299,46 @@ func _build_title() -> void:
 		row4.add_child(b)
 	var hb := CheckButton.new()
 	hb.name = "hints_toggle"
-	hb.text = "hints"
+	hb.text = Loc.t("hints")
 	hb.button_pressed = hints_on
 	hb.toggled.connect(func(v): hints_on = v)
 	row4.add_child(hb)
+	var row5 := HBoxContainer.new()
+	row5.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(row5)
+	var lab5 := Label.new()
+	lab5.text = Loc.t("lang")
+	row5.add_child(lab5)
+	for lg in [["en", "English"], ["cs", "Čeština"]]:
+		var b := Button.new()
+		b.text = lg[1]
+		b.toggle_mode = true
+		b.button_pressed = Loc.lang == lg[0]
+		b.pressed.connect(func(): _set_lang(lg[0]))
+		row5.add_child(b)
 	var start := Button.new()
-	start.text = "Pick up the phone"
+	start.text = Loc.t("start")
 	start.custom_minimum_size = Vector2(260, 44)
 	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start.pressed.connect(_start_game)
 	v.add_child(start)
 	_refresh_title_buttons()
+
+
+func _set_lang(lg: String) -> void:
+	Loc.lang = lg
+	_save_settings()
+	# Rebuild the menus in the new language.
+	for layer in [title_layer, over_layer, pause_layer]:
+		remove_child(layer)
+		layer.queue_free()
+	over_panel = null
+	_build_title()
+	_build_over()
+	_build_pause()
+	header_label.text = Loc.t("header")
+	_apply_style()
+	_show_title()
 
 
 func _refresh_title_buttons() -> void:
@@ -352,11 +385,11 @@ func _build_over() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row)
 	var again := Button.new()
-	again.text = "Call again"
+	again.text = Loc.t("again")
 	again.pressed.connect(_start_game)
 	row.add_child(again)
 	var menu := Button.new()
-	menu.text = "Title"
+	menu.text = Loc.t("to_title")
 	menu.pressed.connect(_show_title)
 	row.add_child(menu)
 
@@ -372,17 +405,17 @@ func _build_pause() -> void:
 	pause_layer.add_child(dim)
 	var v := _panel_box(pause_layer, Vector2(360, 0))
 	var l := Label.new()
-	l.text = "ON HOLD"
+	l.text = Loc.t("hold")
 	l.add_theme_font_size_override("font_size", 28)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(l)
 	var hint := Label.new()
-	hint.text = "(he's on hold too)"
+	hint.text = Loc.t("hold_sub")
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(hint)
-	for b in [["Resume", func(): _set_paused(false)], ["Next look (F2)", func():
+	for b in [[Loc.t("resume"), func(): _set_paused(false)], [Loc.t("next_look"), func():
 			Style.next_style()
-			_apply_style()], ["Quit to title", func():
+			_apply_style()], [Loc.t("quit_title"), func():
 			_set_paused(false)
 			_show_title()]]:
 		var btn := Button.new()
@@ -522,15 +555,15 @@ func _start_game() -> void:
 	over_layer.visible = false
 	running = true
 	var r: Dictionary = game.house.rooms[game.player_room]
-	phone.add_line("narr", "You are crouched by the phone in the %s, receiver pressed to your ear. Somewhere in the house, someone is walking." % r.name)
+	phone.add_line("narr", Loc.t("start_narr", [game.house.room_in(game.player_room)]))
 	for o in r.objects:
 		if o.has("memory"):
-			phone.add_line("memory", o.memory)
-	phone.hint("start", "Her guess of where you are shows as a dashed box. The icons in each room are the sounds it makes: clock, fan, window (rain), radiator; the handset = a phone.")
-	_intro_queue = INTRO.duplicate()
+			phone.add_line("memory", game.house.obj_memory(o.id))
+	phone.hint("start")
+	_intro_queue = INTRO[Loc.lang].duplicate()
 	_intro_t = 1.0
 	if backend != "mock":
-		phone.add_line("sound", "her voice: %s" % ("Claude Haiku via local proxy" if backend == "proxy" else "API endpoint"))
+		phone.add_line("sound", Loc.t("her_voice_line", [Loc.t("be_" + backend)]))
 
 
 func _on_game_event(t: String, d: Dictionary) -> void:
@@ -551,22 +584,15 @@ func _show_over() -> void:
 	var dc: String = (Style.c("danger") as Color).to_html(false)
 	var ac: String = (Style.c("accent") as Color).to_html(false)
 	var dm: String = (Style.c("dim") as Color).to_html(false)
-	var t := ""
-	var heads := {
-		"escaped": "[color=#%s][font_size=34]YOU GOT OUT.[/font_size][/color]" % ac,
-		"caught": "[color=#%s][font_size=34]HE FOUND YOU.[/font_size][/color]" % dc,
-		"walked_in": "[color=#%s][font_size=34]YOU WALKED RIGHT INTO HIM.[/font_size][/color]" % dc,
-		"noise": "[color=#%s][font_size=34]TOO MUCH NOISE.[/font_size][/color]" % dc,
-	}
-	t += heads.get(g.end_reason, g.end_reason) + "\n"
-	var od := h.object_def(g.exit_obj)
-	t += "The way out was the [b]%s[/b] in the [b]%s[/b] — %s.\n" % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, "")]
-	t += "[color=#%s]%d:%02d on the line.[/color]\n\n" % [dm, int(g.time) / 60, int(g.time) % 60]
-	t += "[b]HIS NOTEBOOK[/b] — what he heard, and what he made of it:\n"
+	var col := ac if g.won else dc
+	var t := "[color=#%s][font_size=34]%s[/font_size][/color]\n" % [col, Loc.t("end_" + g.end_reason)]
+	t += Loc.t("end_way", [h.obj_name(g.exit_obj), h.room_name(g.exit_room), h.exit_flavor(g.exit_obj)]) + "\n"
+	t += "[color=#%s]%s[/color]\n\n" % [dm, Loc.t("end_time", [int(g.time) / 60, int(g.time) % 60])]
+	t += Loc.t("notebook") + "\n"
 	for e in g.murderer.log:
 		t += "[color=#%s]%d:%02d[/color]  %s\n" % [dm, int(e.t) / 60, int(e.t) % 60, str(e.text).replace("[", "[lb]")]
 	if g.murderer.log.is_empty():
-		t += "[i]…he never heard a thing.[/i]\n"
+		t += Loc.t("notebook_empty") + "\n"
 	over_text.text = t
 	over_layer.visible = true
 
@@ -605,7 +631,7 @@ func _process(dt: float) -> void:
 			phone.add_line("her", line, false)
 			_intro_t = 0.6
 			if _intro_queue.is_empty():
-				phone.hint("first", "Type to whisper. Tell her something about your room he hasn't seen yet — an object, a memory — and ask the way.")
+				phone.hint("first")
 	game.tick(dt)
 	if autobot != null and not game.over:
 		autobot.tick(dt)

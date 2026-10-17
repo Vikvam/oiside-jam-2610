@@ -107,47 +107,47 @@ func rebuild() -> void:
 	var h := game.house
 	var r: Dictionary = h.rooms[game.player_room]
 	var ok := game.can_act()
-	title.text = "%s   ·   hidden-exit tries left: %s" % [r.name.to_upper(), "● ".repeat(game.attempts_left) + "○ ".repeat(3 - game.attempts_left)]
+	title.text = Loc.t("tries", [h.room_name(game.player_room).to_upper(), "● ".repeat(game.attempts_left) + "○ ".repeat(3 - game.attempts_left)])
 	if game.moving_to != "":
-		title.text = "…walking to the %s" % h.rooms[game.moving_to].name
-	_small(objects_box, "Search:")
+		title.text = Loc.t("walking_to", [h.room_to(game.moving_to)])
+	_small(objects_box, Loc.t("search"))
 	for o in r.objects:
-		var label: String = o.name
+		var label: String = h.obj_name(o.id)
 		if game.tried.has(o.id):
 			label += " ✗"
 		if armed == o.id:
-			label = "really? (loud if wrong)"
+			label = Loc.t("really")
 		var b := _btn(objects_box, label, func(): _search(o.id), ok and not game.tried.has(o.id))
-		b.tooltip_text = o.desc + "\n\nClick: try to open a hidden exit here.\nA wrong guess makes a LOUD noise."
-	_small(actions_box, "Sounds:")
+		b.tooltip_text = Loc.t("obj_tip", [h.obj_desc(o.id)])
+	_small(actions_box, Loc.t("sounds"))
 	var s: Dictionary = game.room_state[game.player_room]
 	var any := false
 	if h.has_feature(game.player_room, "clock"):
-		_btn(actions_box, "Stop the clock" if s.clock else "Wind the clock", func(): game.toggle_feature("clock"), ok)
+		_btn(actions_box, Loc.t("clock_stop_b") if s.clock else Loc.t("clock_wind_b"), func(): game.toggle_feature("clock"), ok)
 		any = true
 	if h.has_feature(game.player_room, "fan"):
-		_btn(actions_box, "Switch off fan" if s.fan else "Switch on fan", func(): game.toggle_feature("fan"), ok)
+		_btn(actions_box, Loc.t("fan_off_b") if s.fan else Loc.t("fan_on_b"), func(): game.toggle_feature("fan"), ok)
 		any = true
 	if h.has_feature(game.player_room, "rain"):
-		_btn(actions_box, "Close window" if s.window else "Open window", func(): game.toggle_feature("rain"), ok)
+		_btn(actions_box, Loc.t("win_close_b") if s.window else Loc.t("win_open_b"), func(): game.toggle_feature("rain"), ok)
 		any = true
 	if h.has_feature(game.player_room, "radiator"):
-		_small(actions_box, "· radiator: %s" % ("clanking (heating on)" if game.heating else "quiet (heating off)"))
+		_small(actions_box, Loc.t("radiator_on") if game.heating else Loc.t("radiator_off"))
 	if not any and not h.has_feature(game.player_room, "radiator"):
-		_small(actions_box, "· nothing here makes a sound")
-	_small(doors_box, "Doors:")
+		_small(actions_box, Loc.t("silent_room"))
+	_small(doors_box, Loc.t("doors"))
 	for dir in House.DIRS:
 		var to := h.step(game.player_room, dir)
 		if to != "":
-			_btn(doors_box, "%s → %s" % [dir.capitalize(), h.rooms[to].name], func():
+			_btn(doors_box, "%s → %s" % [Loc.t(dir.capitalize()), h.room_name(to)], func():
 				move_requested.emit(to, sneak), ok)
 	if game.hidden:
-		_btn(doors_box, "(hidden — any action reveals you)", func(): pass, false)
+		_btn(doors_box, Loc.t("hidden_btn"), func(): pass, false)
 	else:
-		var hb := _btn(doors_box, "Hide", func(): game.hide(), ok)
-		hb.tooltip_text = "Hide in here (hangs up). If he only passes through, he probably won't find you.\nIf he came for this room, he probably will."
+		var hb := _btn(doors_box, Loc.t("hide"), func(): game.hide(), ok)
+		hb.tooltip_text = Loc.t("hide_tip")
 	sneak_toggle = CheckButton.new()
-	sneak_toggle.text = "sneak (slow, quiet)"
+	sneak_toggle.text = Loc.t("sneak")
 	sneak_toggle.focus_mode = Control.FOCUS_NONE
 	sneak_toggle.button_pressed = sneak
 	sneak_toggle.toggled.connect(func(v): sneak = v)

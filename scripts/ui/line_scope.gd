@@ -114,4 +114,4 @@ func _draw() -> void:
 	draw_polyline(b, Color(Style.c("danger"), 0.9), 1.5, true)
 	draw_polyline(a, Style.c("her"), 1.5, true)
 	var font := get_theme_default_font()
-	draw_string(font, Vector2(6, 13), "LINE", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.c("dim"))
+	draw_string(font, Vector2(6, 13), Loc.t("line"), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Style.c("dim"))

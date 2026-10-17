@@ -132,11 +132,17 @@ static func build_system(g) -> String:
 			if to != "":
 				doors.append("%s door → %s" % [d, h.rooms[to].name])
 		var feats: Array = r.features.map(func(f): return House.FEATURE_LABEL[f])
-		s += "- %s (id: %s). %s. Sounds: %s. Doors: %s.\n" % [r.name, rid, "Has a phone" if r.phone else "NO phone", ", ".join(feats) if not feats.is_empty() else "none", "; ".join(doors)]
+		var cs_name := " / Czech: %s" % House.CS_ROOMS[rid][0] if Loc.lang == "cs" else ""
+		s += "- %s%s (id: %s). %s. Sounds: %s. Doors: %s.\n" % [r.name, cs_name, rid, "Has a phone" if r.phone else "NO phone", ", ".join(feats) if not feats.is_empty() else "none", "; ".join(doors)]
 		for o in r.objects:
 			var line := "    · %s" % o.name
+			if Loc.lang == "cs":
+				line += " (Czech: %s)" % House.CS_OBJECTS[o.id][0]
 			if o.has("nick"):
-				line += " — childhood nickname \"%s\" (%s)" % [o.nick, o.memory]
+				if Loc.lang == "cs":
+					line += " — childhood nickname \"%s\" (%s)" % [House.CS_OBJECTS[o.id][3], House.CS_OBJECTS[o.id][4]]
+				else:
+					line += " — childhood nickname \"%s\" (%s)" % [o.nick, o.memory]
 			s += line + "\n"
 	var od := h.object_def(g.exit_obj)
 	s += "\nTHE WAY OUT: the %s in the %s — %s. The player must stand in that room and search that exact object. " % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, "")]
@@ -159,6 +165,9 @@ static func build_system(g) -> String:
 	s += "Prefer nicknames, yes/no questions the player can answer with taps, and compass directions from where you think they are. "
 	s += "Avoid saying room names or object names when he might be listening. Ask before you guide if you are unsure where they are. "
 	s += "It is fine to stay silent (empty say) if speaking now is too dangerous.\n\n"
+	if Loc.lang == "cs":
+		s += "LANGUAGE: the player speaks Czech. Whisper in natural, informal Czech (tykání). Use the Czech room and object names and the Czech nicknames. "
+		s += "Directions in Czech: severními / východními / jižními / západními dveřmi. Note: in Czech 'východ' means both 'east' and 'exit' — avoid the ambiguity.\n\n"
 	s += "OUTPUT FORMAT (JSON only, no prose around it):\n"
 	s += "{\"thinking\": \"one short private sentence\", \"say\": \"what you whisper\", \"guess_room\": \"room id where you think the player is, or empty\"}\n"
 	return s

@@ -225,7 +225,7 @@ func _draw() -> void:
 		var name_col: Color = Style.c("text") if game.visited.has(id) else dim
 		if id == game.player_room:
 			name_col = Style.c("accent")
-		draw_string(font, rc.position + Vector2(10, 22), h.rooms[id].name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, name_col)
+		draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, 14, name_col)
 		if not explore_mode or game.visited.has(id) or game.over:
 			_draw_icons(id, rc)
 		else:
@@ -233,7 +233,7 @@ func _draw() -> void:
 		if game.visited.has(id):
 			var y := rc.position.y + 40.0
 			for o in h.rooms[id].objects:
-				var txt: String = o.nick if o.has("nick") else o.name
+				var txt: String = h.obj_nick(o.id) if o.has("nick") else h.obj_name(o.id)
 				var oc: Color = Style.c("dim")
 				if game.tried.has(o.id):
 					txt = "✗ " + txt
@@ -267,7 +267,7 @@ func _draw() -> void:
 		draw_line(mp - Vector2(8, -8), mp + Vector2(8, -8), dc, 3.0)
 		draw_string(font, mp + Vector2(12, 5), Murderer.S.keys()[game.murderer.state], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, dc)
 		var er := _c(game.exit_room) + Vector2(-30, 26)
-		draw_string(font, er, "EXIT", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
+		draw_string(font, er, Loc.t("exit"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
 	# Player
 	var pp := _c(game.player_room) + Vector2(0, 16)
 	if game.moving_to != "":
@@ -287,7 +287,7 @@ func _draw() -> void:
 	# Hover hint
 	if hover != "" and hover in reachable:
 		var hr := _rect(hover)
-		draw_string(font, hr.position + Vector2(10, hr.size.y - 34), "walk · shift: sneak", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
+		draw_string(font, hr.position + Vector2(10, hr.size.y - 34), Loc.t("walk_hint"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
 
 
 func _draw_reveal(font: Font) -> void:
@@ -311,7 +311,7 @@ func _draw_reveal(font: Font) -> void:
 		var mp := pts[shown - 1]
 		draw_line(mp - Vector2(9, 9), mp + Vector2(9, 9), dc, 3.0)
 		draw_line(mp - Vector2(9, -9), mp + Vector2(9, -9), dc, 3.0)
-		draw_string(font, mp + Vector2(12, 4), "HIM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, dc)
+		draw_string(font, mp + Vector2(12, 4), Loc.t("him"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, dc)
 	# The exit
 	var ec := _c(game.exit_room) + Vector2(-34, -20)
 	var ac: Color = Style.c("accent")
@@ -321,7 +321,7 @@ func _draw_reveal(font: Font) -> void:
 		var rr := 10.0 if i % 2 == 0 else 4.5
 		star.append(ec + Vector2(cos(ang), sin(ang)) * rr)
 	draw_colored_polygon(star, ac)
-	draw_string(font, ec + Vector2(14, 5), game.house.object_def(game.exit_obj).name, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, ac)
+	draw_string(font, ec + Vector2(14, 5), game.house.obj_name(game.exit_obj), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, ac)
 
 
 func _dashed_rect(r: Rect2, col: Color) -> void:

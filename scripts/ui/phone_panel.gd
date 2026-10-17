@@ -12,6 +12,7 @@ var thinking: Label
 var input: LineEdit
 var tap_btn: Button
 var hook_btn: Button
+var tap_hint: Label
 var lines: Array = []        # {kind, text, shown}
 var reveal_speed := 30.0     # chars per second for her voice
 var _acc := 0.0
@@ -58,12 +59,11 @@ func _ready() -> void:
 	hook_btn.focus_mode = Control.FOCUS_NONE
 	hook_btn.pressed.connect(_toggle_hook)
 	row.add_child(hook_btn)
-	var hint := Label.new()
-	hint.text = "1 tap = yes · 2 taps = no"
-	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	hint.add_theme_font_size_override("font_size", 12)
-	row.add_child(hint)
+	tap_hint = Label.new()
+	tap_hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tap_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	tap_hint.add_theme_font_size_override("font_size", 12)
+	row.add_child(tap_hint)
 
 
 func bind(g: Game) -> void:
@@ -79,10 +79,10 @@ func add_line(kind: String, text: String, instant := true) -> void:
 	_dirty = true
 
 
-func hint(key: String, text: String) -> void:
+func hint(key: String) -> void:
 	if hints and not _hinted.has(key):
 		_hinted[key] = true
-		add_line("hint", "» " + text)
+		add_line("hint", "» " + Loc.t("h_" + key))
 
 
 func _toggle_hook() -> void:
@@ -111,92 +111,88 @@ func _unhandled_key_input(e: InputEvent) -> void:
 
 
 func _on_event(t: String, d: Dictionary) -> void:
+	var h: House = game.house
 	match t:
 		"player_says":
 			add_line("you", d.text)
 		"player_tap":
-			add_line("sound", "tap")
+			add_line("sound", Loc.t("tap"))
 		"rescuer_says":
 			if game.player_on_line():
 				add_line("her", d.text, false)
 			else:
-				add_line("sound", "her voice buzzes from the receiver on the hook — you can't make it out")
+				add_line("sound", Loc.t("her_missed"))
 		"murderer_says":
 			add_line("him", d.text, false)
-			hint("taunt", "He's sure where you are. Move. Now.")
+			hint("taunt")
 		"rescuer_thinking":
 			_is_thinking = d.on
 		"line_click":
-			add_line("danger", d.text)
+			add_line("danger", Loc.t("click_" + d.kind))
 			if d.kind == "pickup":
-				hint("click", "That's him on another extension. He hears every word — and the sounds of your room. Hang up, go quiet, or lie.")
+				hint("click")
 		"line_breath":
-			add_line("danger", "…slow breathing on the line. Not yours.")
+			add_line("danger", Loc.t("breath_line"))
 		"line_quiet_presence":
-			add_line("danger", "The line sounds… open. As if someone is already listening.")
+			add_line("danger", Loc.t("open_line"))
 		"line_background":
-			hint("bg", "Those are the sounds of HIS room. Check the plan icons: which phone room sounds like that?")
-			var labels: Array = d.features.map(func(f): return House.FEATURE_LABEL[f])
+			hint("bg")
+			var labels: Array = d.features.map(func(f): return Loc.feature(f))
 			if labels.is_empty():
-				add_line("danger", "Behind the other extension: dead silence.")
+				add_line("danger", Loc.t("his_silence"))
 			else:
-				add_line("danger", "Faintly, through the receiver: %s. Not from your room." % ", ".join(labels))
+				add_line("danger", Loc.t("his_sounds", [", ".join(labels)]))
 		"receiver":
-			add_line("sound", "you pick up the receiver" if d.up else "you hang up")
+			add_line("sound", Loc.t("pickup_me") if d.up else Loc.t("hangup_me"))
 		"footsteps":
-			hint("steps", "Footsteps come with a direction. Move away — or Hide. Walking makes noise too (sneak is quieter).")
-			var kind := "Running footsteps" if d.running else "Heavy footsteps"
+			hint("steps")
+			var kind := Loc.t("steps_run") if d.running else Loc.t("steps_heavy")
+			var dr := Loc.dir(d.dir)
 			if d.get("leaving", false):
-				add_line("danger", "A door creaks %s beyond the %s door. %s — moving." % ["right" if d.dist == 1 else "somewhere", d.dir, kind])
+				add_line("danger", Loc.t("steps_leave", [Loc.t("steps_right") if d.dist == 1 else Loc.t("steps_some"), dr, kind]))
 			elif d.dist == 1:
-				add_line("danger", "%s — right behind the %s door!" % [kind, d.dir])
+				add_line("danger", Loc.t("steps_1", [kind, dr]))
 			elif d.dist == 2:
-				add_line("danger", "%s, two rooms away — beyond the %s door." % [kind, d.dir])
+				add_line("danger", Loc.t("steps_2", [kind, dr]))
 			else:
-				add_line("danger", "%s, far off, somewhere past the %s door. Coming closer?" % [kind, d.dir])
+				add_line("danger", Loc.t("steps_3", [kind, dr]))
 		"player_arrive":
-			var r: Dictionary = game.house.rooms[d.room]
-			add_line("narr", "You slip into the %s.%s" % [r.name, "" if r.phone else " There is no phone here."])
+			var r: Dictionary = h.rooms[d.room]
+			add_line("narr", Loc.t("slip_in", [h.room_to(d.room)]) + ("" if r.phone else Loc.t("no_phone_here")))
 			if r.phone and not game.receiver_up:
-				hint("pickup", "There's a phone here. Pick up (Ctrl+H) to talk to her again — but first think about what this room sounds like.")
+				hint("pickup")
 			if d.first:
 				for o in r.objects:
 					if o.has("memory"):
-						add_line("memory", o.memory)
+						add_line("memory", h.obj_memory(o.id))
 		"feature_toggled":
-			var what := {"clock": ["The clock stops.", "The clock ticks again."], "fan": ["The fan whirs down.", "The fan hums back to life."], "window": ["The window shuts. The rain goes muffled.", "The window creaks open."]}
-			add_line("narr", what[d.feature][1 if d.on else 0])
+			var what := {"clock": ["clock_stop", "clock_go"], "fan": ["fan_off", "fan_on"], "window": ["win_shut", "win_open"]}
+			add_line("narr", Loc.t(what[d.feature][1 if d.on else 0]))
 		"weather":
-			add_line("narr", "The rain picks up again." if d.raining else "The rain stops. Suddenly everything is quieter.")
+			add_line("narr", Loc.t("rain_on") if d.raining else Loc.t("rain_off"))
 		"heating":
-			if game.house.has_feature(game.player_room, "radiator"):
-				add_line("narr", "The radiator starts knocking — the heating came on." if d.on else "The radiator goes quiet.")
+			if h.has_feature(game.player_room, "radiator"):
+				add_line("narr", Loc.t("heat_on") if d.on else Loc.t("heat_off"))
 		"clock_strike":
-			if game.room_state[game.player_room].clock:
-				add_line("narr", "The clock in this room strikes. Loud. Every clock in the house joins in.")
-			else:
-				add_line("narr", "Somewhere in the house, clocks are striking.")
+			add_line("narr", Loc.t("strike_here") if game.room_state[game.player_room].clock else Loc.t("strike_far"))
 		"exit_try":
 			if d.ok:
-				add_line("narr", "Something gives way. Cold air. A way out.")
+				add_line("narr", Loc.t("exit_ok"))
 			else:
-				add_line("danger", "Nothing — and it made a terrible noise. %d tries left." % d.attempts_left)
+				add_line("danger", Loc.t("exit_bad", [d.attempts_left]))
 		"presence":
-			add_line("danger", ["Behind the %s door: a floorboard creaks. Someone is standing there.", "A slow breath behind the %s door. Very close.", "Something shifts its weight behind the %s door."].pick_random() % d.dir)
-			hint("presence", "He's in the next room, standing still. Don't go through that door.")
+			add_line("danger", Loc.t("presence", [Loc.dir(d.dir)]))
+			hint("presence")
 		"hidden":
-			add_line("narr", "You squeeze into the darkest corner and hold still." if d.on else "You come out of hiding.")
+			add_line("narr", Loc.t("hide_on") if d.on else Loc.t("hide_off"))
 		"murderer_in_room":
-			if d.get("still", false):
-				add_line("danger", "He's still here. Floorboards creak a few steps from you.")
-			else:
-				add_line("danger", "The door creaks open. He is IN THE ROOM. Don't. Breathe.")
+			add_line("danger", Loc.t("in_room_still") if d.get("still", false) else Loc.t("in_room"))
 		"murderer_found_exit":
-			add_line("danger", "Far off in the house: wood splintering. Then a low, pleased laugh.")
+			add_line("danger", Loc.t("found_exit"))
 		"line_fake_tell":
-			add_line("danger", "…but the line still sounds a little too full.")
+			add_line("danger", Loc.t("fake_tell"))
 		"rescuer_error":
-			add_line("sound", "the line hisses — her voice comes through thin and strange")
+			add_line("sound", Loc.t("llm_err"))
 
 
 func _process(dt: float) -> void:
@@ -221,31 +217,33 @@ func _process(dt: float) -> void:
 			_acc = 0.0
 			break
 	_think_t += dt
-	thinking.text = ("…the line crackles" + ".".repeat(int(_think_t * 2.0) % 3)) if _is_thinking else ""
+	thinking.text = (Loc.t("crackle") + ".".repeat(int(_think_t * 2.0) % 3)) if _is_thinking else ""
 	var on := game.player_on_line()
 	var here: Dictionary = game.house.rooms[game.player_room]
 	if game.hidden:
-		status.text = "○ HIDDEN — hold still"
+		status.text = Loc.t("st_hidden")
 	elif game.moving_to != "":
-		status.text = "○ moving…"
+		status.text = Loc.t("st_moving")
 	elif not here.phone:
-		status.text = "○ no phone in this room"
+		status.text = Loc.t("st_nophone")
 	elif game.receiver_up:
 		var mine := game.player_active_features()
 		var foreign := []
 		for f in game.foreign_sounds():
-			foreign.append(("a second " + House.FEATURE_LABEL[f] + ", out of step") if f in mine else House.FEATURE_LABEL[f])
+			foreign.append(Loc.t("second_x", [Loc.feature(f)]) if f in mine else Loc.feature(f))
 		if foreign.is_empty():
-			status.text = "● ON THE LINE — just hiss"
+			status.text = Loc.t("st_hiss")
 		else:
-			status.text = "● ON THE LINE — also: " + ", ".join(foreign)
+			status.text = Loc.t("st_also", [", ".join(foreign)])
 	else:
-		status.text = "○ receiver on the hook"
+		status.text = Loc.t("st_hook")
 	input.editable = on and not game.over
-	input.placeholder_text = "Whisper into the receiver… (Enter)" if on else "(you need to be on the line)"
+	input.placeholder_text = Loc.t("whisper") if on else Loc.t("need_line")
 	tap_btn.disabled = not on
 	hook_btn.disabled = not here.phone or game.moving_to != "" or game.over
-	hook_btn.text = ("Hang up  [Ctrl+H]" if game.receiver_up else "Pick up  [Ctrl+H]")
+	hook_btn.text = Loc.t("hang_btn") if game.receiver_up else Loc.t("pick_btn")
+	tap_btn.text = Loc.t("tap_btn")
+	tap_hint.text = Loc.t("tap_hint")
 	if _dirty:
 		_dirty = false
 		_render()
@@ -258,9 +256,9 @@ func _render() -> void:
 		var txt: String = l.text.substr(0, l.shown).replace("[", "[lb]")
 		match l.kind:
 			"you":
-				out += "[color=#%s]YOU:[/color] %s\n" % [col.call("you"), txt]
+				out += "[color=#%s]%s[/color] %s\n" % [col.call("you"), Loc.t("you"), txt]
 			"her":
-				out += "[color=#%s]HER:[/color] [color=#%s]%s[/color]\n" % [col.call("dim"), col.call("her"), txt]
+				out += "[color=#%s]%s[/color] [color=#%s]%s[/color]\n" % [col.call("dim"), Loc.t("her"), col.call("her"), txt]
 			"danger":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("danger"), txt]
 			"him":

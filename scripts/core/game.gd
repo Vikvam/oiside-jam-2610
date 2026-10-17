@@ -203,7 +203,7 @@ func hide() -> bool:
 		return false
 	if receiver_up and house.rooms[player_room].phone:
 		hang_up()
-	_start_busy("Hiding...", hide_time, func():
+	_start_busy(Loc.t("busy_hide"), hide_time, func():
 		hidden = true
 		emit("hidden", {"on": true})
 	)
@@ -239,7 +239,7 @@ func pick_up() -> bool:
 	receiver_up = true
 	emit("receiver", {"up": true})
 	_line_note("[the player's extension picks up]")
-	murderer.on_line_noise("Someone picked up")
+	murderer.on_line_noise("m_n_pickup")
 	if murderer.on_line:
 		emit("line_quiet_presence", {})
 	_bg_timer = 2.0
@@ -255,7 +255,7 @@ func hang_up() -> bool:
 	off_line_since = time
 	emit("receiver", {"up": false})
 	_line_note("[click: the caller hangs up]")
-	murderer.on_line_noise("A click")
+	murderer.on_line_noise("m_n_click")
 	return true
 
 
@@ -266,7 +266,7 @@ func say(text: String) -> bool:
 	transcript.append({"t": time, "who": "you", "text": text})
 	line_log.append({"who": "player", "text": text})
 	emit("player_says", {"text": text})
-	murderer.on_line_noise("A voice")
+	murderer.on_line_noise("m_n_voice")
 	murderer.on_words("player", text)
 	_ask_rescuer("speech")
 	return true
@@ -276,7 +276,7 @@ func tap() -> bool:
 	if over or not player_on_line():
 		return false
 	emit("player_tap", {})
-	murderer.on_line_noise("Tapping")
+	murderer.on_line_noise("m_n_tap")
 	_tap_count += 1
 	_tap_timer = 1.6
 	return true
@@ -290,20 +290,20 @@ func toggle_feature(f: String) -> bool:
 	var key := "window" if f == "rain" else f
 	if not room_state[player_room].has(key) or not house.has_feature(player_room, "rain" if key == "window" else key):
 		return false
-	var label: String = {"clock": "the clock", "fan": "the fan", "window": "the window"}[key]
+	var label: String = Loc.t("the_" + key)
 	var now_on: bool = room_state[player_room][key]
 	var verb := ""
 	match key:
-		"clock": verb = "Stopping " if now_on else "Winding "
-		"fan": verb = "Switching off " if now_on else "Switching on "
-		"window": verb = "Closing " if now_on else "Opening "
+		"clock": verb = Loc.t("busy_stop") if now_on else Loc.t("busy_wind")
+		"fan": verb = Loc.t("busy_off") if now_on else Loc.t("busy_on")
+		"window": verb = Loc.t("busy_close") if now_on else Loc.t("busy_open")
 	_start_busy(verb + label + "...", toggle_time, func():
 		room_state[player_room][key] = not now_on
 		emit("feature_toggled", {"room": player_room, "feature": key, "on": not now_on})
 		murderer.on_small_noise(player_room, "click")
 		if player_on_line():
 			_line_note("[a click and a scrape somewhere on the line]")
-			murderer.on_line_noise("A click")
+			murderer.on_line_noise("m_n_click")
 		_bg_timer = 1.0
 	)
 	return true
@@ -315,7 +315,7 @@ func try_exit(obj: String) -> bool:
 	var od := house.object_def(obj)
 	if od.is_empty() or house.object_room[obj] != player_room:
 		return false
-	_start_busy("Searching the %s for a way out..." % od.name, try_time, func():
+	_start_busy(Loc.t("busy_search", [house.obj_name(obj)]), try_time, func():
 		tried[obj] = true
 		if obj == exit_obj:
 			emit("exit_try", {"obj": obj, "ok": true, "attempts_left": attempts_left})
@@ -330,7 +330,7 @@ func try_exit(obj: String) -> bool:
 			_end(false, "noise")
 			return
 		# You freeze while the crash echoes through the house.
-		_start_busy("Frozen — listening to the echo...", wrong_freeze, func(): pass)
+		_start_busy(Loc.t("busy_frozen"), wrong_freeze, func(): pass)
 	)
 	return true
 
@@ -356,7 +356,7 @@ func on_murderer_entered(r: String) -> void:
 			if randf() >= chance:
 				_seek_timer = 5.0
 				emit("murderer_in_room", {})
-				murderer.note("Nobody in the %s." % house.rooms[r].name)
+				murderer.note(Loc.t("m_nobody", [house.room_in(r)]))
 				return
 		_end(false, "caught")
 		return
@@ -566,7 +566,7 @@ func _tick_world(dt: float) -> void:
 		emit("clock_strike", {"rooms": rs})
 		if player_on_line() and room_state[player_room].clock and murderer.listening:
 			murderer.listen_overlap = murderer.identify_time
-			murderer.note("The clocks struck. One of them was right behind their voice.")
+			murderer.note(Loc.t("m_strike"))
 		if player_on_line() and murderer.on_line and room_state[murderer.room].clock:
 			_line_note("[a clock strikes, loud, through the line]")
 

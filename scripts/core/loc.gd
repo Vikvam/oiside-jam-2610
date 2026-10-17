@@ -1,0 +1,247 @@
+class_name Loc
+extends RefCounted
+## Tiny localisation: Loc.t("key") or Loc.t("key", [args]) with % formatting.
+## English is the source; Czech is the jam's home language.
+
+static var lang := "en"
+
+const LANGS := ["en", "cs"]
+
+const S := {
+	# ---- title / menus
+	"title": ["I WON'T TELL YOU", "TO TI NEŘEKNU"],
+	"title_quote": ["„To ti neřeknu, protože nás odposlouchává.“ — “I won't tell you: he's listening.”", "„To ti neřeknu, protože nás odposlouchává.“"],
+	"header": ["I WON'T TELL YOU  ·  to ti neřeknu", "TO TI NEŘEKNU  ·  I won't tell you"],
+	"title_body": [
+		"You are hiding in an old house with a murderer. You found a wired phone and called someone who grew up here — she knows a [b]secret way out[/b].\n\nBut every room's phone is on [b]the same line[/b], and he can pick up any extension and listen. He knows the layout and the room names. He only knows what's [i]inside[/i] rooms he has already searched. He can hear the clock, the fan, the rain behind your voice.\n\n[b]Talk carefully. Lie if you must.[/b] Click a neighbouring room to walk (shift: sneak). Search objects to find the hidden exit — three tries, and wrong ones are loud.\n\n[color=#888888]F2: switch look · F3: show the murderer (cheat) · F4: show her guess · F11: fullscreen · Esc: hold[/color]",
+		"Schováváš se ve starém domě s vrahem. Našel jsi drátový telefon a zavolal někomu, kdo tu vyrůstal — ona zná [b]tajný východ[/b].\n\nJenže všechny telefony v domě jsou na [b]jedné lince[/b] a on může zvednout kterýkoli z nich a poslouchat. Zná půdorys i názvy místností. Co je [i]uvnitř[/i], ví jen u místností, které už prohledal. Za tvým hlasem slyší hodiny, větrák, déšť.\n\n[b]Mluv opatrně. Lži, když musíš.[/b] Klikni na sousední místnost a jdi (shift: plížit se). Prohledávej předměty a najdi tajný východ — tři pokusy, a ty špatné jsou hlasité.\n\n[color=#888888]F2: vzhled · F3: ukázat vraha (cheat) · F4: její odhad · F11: celá obrazovka · Esc: pauza[/color]",
+	],
+	"look": ["Look:", "Vzhled:"],
+	"her_voice": ["Her voice:", "Její hlas:"],
+	"he_is": ["He is:", "On je:"],
+	"plan": ["Plan:", "Plánek:"],
+	"lang": ["Language:", "Jazyk:"],
+	"be_mock": ["Scripted (offline)", "Skriptovaná (offline)"],
+	"be_proxy": ["Claude Haiku (local proxy)", "Claude Haiku (lokální proxy)"],
+	"be_api": ["API endpoint", "API endpoint"],
+	"diff_gentle": ["slow-witted", "pomalý"],
+	"diff_normal": ["patient", "trpělivý"],
+	"diff_hard": ["sharp-eared", "ostrý sluch"],
+	"plan_full": ["all room sounds known", "zvuky všech místností známé"],
+	"plan_explore": ["learn sounds by exploring", "zvuky zjišťuješ průzkumem"],
+	"hints": ["hints", "nápovědy"],
+	"start": ["Pick up the phone", "Zvednout telefon"],
+	"again": ["Call again", "Zavolat znovu"],
+	"to_title": ["Title", "Menu"],
+	"hold": ["ON HOLD", "NA LINCE ČEKÁ"],
+	"hold_sub": ["(he's on hold too)", "(on čeká taky)"],
+	"resume": ["Resume", "Pokračovat"],
+	"next_look": ["Next look (F2)", "Další vzhled (F2)"],
+	"quit_title": ["Quit to title", "Zpět do menu"],
+	"her_voice_line": ["her voice: %s", "její hlas: %s"],
+	# ---- phone panel
+	"whisper": ["Whisper into the receiver… (Enter)", "Šeptej do sluchátka… (Enter)"],
+	"need_line": ["(you need to be on the line)", "(musíš být na lince)"],
+	"tap_btn": ["Tap  [Ctrl+T]", "Ťuknout  [Ctrl+T]"],
+	"hang_btn": ["Hang up  [Ctrl+H]", "Zavěsit  [Ctrl+H]"],
+	"pick_btn": ["Pick up  [Ctrl+H]", "Zvednout  [Ctrl+H]"],
+	"tap_hint": ["1 tap = yes · 2 taps = no", "1 ťuk = ano · 2 ťuky = ne"],
+	"you": ["YOU:", "TY:"],
+	"her": ["HER:", "ONA:"],
+	"crackle": ["…the line crackles", "…linka praská"],
+	"st_hidden": ["○ HIDDEN — hold still", "○ SCHOVANÝ — ani hnout"],
+	"st_moving": ["○ moving…", "○ jdeš…"],
+	"st_nophone": ["○ no phone in this room", "○ tady není telefon"],
+	"st_hiss": ["● ON THE LINE — just hiss", "● NA LINCE — jen šum"],
+	"st_also": ["● ON THE LINE — also: %s", "● NA LINCE — navíc: %s"],
+	"st_hook": ["○ receiver on the hook", "○ sluchátko je zavěšené"],
+	"second_x": ["a second %s, out of step", "druhé %s, mimo rytmus"],
+	"tap": ["tap", "ťuk"],
+	"click_pickup": ["Click. Someone else picked up an extension.", "Cvak. Někdo jiný zvedl telefon."],
+	"click_hangup": ["Click. An extension hung up.", "Cvak. Někdo zavěsil."],
+	"pickup_me": ["you pick up the receiver", "zvedáš sluchátko"],
+	"hangup_me": ["you hang up", "zavěšuješ"],
+	"breath_line": ["…slow breathing on the line. Not yours.", "…pomalý dech na lince. Ne tvůj."],
+	"open_line": ["The line sounds… open. As if someone is already listening.", "Linka zní… otevřeně. Jako by už někdo poslouchal."],
+	"his_silence": ["Behind the other extension: dead silence.", "Za druhým telefonem: mrtvé ticho."],
+	"his_sounds": ["Faintly, through the receiver: %s. Not from your room.", "Slabě, ze sluchátka: %s. Není to z tvé místnosti."],
+	"steps_run": ["Running footsteps", "Běžící kroky"],
+	"steps_heavy": ["Heavy footsteps", "Těžké kroky"],
+	"steps_leave": ["A door creaks %s beyond the %s door. %s — moving.", "%s za %s dveřmi zavrzaly dveře. %s — pohyb."],
+	"steps_right": ["right", "Hned"],
+	"steps_some": ["somewhere", "Někde"],
+	"steps_1": ["%s — right behind the %s door!", "%s — hned za %s dveřmi!"],
+	"steps_2": ["%s, two rooms away — beyond the %s door.", "%s, o dvě místnosti dál — za %s dveřmi."],
+	"steps_3": ["%s, far off, somewhere past the %s door. Coming closer?", "%s, daleko, někde za %s dveřmi. Blíží se?"],
+	"slip_in": ["You slip into %s.", "Proklouzneš %s."],
+	"no_phone_here": [" There is no phone here.", " Není tu telefon."],
+	"clock_stop": ["The clock stops.", "Hodiny se zastaví."],
+	"clock_go": ["The clock ticks again.", "Hodiny zase tikají."],
+	"fan_off": ["The fan whirs down.", "Větrák dozní."],
+	"fan_on": ["The fan hums back to life.", "Větrák se znovu rozbzučí."],
+	"win_shut": ["The window shuts. The rain goes muffled.", "Okno se zavře. Déšť ztichne."],
+	"win_open": ["The window creaks open.", "Okno se se zavrzáním otevře."],
+	"rain_on": ["The rain picks up again.", "Zase začíná pršet."],
+	"rain_off": ["The rain stops. Suddenly everything is quieter.", "Přestalo pršet. Najednou je všechno tišší."],
+	"heat_on": ["The radiator starts knocking — the heating came on.", "Radiátor začne klepat — naskočilo topení."],
+	"heat_off": ["The radiator goes quiet.", "Radiátor utichne."],
+	"strike_here": ["The clock in this room strikes. Loud. Every clock in the house joins in.", "Hodiny v této místnosti odbíjejí. Nahlas. Přidávají se všechny hodiny v domě."],
+	"strike_far": ["Somewhere in the house, clocks are striking.", "Někde v domě odbíjejí hodiny."],
+	"exit_ok": ["Something gives way. Cold air. A way out.", "Něco povolí. Studený vzduch. Cesta ven."],
+	"exit_bad": ["Nothing — and it made a terrible noise. %d tries left.", "Nic — a strašně to zarachotilo. Zbývají pokusy: %d."],
+	"found_exit": ["Far off in the house: wood splintering. Then a low, pleased laugh.", "Někde daleko v domě: praskající dřevo. Pak tichý, spokojený smích."],
+	"fake_tell": ["…but the line still sounds a little too full.", "…ale linka pořád zní nějak moc plně."],
+	"llm_err": ["the line hisses — her voice comes through thin and strange", "linka zasyčí — její hlas zní tence a divně"],
+	"her_missed": ["her voice buzzes from the receiver on the hook — you can't make it out", "z položeného sluchátka bzučí její hlas — nerozumíš"],
+	"presence": [["Behind the %s door: a floorboard creaks. Someone is standing there.", "A slow breath behind the %s door. Very close.", "Something shifts its weight behind the %s door."],
+		["Za %s dveřmi vrzne podlaha. Někdo tam stojí.", "Pomalý nádech za %s dveřmi. Velmi blízko.", "Za %s dveřmi někdo přešlápne."]],
+	"hide_on": ["You squeeze into the darkest corner and hold still.", "Zmáčkneš se do nejtemnějšího kouta a nehýbeš se."],
+	"hide_off": ["You come out of hiding.", "Vylézáš z úkrytu."],
+	"in_room": ["The door creaks open. He is IN THE ROOM. Don't. Breathe.", "Dveře zavrzají. Je V MÍSTNOSTI. Nedýchej."],
+	"in_room_still": ["He's still here. Floorboards creak a few steps from you.", "Pořád je tady. Pár kroků od tebe vrže podlaha."],
+	"start_narr": ["You are crouched by the phone %s, receiver pressed to your ear. Somewhere in the house, someone is walking.", "Krčíš se u telefonu %s, sluchátko u ucha. Někde v domě někdo chodí."],
+	"who_him": ["???:", "???:"],
+	# ---- hints
+	"h_start": ["Her guess of where you are shows as a dashed box. The icons in each room are the sounds it makes: clock, fan, window (rain), radiator; the handset = a phone.", "Její odhad, kde jsi, je čárkovaný rámeček. Ikony v místnostech jsou zvuky: hodiny, větrák, okno (déšť), radiátor; sluchátko = telefon."],
+	"h_first": ["Type to whisper. Tell her something about your room he hasn't seen yet — an object, a memory — and ask the way.", "Piš a šeptej. Řekni jí něco o své místnosti, co on ještě neviděl — předmět, vzpomínku — a zeptej se na cestu."],
+	"h_click": ["That's him on another extension. He hears every word — and the sounds of your room. Hang up, go quiet, or lie.", "To je on na jiném telefonu. Slyší každé slovo — i zvuky tvé místnosti. Zavěs, mlč, nebo lži."],
+	"h_bg": ["Those are the sounds of HIS room. Check the plan icons: which phone room sounds like that?", "To jsou zvuky JEHO místnosti. Podívej se na ikony v plánku: která místnost s telefonem tak zní?"],
+	"h_steps": ["Footsteps come with a direction. Move away — or Hide. Walking makes noise too (sneak is quieter).", "Kroky mají směr. Uteč — nebo se schovej. I chůze dělá hluk (plížení je tišší)."],
+	"h_pickup": ["There's a phone here. Pick up (Ctrl+H) to talk to her again — but first think about what this room sounds like.", "Je tu telefon. Zvedni (Ctrl+H) a mluv s ní — ale nejdřív přemýšlej, jak tahle místnost zní."],
+	"h_taunt": ["He's sure where you are. Move. Now.", "Ví, kde jsi. Pohni se. Hned."],
+	"h_presence": ["He's in the next room, standing still. Don't go through that door.", "Je ve vedlejší místnosti a stojí. Nechoď těmi dveřmi."],
+	# ---- room panel
+	"tries": ["%s   ·   hidden-exit tries left: %s", "%s   ·   pokusy o tajný východ: %s"],
+	"walking_to": ["…walking to %s", "…jdeš %s"],
+	"search": ["Search:", "Prohledat:"],
+	"sounds": ["Sounds:", "Zvuky:"],
+	"doors": ["Doors:", "Dveře:"],
+	"really": ["really? (loud if wrong)", "opravdu? (špatně = hluk)"],
+	"obj_tip": ["%s\n\nClick: try to open a hidden exit here.\nA wrong guess makes a LOUD noise.", "%s\n\nKlik: zkusit tu otevřít tajný východ.\nŠpatný pokus HLASITĚ zarachotí."],
+	"clock_stop_b": ["Stop the clock", "Zastavit hodiny"],
+	"clock_wind_b": ["Wind the clock", "Natáhnout hodiny"],
+	"fan_off_b": ["Switch off fan", "Vypnout větrák"],
+	"fan_on_b": ["Switch on fan", "Zapnout větrák"],
+	"win_close_b": ["Close window", "Zavřít okno"],
+	"win_open_b": ["Open window", "Otevřít okno"],
+	"radiator_on": ["· radiator: clanking (heating on)", "· radiátor: klepe (topí se)"],
+	"radiator_off": ["· radiator: quiet (heating off)", "· radiátor: ticho (netopí se)"],
+	"silent_room": ["· nothing here makes a sound", "· nic tu nevydává zvuk"],
+	"hidden_btn": ["(hidden — any action reveals you)", "(schovaný — každá akce tě prozradí)"],
+	"hide": ["Hide", "Schovat se"],
+	"hide_tip": ["Hide in here (hangs up). If he only passes through, he probably won't find you.\nIf he came for this room, he probably will.", "Schovej se tady (zavěsí). Když jen projde, asi tě nenajde.\nKdyž přišel kvůli této místnosti, asi ano."],
+	"sneak": ["sneak (slow, quiet)", "plížit se (pomalu, potichu)"],
+	"busy_stop": ["Stopping ", "Zastavuješ "],
+	"busy_wind": ["Winding ", "Natahuješ "],
+	"busy_off": ["Switching off ", "Vypínáš "],
+	"busy_on": ["Switching on ", "Zapínáš "],
+	"busy_close": ["Closing ", "Zavíráš "],
+	"busy_open": ["Opening ", "Otevíráš "],
+	"the_clock": ["the clock...", "hodiny..."],
+	"the_fan": ["the fan...", "větrák..."],
+	"the_window": ["the window...", "okno..."],
+	"busy_search": ["Searching the %s for a way out...", "Prohledáváš: %s..."],
+	"busy_frozen": ["Frozen — listening to the echo...", "Ztuhlý — posloucháš ozvěnu..."],
+	"busy_hide": ["Hiding...", "Schováváš se..."],
+	# ---- plan
+	"walk_hint": ["walk · shift: sneak", "jít · shift: plížit"],
+	"him": ["HIM", "ON"],
+	"exit": ["EXIT", "VÝCHOD"],
+	"line": ["LINE", "LINKA"],
+	# ---- game over
+	"end_escaped": ["YOU GOT OUT.", "DOSTAL/A SES VEN."],
+	"end_caught": ["HE FOUND YOU.", "NAŠEL TĚ."],
+	"end_walked_in": ["YOU WALKED RIGHT INTO HIM.", "VEŠEL/VEŠLA JSI PŘÍMO K NĚMU."],
+	"end_noise": ["TOO MUCH NOISE.", "PŘÍLIŠ MOC HLUKU."],
+	"end_way": ["The way out was the [b]%s[/b] in the [b]%s[/b] — %s.", "Cesta ven: [b]%s[/b] v místnosti [b]%s[/b] — %s."],
+	"end_time": ["%d:%02d on the line.", "%d:%02d na lince."],
+	"notebook": ["[b]HIS NOTEBOOK[/b] — what he heard, and what he made of it:", "[b]JEHO ZÁPISNÍK[/b] — co slyšel a co si z toho vyvodil:"],
+	"notebook_empty": ["[i]…he never heard a thing.[/i]", "[i]…nikdy nic neslyšel.[/i]"],
+	# ---- murderer's notebook
+	"m_anywhere": ["could be anywhere", "může být kdekoli"],
+	"m_maybe": ["maybe: %s", "možná: %s"],
+	"m_known_obj": ["Heard '%s' — I know where that is: the %s", "Slyšel jsem „%s“ — vím, kde to je: %s"],
+	"m_pointed": ["The voice on the line pointed at the %s. Interesting.", "Hlas na lince ukázal na místnost %s. Zajímavé."],
+	"m_useless": ["%s — useless while I don't know where they are.", "%s — k ničemu, dokud nevím, kde jsou."],
+	"m_heard_bg": ["Heard %s behind their voice", "Za jejich hlasem: %s"],
+	"m_bg_weird": ["Heard %s behind them. Doesn't fit anything I know", "Za nimi: %s. Nesedí to na nic, co znám"],
+	"m_silence": ["silence", "ticho"],
+	"m_steps1": ["Footsteps, right next door", "Kroky, hned vedle"],
+	"m_steps2": ["Footsteps, two rooms away", "Kroky, o dvě místnosti dál"],
+	"m_crash": ["A loud crash from the %s", "Hlasitý rachot: %s"],
+	"m_click_near": ["A click nearby", "Cvaknutí poblíž"],
+	"m_on_line": ["%s on the line. They're at a phone", "%s na lince. Jsou u telefonu"],
+	"m_n_click": ["A click", "Cvaknutí"],
+	"m_n_voice": ["A voice", "Hlas"],
+	"m_n_tap": ["Tapping", "Ťukání"],
+	"m_n_pickup": ["Someone picked up", "Někdo zvedl"],
+	"m_prey_said": ["The prey mentioned it", "Kořist to zmínila"],
+	"m_prey_dir": ["The prey said '%s'", "Kořist řekla „%s“"],
+	"m_voice_dir": ["The voice said '%s'", "Hlas řekl „%s“"],
+	"m_talked_feat": ["They talked about: %s", "Mluvili o: %s"],
+	"m_found_exit": ["Found it. A hidden way out, %s. Nobody leaves.", "Mám to. Tajný východ, %s. Nikdo neodejde."],
+	"m_no_exit": ["Nothing hidden %s.", "Nic tajného %s."],
+	"m_fresh": ["A fresh lead. I'll leave the exit for a moment.", "Čerstvá stopa. Na chvíli nechám východ být."],
+	"m_going": ["Going for %s.", "Jdu %s."],
+	"m_special": ["Let's see what's so special about the %s.", "Podívám se, co je tak zvláštního na místnosti %s."],
+	"m_sweep": ["Nothing on the line. I'll go look %s.", "Na lince nic. Půjdu se podívat %s."],
+	"m_touched": ["Someone touched the %s %s. They were here", "Někdo sahal na %s %s. Byli tady"],
+	"m_searched": ["Searched the %s: %s.", "Prohledáno %s: %s."],
+	"m_fake": ["Pretended to hang up. Still listening.", "Předstíral jsem zavěšení. Poslouchám dál."],
+	"m_strike": ["The clocks struck. One of them was right behind their voice.", "Hodiny odbily. Jedny byly hned za jejich hlasem."],
+	"m_nobody": ["Nobody %s.", "Nikdo %s."],
+	"m_t_clock": [["Tick. Tock.", "Lovely clock you've got there."], ["Tik. Tak.", "Pěkné hodiny tam máš."]],
+	"m_t_fan": ["Such a noisy fan.", "To je ale hlučný větrák."],
+	"m_t_rain": ["Hear that rain? So do I.", "Slyšíš ten déšť? Já taky."],
+	"m_t_radiator": ["Old pipes. They always give you away.", "Staré trubky. Vždycky prozradí."],
+	"m_t_voice": ["Thank you, sweetheart. Very helpful.", "Děkuju, zlato. Moc jsi pomohla."],
+	"m_t_prey": ["You talk too much.", "Moc mluvíš."],
+	"m_t_steps": ["Creaky floors in this house.", "V tomhle domě vrzají podlahy."],
+	"m_t_touched": ["You should leave things as you found them.", "Měl bys nechávat věci, jak byly."],
+	"m_t_any": [["Stay right there.", "I'm coming."], ["Zůstaň, kde jsi.", "Už jdu."]],
+	"k_clock": ["clock", "hodiny"], "k_fan": ["fan", "větrák"], "k_window": ["window", "okno"],
+	# ---- directions
+	"north": ["north", "severními"], "east": ["east", "východními"], "south": ["south", "jižními"], "west": ["west", "západními"],
+	"North": ["North", "Sever"], "East": ["East", "Východ"], "South": ["South", "Jih"], "West": ["West", "Západ"],
+	# ---- features (labels)
+	"f_clock": ["ticking clock", "tikající hodiny"],
+	"f_fan": ["humming fan", "bzučící větrák"],
+	"f_rain": ["rain on a window", "déšť na okně"],
+	"f_radiator": ["clanking radiator", "klepající radiátor"],
+	"f2_clock": ["ticking clock", "tikající hodiny"],
+	"f2_fan": ["humming fan", "bzučící větrák"],
+	"f2_rain": ["rain on a window", "déšť na okně"],
+	"f2_radiator": ["clanking radiator", "klepající radiátor"],
+}
+
+
+static func t(key: String, args = null) -> String:
+	var e = S.get(key)
+	if e == null:
+		return key
+	var txt = e[1] if lang == "cs" and e.size() > 1 else e[0]
+	if txt is Array:
+		txt = txt[randi() % txt.size()]
+	if args == null:
+		return txt
+	return txt % args
+
+
+static func feature(f: String) -> String:
+	return t("f_" + f)
+
+
+static func dir(d: String) -> String:
+	return t(d)
+
+
+## Lower-case and strip Czech diacritics, for keyword matching.
+static func fold(s: String) -> String:
+	s = s.to_lower()
+	const FROM := "áčďéěíňóřšťúůýž"
+	const TO := "acdeeinorstuuyz"
+	var out := ""
+	for c in s:
+		var i := FROM.find(c)
+		out += TO[i] if i >= 0 else c
+	return out

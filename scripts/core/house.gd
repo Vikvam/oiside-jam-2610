@@ -87,7 +87,7 @@ const ROOMS := [
 		"objects": [
 			{"id": "stove", "name": "iron stove", "keys": ["stove", "oven", "iron", "cooker"],
 				"desc": "A big iron stove. The floorboards in front of it are loose."},
-			{"id": "dumbwaiter", "name": "dumbwaiter", "keys": ["dumbwaiter", "lift", "hatch", "shaft"],
+			{"id": "dumbwaiter", "name": "dumbwaiter", "keys": ["dumbwaiter", "hatch", "shaft"],
 				"desc": "A dumbwaiter hatch in the wall.", "nick": "the ghost lift",
 				"memory": "The dumbwaiter... the ghost lift. You rode it once and got stuck for an hour."},
 			{"id": "knife_block", "name": "knife block", "keys": ["knife", "knives", "block"],
@@ -171,6 +171,120 @@ const EXIT_FLAVOR := {
 	"flour_sacks": "under the flour sacks is a hatch",
 	"meat_hook": "pull the meat hook down and the back wall opens",
 }
+
+## Czech data. Keys ending in * are stems (prefix match on diacritics-folded words).
+const CS_ROOMS := {
+	"library": ["Knihovna", "v knihovně", "do knihovny", ["knihovn*"]],
+	"study": ["Pracovna", "v pracovně", "do pracovny", ["pracovn*", "kancelar*"]],
+	"nursery": ["Dětský pokoj", "v dětském pokoji", "do dětského pokoje", ["detsk*", "pokojic*"]],
+	"parlor": ["Salon", "v salonu", "do salonu", ["salon*", "obyvak*"]],
+	"hall": ["Hala", "v hale", "do haly", ["hala", "hale", "halu", "halou", "predsin*", "vstup*"]],
+	"kitchen": ["Kuchyně", "v kuchyni", "do kuchyně", ["kuchyn*"]],
+	"conservatory": ["Zimní zahrada", "v zimní zahradě", "do zimní zahrady", ["zimn*", "zahrad*", "sklenik*"]],
+	"dining": ["Jídelna", "v jídelně", "do jídelny", ["jideln*"]],
+	"pantry": ["Spíž", "ve spíži", "do spíže", ["spiz*"]],
+}
+
+## object id -> [name, desc, keys, nick, memory]
+const CS_OBJECTS := {
+	"bookcase": ["vysoký regál s knihami", "Vysoký regál s knihami. Jeden svazek chybí a zbyla po něm tmavá mezera.", ["regal*", "svazk*", "knizk*"]],
+	"globe": ["starý glóbus", "Zaprášený glóbus. Někdo na něj nakreslil malou lebku na místo Čech.", ["glob*"]],
+	"armchair": ["kožené křeslo", "Popraskané kožené křeslo. Nějak pořád vypadá teple.", ["kresl*", "kozen*"]],
+	"desk": ["těžký dubový stůl", "Těžký dubový psací stůl. Šuplíky jsou zamčené.", ["dubov*", "suplik*", "supl*"]],
+	"horse_painting": ["obraz koně", "Obraz šedého koně.", ["obraz*", "malb*", "kun", "kone", "koni", "konem"], "Kapitán", "Šedý kůň ve zlaceném rámu… Kapitán. Každé ráno jste mu spolu salutovali."],
+	"typewriter": ["psací stroj", "Černý psací stroj s rozepsaným dopisem.", ["stroj*", "psaci"]],
+	"bear": ["plyšový medvěd", "Plyšový medvěd s jedním knoflíkovým okem.", ["medv*", "plys*", "hrack*"], "Pan Knoflík", "Jednooký plyšový medvěd… Pan Knoflík! Hlídal ti postel."],
+	"rocking_horse": ["houpací kůň", "Dřevěný houpací kůň. Zavrže, jen když se na něj podíváš.", ["houpac*", "kun", "kone", "koni", "konem"]],
+	"dollhouse": ["domeček pro panenky", "Domeček pro panenky — maličká kopie tohohle domu.", ["domec*", "panenk*"]],
+	"piano": ["babiččin klavír", "Babiččin klavír se zavřeným víkem.", ["klavir*", "piano*", "kridl*"]],
+	"fireplace": ["krb", "Studený krb plný šedého popela.", ["krb*", "komin*", "popel*"]],
+	"mirror": ["vysoké zrcadlo", "Vysoké zrcadlo. Dlouho se do něj nedíváš.", ["zrcad*"]],
+	"stag": ["jelení hlava", "Vycpaná jelení hlava se skleněnýma očima.", ["jelen*", "parohy", "paroh*", "trofej*"], "Starý Řehoř", "Jelení hlava… Starý Řehoř. Oba jste přísahali, že jednou mrkl."],
+	"staircase": ["schodiště", "Široké schodiště. Patro je zatlučené prkny.", ["schod*", "zabradl*"]],
+	"umbrella_stand": ["stojan na deštníky", "Stojan na deštníky ze sloní nohy. Hrůza.", ["destnik*", "stojan*", "hul", "hole"]],
+	"stove": ["litinová kamna", "Velká litinová kamna. Prkna před nimi se viklají.", ["kamn*", "sporak*"]],
+	"dumbwaiter": ["jídelní výtah", "Dvířka jídelního výtahu ve zdi.", ["vytah*", "sacht*", "dvirk*"], "Duchovka", "Jídelní výtah… Duchovka. Jednou jste v ní uvízli na celou hodinu."],
+	"knife_block": ["stojan na nože", "Stojan na nože. Jedna škvíra je prázdná. Snažíš se na to nemyslet.", ["noz*", "nuz*"]],
+	"birdcage": ["prázdná ptačí klec", "Prázdná mosazná klec.", ["klec*", "ptac*", "kanar*"], "Pípův palác", "Mosazná klec… Pípův palác. Píp byl kanárek. Pohřbili jste ho u růží."],
+	"fern": ["uschlá kapradina", "Obrovská uschlá kapradina v prasklém květináči.", ["kaprad*", "kvetin*", "rostlin*"]],
+	"wicker_chair": ["proutěné křeslo", "Proutěné křeslo se lehce houpe. Nefouká.", ["prouten*", "kresl*"]],
+	"long_table": ["dlouhý stůl", "Dlouhý stůl prostřený pro dvanáct. Roky tu nikdo nejedl.", ["stol*", "stul", "ubrus*", "tabul*"]],
+	"china_cabinet": ["vitrína s porcelánem", "Vitrína s porcelánem. Každý šálek je otlučený.", ["vitrin*", "porcelan*", "salk*", "salek", "talir*"]],
+	"chandelier": ["lustr", "Křišťálový lustr, který se nepatrně houpe.", ["lustr*", "kristal*"]],
+	"jam_shelf": ["police se zavařeninami", "Police se zavařeninami, popsané roztřesenou rukou: 1987, 1988, 1989…", ["zavaren*", "marmelad*", "sklenic*", "dzem*"]],
+	"flour_sacks": ["pytle mouky", "Hromada pytlů s moukou. Něco malého si v nich udělalo hnízdo.", ["pytl*", "pytel", "mouk*"]],
+	"meat_hook": ["hák na maso", "Rezavý hák na maso na kolejnici. Prázdný. Naštěstí.", ["hak", "haku", "hakem", "haky", "hak*"]],
+}
+
+const CS_EXIT_FLAVOR := {
+	"bookcase": "zatáhni za mezeru po chybějícím svazku a regál se otevře na stará služebnická schodiště",
+	"globe": "podstavec glóbu je poklop do průlezu, který vede pod zahradou",
+	"armchair": "pod křeslem je padací dveře do starého uhelného tunelu",
+	"desk": "pod deskou stolu je falešná zadní stěna do chodby",
+	"horse_painting": "za Kapitánem jsou malá dvířka do chodby ve zdi",
+	"typewriter": "stolek s psacím strojem zakrývá poklop v podlaze",
+	"bear": "Pan Knoflík sedí na uvolněném panelu, pod kterým je skluz",
+	"rocking_horse": "pod houpacím koněm jsou padací dveře",
+	"dollhouse": "panel ve zdi za domečkem jsou tajné dveře",
+	"piano": "pod klavírem jdou zvednout prkna do tunelu",
+	"fireplace": "zadní deska krbu se odsune do komínové chodby",
+	"mirror": "zrcadlo jsou dveře — zatlač na levý okraj",
+	"stag": "zatáhni Starého Řehoře za levý paroh a otevře se panel",
+	"staircase": "komora pod schody má falešnou podlahu",
+	"umbrella_stand": "za stojanem na deštníky se otvírá nízký panel",
+	"stove": "uvolněná prkna před kamny vedou do sklepa",
+	"dumbwaiter": "šachta jídelního výtahu vede dolů do uhelného tunelu",
+	"knife_block": "kachlíky za stojanem na nože jsou poklop",
+	"birdcage": "háček klece je páka ke skleněným dveřím v zahradní zdi",
+	"fern": "květináč kapradiny zakrývá kanál, kterým se dá prolézt",
+	"wicker_chair": "pod proutěným křeslem se otevírá mříž",
+	"long_table": "pod dlouhým stolem jsou padací dveře",
+	"china_cabinet": "vitrína se otevírá na pantech",
+	"chandelier": "řetěz lustru je táhlo, které otevře panel ve zdi",
+	"jam_shelf": "police se zavařeninami se vyklopí do staré ledárny",
+	"flour_sacks": "pod pytli s moukou je poklop",
+	"meat_hook": "stáhni hák dolů a zadní stěna se otevře",
+}
+
+
+func room_name(id: String) -> String:
+	return CS_ROOMS[id][0] if Loc.lang == "cs" else rooms[id].name
+
+
+## "in the Library" / "v knihovně"
+func room_in(id: String) -> String:
+	return CS_ROOMS[id][1] if Loc.lang == "cs" else "in the " + rooms[id].name
+
+
+## "into the Library" / "do knihovny"
+func room_to(id: String) -> String:
+	return CS_ROOMS[id][2] if Loc.lang == "cs" else "the " + rooms[id].name
+
+
+func obj_name(oid: String) -> String:
+	return CS_OBJECTS[oid][0] if Loc.lang == "cs" else object_def(oid).name
+
+
+func obj_desc(oid: String) -> String:
+	return CS_OBJECTS[oid][1] if Loc.lang == "cs" else object_def(oid).desc
+
+
+func obj_nick(oid: String) -> String:
+	var o := object_def(oid)
+	if not o.has("nick"):
+		return ""
+	return CS_OBJECTS[oid][3] if Loc.lang == "cs" else o.nick
+
+
+func obj_memory(oid: String) -> String:
+	var o := object_def(oid)
+	if not o.has("memory"):
+		return ""
+	return CS_OBJECTS[oid][4] if Loc.lang == "cs" else o.memory
+
+
+func exit_flavor(oid: String) -> String:
+	return CS_EXIT_FLAVOR.get(oid, "") if Loc.lang == "cs" else EXIT_FLAVOR.get(oid, "")
 
 var rooms := {}          # id -> room dict
 var room_ids: Array[String] = []
