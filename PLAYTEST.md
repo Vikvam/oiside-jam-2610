@@ -38,7 +38,7 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 | Sound | Where | What to judge | Knob |
 |---|---|---|---|
 | **Line hiss** (receiver up) | Line bus (300–3400 Hz + lo-fi) | Is it phone-like, and is it too loud? | `sfx.gd` `_process` hiss `-20` dB; `Synth.hiss_loop` |
-| **Her "voice"** (formant mumble per ~3 letters) | Line bus | Cute? Creepy? Annoying? Female-ish? | `sfx.gd` `on_voice_char` (every 3rd letter, pitch); vowel table in `_generate` |
+| **Her "voice"** (formant mumble per ~3 letters, rising on questions, falling at full stops) | Line bus | Cute? Creepy? Annoying? Female-ish? | `sfx.gd` `on_voice_char` (every 3rd letter, pitch); vowel table in `_generate`; `PhonePanel._contour` |
 | **His voice** (taunts) | Line bus, pitch ×0.53 | Does it read as a low male voice? | same, `kind == "him"` |
 | **His imitation of her** (hard only) | Line bus, pitch ×0.82 | Is it subtly "off" but not obvious? | same, `kind == "fake"` |
 | **Your room**: clock / fan / rain / radiator | Room bus, per-feature dB | Recognisable? Balanced? | `Synth.clock_loop` etc.; `Sfx.FEATURE_DB` |

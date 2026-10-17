@@ -235,7 +235,7 @@ func _build_game_ui() -> void:
 	left.add_child(room_panel)
 	phone = PhonePanel.new()
 	phone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	phone.voice_char.connect(func(c, k): sfx.on_voice_char(c, k))
+	phone.voice_char.connect(func(c, k, contour): sfx.on_voice_char(c, k, contour))
 	h.add_child(phone)
 	cord = Cord.new()
 	cord.plan = plan

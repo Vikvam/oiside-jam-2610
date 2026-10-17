@@ -2,7 +2,7 @@ class_name PhonePanel
 extends PanelContainer
 ## The line: transcript, typing, tapping, hanging up.
 
-signal voice_char(c: String, kind: String)
+signal voice_char(c: String, kind: String, contour: float)
 
 var game: Game
 var log_view: RichTextLabel
@@ -92,6 +92,24 @@ func hint(key: String) -> void:
 	if hints and not _hinted.has(key):
 		_hinted[key] = true
 		add_line("hint", "» " + Loc.t("h_" + key))
+
+
+## Intonation: rises towards the end of a question, falls at the end of a
+## statement. Returns a pitch multiplier offset for the current position.
+static func _contour(text: String, pos: int) -> float:
+	var end := text.length()
+	for p in [".", "?", "!"]:
+		var i := text.find(p, pos - 1)
+		if i != -1 and i < end:
+			end = i
+	var start := 0
+	for p in [". ", "? ", "! "]:
+		var j := text.rfind(p, pos - 1)
+		if j != -1 and j + 2 > start:
+			start = j + 2
+	var f := clampf(float(pos - start) / maxf(1.0, float(end - start)), 0.0, 1.0)
+	var q := end < text.length() and text[end] == "?"
+	return 0.16 * f * f if q else -0.07 * f
 
 
 func _toggle_hook() -> void:
@@ -224,7 +242,7 @@ func _process(dt: float) -> void:
 			if l.shown < l.text.length():
 				var c: String = l.text[l.shown]
 				l.shown += 1
-				voice_char.emit(c, l.kind)
+				voice_char.emit(c, l.kind, _contour(l.text, l.shown))
 				if c != " ":
 					scope.voice()
 				advanced = true
