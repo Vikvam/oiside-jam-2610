@@ -124,3 +124,15 @@ A reviewer agent found 11 issues, all fixed:
 - a stale "crackle" indicator and a half-armed search carried into the next game
 - reference cycles leaked every finished game (fixed with `Game.dispose()`)
 - hide chances didn't match this document
+
+## Later additions (still autonomous phase)
+
+- **Rearranged house** (title toggle, off by default): each call gets a random spanning tree of doors plus 2–3 loops, 6 random phone rooms and random room sounds. Names, positions and objects stay, so memories still make sense. *Why:* replayability once players have learned the house.
+- **Endings:** a flash (warm light if you escape, red if caught) and one closing line of narration before the reveal.
+- **He imitates her voice, on "sharp-eared" only.** When he's down to ≤3 candidate rooms and you're on the line, he may whisper a fake direction that leads toward him (at most once a minute). The tells are fair:
+  - there's no "…line crackles" first
+  - his room's sounds are on the line
+  - the mumble pitch is lower
+  - the text is in italics
+  - she hears it and warns you ("That wasn't me!")
+  - *Why:* DESIGN.md asked "Do they try to imitate the rescuer?". This answers it without making normal play unfair.

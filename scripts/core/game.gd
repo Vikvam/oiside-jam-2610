@@ -57,7 +57,7 @@ var rearranged := false     # random doors/phones/sounds each game
 const DIFFICULTY := {
 	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "find_chance_hunt": 0.55, "find_chance_pass": 0.1},
 	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "find_chance_hunt": 0.65, "find_chance_pass": 0.15},
-	"hard": {"identify_time": 4.0, "hunt_threshold": 2, "far_step_chance": 0.5, "fake_hangup_chance": 0.35, "find_chance_hunt": 0.8, "find_chance_pass": 0.25},
+	"hard": {"identify_time": 4.0, "hunt_threshold": 2, "far_step_chance": 0.5, "fake_hangup_chance": 0.35, "find_chance_hunt": 0.8, "find_chance_pass": 0.25, "imitate_chance": 0.6},
 }
 var hide_time := 1.0
 var find_chance_hunt := 0.75   # he came for this room
@@ -427,6 +427,12 @@ func on_murderer_taunt(text: String) -> void:
 	_line_note("[a man's voice on the line, low]: " + text)
 	if player_on_line():
 		emit("murderer_says", {"text": text})
+
+
+func on_murderer_imitate(text: String) -> void:
+	_line_note("[a voice imitating you (Mara), slightly too low]: " + text)
+	emit("imposter_says", {"text": text})
+	_ask_rescuer("imposter")
 
 
 func on_murderer_fake_hangup() -> void:

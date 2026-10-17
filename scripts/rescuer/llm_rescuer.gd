@@ -186,6 +186,7 @@ static func build_prompt(g, reason: String) -> String:
 		"tap": "The player just tapped.",
 		"pickup": "The player just picked up a receiver again after being away.",
 		"followup": "More happened on the line while you were answering.",
+		"imposter": "Someone just imitated YOUR voice on the line to mislead the player. Warn them, briefly.",
 	}
 	p += "\n%s It is %d:%02d into the call. Reply with the JSON object." % [why.get(reason, ""), int(g.time) / 60, int(g.time) % 60]
 	return p

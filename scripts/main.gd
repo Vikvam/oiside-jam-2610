@@ -29,6 +29,7 @@ var over_layer: CanvasLayer
 var over_text: RichTextLabel
 var over_panel: PanelContainer
 var header_label: Label
+var flash: ColorRect
 var pause_layer: CanvasLayer
 var paused := false
 var backend := "mock"
@@ -201,6 +202,14 @@ func _build_game_ui() -> void:
 
 
 func _build_post() -> void:
+	var fl := CanvasLayer.new()
+	fl.layer = 49
+	add_child(fl)
+	flash = ColorRect.new()
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash.color = Color(1, 1, 1, 0)
+	fl.add_child(flash)
 	var layer := CanvasLayer.new()
 	layer.layer = 50
 	add_child(layer)
@@ -614,6 +623,12 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 	if t == "game_over":
 		running = false
 		var ended := game
+		var c: Color = Color(1, 0.97, 0.9) if d.won else Style.c("danger")
+		flash.color = Color(c, 0.0)
+		var tw := create_tween()
+		tw.tween_property(flash, "color:a", 0.85 if d.won else 0.6, 0.25)
+		tw.tween_property(flash, "color:a", 0.0, 1.3)
+		phone.add_line("narr" if d.won else "danger", Loc.t("outro_won") if d.won else Loc.t("outro_" + d.reason))
 		get_tree().create_timer(1.6).timeout.connect(func():
 			if game == ended and not title_layer.visible:
 				_show_over())

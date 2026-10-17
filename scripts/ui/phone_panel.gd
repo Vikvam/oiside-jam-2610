@@ -124,6 +124,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 				add_line("her", d.text, false)
 			else:
 				add_line("sound", Loc.t("her_missed"))
+		"imposter_says":
+			add_line("fake", d.text, false)
+			hint("imposter")
 		"murderer_says":
 			add_line("him", d.text, false)
 			hint("taunt")
@@ -263,6 +266,8 @@ func _render() -> void:
 				out += "[color=#%s]%s[/color] [color=#%s]%s[/color]\n" % [col.call("dim"), Loc.t("her"), col.call("her"), txt]
 			"danger":
 				out += "[color=#%s][i]%s[/i][/color]\n" % [col.call("danger"), txt]
+			"fake":
+				out += "[color=#%s]%s[/color] [color=#%s][i]%s[/i][/color]\n" % [col.call("dim"), Loc.t("her"), col.call("her"), txt]
 			"him":
 				out += "[color=#%s][b]???:[/b] [i]%s[/i][/color]\n" % [col.call("danger"), txt]
 			"hint":

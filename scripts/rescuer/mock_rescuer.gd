@@ -12,6 +12,7 @@ var cautious := false
 var said_cautious := false
 var pending_q := {}       # {feature, cands} — asked "tap once if you hear X"
 var bg_cands: Array = []
+var imposter := false
 var _pending := -1.0
 var _reply := ""
 var _read := 0            # line_log index already processed
@@ -28,6 +29,7 @@ const L := {
 		"exit_nick": ["You're there. It's %s. You know what I mean.", "That's the room. %s. Remember?"],
 		"exit_obj": ["You're in the right room. Check the %s.", "This is it. The %s. Go."],
 		"the": "the ",
+		"imposter": ["That wasn't me! Don't go anywhere he tells you.", "That voice — it wasn't me. Stay put."],
 	},
 	"cs": {
 		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
@@ -41,6 +43,7 @@ const L := {
 		"exit_nick": ["Jsi tam. Je to %s. Víš, co myslím.", "To je ta místnost. %s. Pamatuješ?"],
 		"exit_obj": ["Jsi ve správné místnosti. Zkus %s.", "Tady to je. %s. Jdi."],
 		"the": "",
+		"imposter": ["To jsem nebyla já! Nikam, kam ti řekne, nechoď.", "Ten hlas — to jsem nebyla já. Zůstaň, kde jsi."],
 	},
 }
 var min_delay := 1.2
@@ -77,6 +80,8 @@ func _compose() -> String:
 			if e.text.contains("another extension picks up"):
 				cautious = true
 				said_cautious = false
+			elif e.text.contains("imitating you"):
+				imposter = true
 			elif e.text.contains("an extension hangs up"):
 				cautious = false
 			elif e.text.begins_with("[background"):
@@ -123,6 +128,9 @@ func _compose() -> String:
 			elif cands.size() > 1:
 				bg_cands = cands
 	var tx: Dictionary = L[Loc.lang]
+	if imposter:
+		imposter = false
+		return _pick(tx.imposter)
 	if cautious:
 		if said_cautious:
 			return ""

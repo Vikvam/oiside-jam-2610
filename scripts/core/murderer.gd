@@ -38,6 +38,8 @@ var breath_timer := 5.0
 var log: Array = []       # [{t, text}]
 var last_evidence := ""   # what most recently narrowed things down
 var taunt_chance := 0.5
+var imitate_chance := 0.0   # hard mode: he whispers in HER voice
+var _last_imitate := -100.0
 
 # Tunables (exposed so A/B settings can poke them)
 var walk_time := 4.0
@@ -479,6 +481,24 @@ func _start_listen() -> void:
 	game.on_murderer_pickup()
 
 
+func _maybe_imitate() -> void:
+	## Pretend to be her and send the prey toward me.
+	if imitate_chance <= 0.0 or not game.player_on_line() or game.time - _last_imitate < 60.0:
+		return
+	if candidates.size() > 3 or candidates.has(room):
+		return
+	_last_imitate = game.time
+	if randf() > imitate_chance:
+		return
+	var c: String = candidates.keys().pick_random()
+	var p := house.path(c, room)
+	if p.is_empty():
+		return
+	var dir := house.door_to(c, p[0])
+	note(Loc.t("m_imitate", [house.room_name(c)]))
+	game.on_murderer_imitate(Loc.t("imitate_say", [Loc.dir(dir)]))
+
+
 func _taunt() -> String:
 	match last_evidence:
 		"clock", "fan", "rain", "radiator":
@@ -510,6 +530,7 @@ func _tick_listen(dt: float) -> void:
 		breath_timer = randf_range(5.0, 9.0)
 		if randf() < 0.45:
 			game.on_murderer_breath()
+	_maybe_imitate()
 	timer -= dt
 	var leave := timer <= 0.0 or candidates.size() <= hunt_threshold or (dirty and not suspects.is_empty())
 	if leave:
