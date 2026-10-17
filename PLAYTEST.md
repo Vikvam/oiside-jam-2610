@@ -60,6 +60,8 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 
 8. **Hard: won in 1:28.** He was standing next door in the Kitchen at the start. Since he never starts in the exit room, I deduced the Pantry. I sneaked the long way round, hid, and then asked her for the object from the Dining Room while he listened. Object names from rooms he hasn't searched are safe, and she named the meat hook.
 
+9. **Large house, normal: caught.** A lie ("im in the library") sent him running across the house, and the fake hang-up tell showed. But the mock's stale guess pointed me to the wrong room, and two brute-force crashes brought him running back. Fixed: the mock now rejects impossible positions (no phone there, or the sounds don't fit). *Brute force with him 2–3 rooms away is death. That's good.*
+
 **Haiku rescuer:**
 - Full bot game: in character and cautious, using yes/no tap questions.
 - Spotted a lie: *"Was that for his ears? One tap for yes."*

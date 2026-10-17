@@ -15,7 +15,6 @@ var bg_cands: Array = []
 var imposter := false
 var played_along := false
 var _pending := -1.0
-var _reply := ""
 var _read := 0            # line_log index already processed
 const L := {
 	"en": {
@@ -57,16 +56,16 @@ func _init(g) -> void:
 	game = g
 
 
-func request(_ctx: Dictionary) -> void:
-	_reply = _compose()
-	_pending = randf_range(min_delay, max_delay)
+func request(ctx: Dictionary) -> void:
+	# After a pickup, wait until the line's background has been heard.
+	_pending = randf_range(2.3, 3.0) if ctx.get("reason", "") == "pickup" else randf_range(min_delay, max_delay)
 
 
 func tick(dt: float) -> void:
 	if _pending >= 0.0:
 		_pending -= dt
 		if _pending < 0.0:
-			game.rescuer_says(_reply, guess)
+			game.rescuer_says(_compose(), guess)
 
 
 func _compose() -> String:
@@ -111,7 +110,9 @@ func _compose() -> String:
 			else:
 				bg_cands = keep
 	if picked_up and expect_next != "":
-		guess = expect_next
+		# Assume they followed us — but only if that's even possible:
+		# a room without a phone can't be calling, and the sounds must fit.
+		guess = expect_next if _plausible(expect_next, bg) else ""
 		expect_next = ""
 	# Update the guess from words, strongest first.
 	var hits: Array = Words.nicknames_named(player_text, h)
@@ -180,6 +181,15 @@ func _cap(t: String) -> String:
 
 func _pick(options: Array) -> String:
 	return options[randi() % options.size()]
+
+
+func _plausible(r: String, bg: String) -> bool:
+	if not game.house.rooms[r].phone:
+		return false
+	for f in House.FEATURE_LABEL:
+		if bg.contains(House.FEATURE_LABEL[f]) and not game.house.has_feature(r, f):
+			return false
+	return true
 
 
 func _from_background(bg: String) -> Array:
