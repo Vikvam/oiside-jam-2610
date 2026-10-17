@@ -37,7 +37,7 @@ Controls:
 **To ti neřeknu**
 *Hororová hra na společné lince. Každé slovo pomáhá jí tě zachránit — a jemu tě najít.*
 
-Schováváš se ve starém domě s vrahem. Našel jsi drátový telefon a zavolal sestře. Vyrůstala tady a zná tajnou cestu ven.
+Schováváš se ve starém domě s vrahem. V ruce svíráš sluchátko drátového telefonu a na druhém konci je tvoje sestra. Vyrůstala tady a zná tajnou cestu ven.
 
 Jenže všechny telefony v domě jsou na jedné lince a on může kterýkoli zvednout a poslouchat.
 

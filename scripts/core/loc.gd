@@ -14,7 +14,7 @@ const S := {
 	"header": ["I WON'T TELL YOU  ·  to ti neřeknu", "TO TI NEŘEKNU  ·  I won't tell you"],
 	"title_body": [
 		"You are hiding in an old house with a murderer. You found a wired phone and called someone who grew up here — she knows a [b]secret way out[/b].\n\nBut every room's phone is on [b]the same line[/b], and he can pick up any extension and listen. He knows the layout and the room names. He only knows what's [i]inside[/i] rooms he has already searched. He can hear the clock, the fan, the rain behind your voice.\n\n[b]Talk carefully. Lie if you must.[/b] Click a neighbouring room to walk (shift: sneak). Search objects to find the hidden exit — three tries, and wrong ones are loud.",
-		"Schováváš se ve starém domě s vrahem. Našel jsi drátový telefon a zavolal někomu, kdo tu vyrůstal — ona zná [b]tajný východ[/b].\n\nJenže všechny telefony v domě jsou na [b]jedné lince[/b] a on může zvednout kterýkoli z nich a poslouchat. Zná půdorys i názvy místností. Co je [i]uvnitř[/i], ví jen u místností, které už prohledal. Za tvým hlasem slyší hodiny, větrák, déšť.\n\n[b]Mluv opatrně. Lži, když musíš.[/b] Klikni na sousední místnost a jdi (shift: plížit se). Prohledávej předměty a najdi tajný východ — tři pokusy, a ty špatné jsou hlasité.",
+		"Schováváš se ve starém domě s vrahem. V ruce svíráš sluchátko drátového telefonu a na druhém konci je tvoje sestra. Vyrůstala tu a zná [b]tajný východ[/b].\n\nJenže všechny telefony v domě jsou na [b]jedné lince[/b] a on může zvednout kterýkoli z nich a poslouchat. Zná půdorys i názvy místností. Co je [i]uvnitř[/i], ví jen u místností, které už prohledal. Za tvým hlasem slyší hodiny, větrák, déšť.\n\n[b]Mluv opatrně. Lži, když musíš.[/b] Klikni na sousední místnost a jdi (shift: plížit se). Prohledávej předměty a najdi tajný východ — tři pokusy, a ty špatné jsou hlasité.",
 	],
 	"look": ["Look:", "Vzhled:"],
 	"her_voice": ["Her voice:", "Její hlas:"],
@@ -176,9 +176,9 @@ const S := {
 	"plan_block2": ["EXIT: [REDACTED]", "VÝCHOD: [ZAČERNĚNO]"],
 	"call_time": ["CALL %d:%02d", "HOVOR %d:%02d"],
 	# ---- game over
-	"end_escaped": ["YOU GOT OUT.", "DOSTAL/A SES VEN."],
+	"end_escaped": ["YOU GOT OUT.", "JSI VENKU."],
 	"end_caught": ["HE FOUND YOU.", "NAŠEL TĚ."],
-	"end_walked_in": ["YOU WALKED RIGHT INTO HIM.", "VEŠEL/VEŠLA JSI PŘÍMO K NĚMU."],
+	"end_walked_in": ["YOU WALKED RIGHT INTO HIM.", "STÁL PŘÍMO ZA DVEŘMI."],
 	"end_noise": ["TOO MUCH NOISE.", "PŘÍLIŠ MOC HLUKU."],
 	"end_way": ["The way out was the [b]%s[/b] in the [b]%s[/b] — %s.", "Cesta ven: [b]%s[/b] v místnosti [b]%s[/b] — %s."],
 	"end_time": ["%d:%02d on the line.", "%d:%02d na lince."],
@@ -229,7 +229,7 @@ const S := {
 	"m_t_voice": ["Thank you, sweetheart. Very helpful.", "Děkuju, zlato. Moc jsi pomohla."],
 	"m_t_prey": ["You talk too much.", "Moc mluvíš."],
 	"m_t_steps": ["Creaky floors in this house.", "V tomhle domě vrzají podlahy."],
-	"m_t_touched": ["You should leave things as you found them.", "Měl bys nechávat věci, jak byly."],
+	"m_t_touched": ["You should leave things as you found them.", "Věci se mají nechávat tak, jak byly."],
 	"m_t_any": [["Stay right there.", "I'm coming."], ["Zůstaň, kde jsi.", "Už jdu."]],
 	"k_clock": ["clock", "hodiny"], "k_fan": ["fan", "větrák"], "k_window": ["window", "okno"],
 	# ---- directions
