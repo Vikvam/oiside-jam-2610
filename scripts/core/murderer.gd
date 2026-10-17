@@ -42,7 +42,7 @@ var hunt_time := 2.2
 var listen_min := 12.0
 var listen_max := 20.0
 var hunt_threshold := 2
-var identify_time := 3.0
+var identify_time := 5.0
 var fake_hangup_chance := 0.3
 var hearing_range := 2
 var far_step_chance := 0.35
@@ -121,7 +121,7 @@ func _expand() -> Array:
 func on_player_step(dest: String, sneaking := false) -> void:
 	var rng := 1 if listening else hearing_range
 	var d := house.distance(room, dest)
-	var heard := d <= rng
+	var heard := d <= rng and state != S.MOVE
 	if heard and d >= 2 and randf() > far_step_chance:
 		heard = false
 	if heard and sneaking and randf() > sneak_heard_chance:
@@ -136,7 +136,7 @@ func on_player_step(dest: String, sneaking := false) -> void:
 			out = ring
 		_set_candidates(out, "Footsteps, %s" % ("right next door" if d <= 1 else "two rooms away"))
 	else:
-		var near := house.rooms_within(room, 0 if sneaking else 1)
+		var near := house.rooms_within(room, 0 if (sneaking or state == S.MOVE) else 1)
 		var out := []
 		for r in _expand():
 			if r not in near:
