@@ -124,6 +124,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 	match t:
 		"player_says":
 			add_line("you", d.text)
+			if d.get("loud", false):
+				add_line("danger", Loc.t("shouted"))
 		"player_tap":
 			add_line("sound", Loc.t("tap"))
 		"rescuer_says":

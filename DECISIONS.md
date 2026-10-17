@@ -150,3 +150,4 @@ A reviewer agent found 11 issues, all fixed:
   - dev runs touched the settings file
   - you could pass *through* him in a doorway (now: meeting him head-on in the door you're walking through gets you caught)
 - **The offline voice no longer blindly assumes you followed her.** After you pick up, she accepts her guess only if the background sounds confirm it. Otherwise she asks: "Did you make it — the room I sent you to? One tap yes, two no." *Why:* in two hand-played games her stale guesses sent me the wrong way with confidence.
+- **Volume is a mechanic:** typing in ALL CAPS is shouting. He hears it through walls up to two rooms away, with no phone needed. *Why:* DESIGN.md asks "Is volume a mechanic (whispering vs. talking)?" This is the cheapest readable answer, and it rewards whispering.

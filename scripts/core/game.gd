@@ -303,12 +303,27 @@ func say(text: String) -> bool:
 	if text == "" or over or not player_on_line():
 		return false
 	transcript.append({"t": time, "who": "you", "text": text})
-	line_log.append({"who": "player", "text": text})
-	emit("player_says", {"text": text})
+	var loud := is_shouting(text)
+	line_log.append({"who": "player", "text": text + (" [shouted]" if loud else "")})
+	emit("player_says", {"text": text, "loud": loud})
+	if loud:
+		murderer.on_shout(player_room)
 	murderer.on_line_noise("m_n_voice")
 	murderer.on_words("player", text)
 	_ask_rescuer("speech")
 	return true
+
+
+## ALL CAPS means raising your voice: heard through walls.
+static func is_shouting(text: String) -> bool:
+	var letters := 0
+	var upper := 0
+	for c in text:
+		if c.to_lower() != c.to_upper():
+			letters += 1
+			if c == c.to_upper():
+				upper += 1
+	return letters >= 4 and upper >= letters * 0.7
 
 
 func tap() -> bool:

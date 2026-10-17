@@ -152,7 +152,7 @@ static func build_system(g) -> String:
 	s += "WHAT YOU HEAR: only the line. You do NOT know where the player is — work it out from what they say and from the background sounds. "
 	s += "Background sounds on the line are mixed from every open extension. '[click: another extension picks up]' means someone, probably him, is now listening. "
 	s += "Hang-up clicks can be faked. Taps: one tap = yes, two taps = no. The player may lie on purpose to lure him away — if it sounds like a lie, play along.\n"
-	s += "Rooms without a phone: the player can't talk from there.\n"
+	s += "Rooms without a phone: the player can't talk from there. '[shouted]' means the player raised their voice — he may have heard it through the walls.\n"
 	if g.explore_mode:
 		s += "The player sees a floor plan with every room's name and doors, but only knows the sounds and objects of rooms they have visited. "
 	else:

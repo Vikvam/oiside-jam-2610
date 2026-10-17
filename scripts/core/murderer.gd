@@ -170,6 +170,12 @@ func on_small_noise(src: String, what: String) -> void:
 		_intersect(house.rooms_at(room, d), Loc.t("m_click_near"), true, "steps")
 
 
+func on_shout(src: String) -> void:
+	var d := house.distance(room, src)
+	if d <= 2 and state != S.MOVE:
+		_intersect(house.rooms_at(room, d), Loc.t("m_shout"), true, "prey")
+
+
 func on_line_noise(what: String) -> void:
 	if listening:
 		_intersect(house.phone_rooms(), Loc.t("m_on_line", [Loc.t(what)]), false)
