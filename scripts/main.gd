@@ -35,6 +35,7 @@ var backend := "mock"
 var difficulty := "gentle"
 var explore_mode := false
 var hints_on := true
+var rearranged := false
 var running := false
 var _intro_queue: Array = []
 var _intro_t := 0.0
@@ -95,6 +96,8 @@ func _dev_args() -> void:
 		backend = a.backend
 	if a.has("lang"):
 		_set_lang(a.lang)
+	if a.has("rearranged"):
+		rearranged = true
 	if a.has("play"):
 		_start_game()
 		if a.has("debug"):
@@ -138,6 +141,7 @@ func _load_settings() -> void:
 	Loc.lang = _settings.get_value("ui", "lang", "en")
 	explore_mode = _settings.get_value("ui", "explore", false)
 	hints_on = _settings.get_value("ui", "hints", true)
+	rearranged = _settings.get_value("ui", "rearranged", false)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
 	if rc.load("res://rescuer_config.cfg") == OK or rc.load("user://rescuer_config.cfg") == OK:
@@ -154,6 +158,7 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "lang", Loc.lang)
 	_settings.set_value("ui", "explore", explore_mode)
 	_settings.set_value("ui", "hints", hints_on)
+	_settings.set_value("ui", "rearranged", rearranged)
 	_settings.save("user://settings.cfg")
 
 
@@ -312,6 +317,12 @@ func _build_title() -> void:
 			explore_mode = pm[0]
 			_refresh_title_buttons())
 		row4.add_child(b)
+	var rb := CheckButton.new()
+	rb.text = Loc.t("rearranged")
+	rb.tooltip_text = Loc.t("rearranged_tip")
+	rb.button_pressed = rearranged
+	rb.toggled.connect(func(v): rearranged = v)
+	row4.add_child(rb)
 	var hb := CheckButton.new()
 	hb.name = "hints_toggle"
 	hb.text = Loc.t("hints")
@@ -555,6 +566,7 @@ func _start_game() -> void:
 	game = Game.new()
 	game.difficulty = difficulty
 	game.explore_mode = explore_mode
+	game.rearranged = rearranged
 	game.setup(randi() % 100000)
 	game.murderer.timer += 12.0  # let her finish the intro
 	game.rescuer = _make_rescuer(game)

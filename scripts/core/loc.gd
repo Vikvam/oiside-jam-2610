@@ -30,6 +30,8 @@ const S := {
 	"plan_full": ["all room sounds known", "zvuky všech místností známé"],
 	"plan_explore": ["learn sounds by exploring", "zvuky zjišťuješ průzkumem"],
 	"hints": ["hints", "nápovědy"],
+	"rearranged": ["rearranged house", "přestavěný dům"],
+	"rearranged_tip": ["Every call: new doors, new phones, new sounds.", "Při každém hovoru: jiné dveře, telefony i zvuky."],
 	"start": ["Pick up the phone", "Zvednout telefon"],
 	"again": ["Call again", "Zavolat znovu"],
 	"to_title": ["Title", "Menu"],

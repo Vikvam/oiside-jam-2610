@@ -205,7 +205,7 @@ func _draw() -> void:
 	# Door swings (architectural quarter arcs)
 	var arc_col := wall
 	arc_col.a = 0.45
-	for d in House.DOORS:
+	for d in game.house.doors:
 		var dp := _door_point(d[0], d[1])
 		var half := DOOR_W * U * 0.5
 		var ra := _rect(d[0])
@@ -343,14 +343,13 @@ func _draw_flourish(size_px: Vector2, font: Font) -> void:
 					c.a = 0.10 - k * 0.025
 					draw_arc(ring[0], ring[1] + k * 1.5, 0.3, TAU - 0.2, 48, c, 2.5 - k * 0.6, true)
 		"blueprint":
-			# Architect's title block in the corner of the Pantry.
-			var r := Rect2(size_px.x - 168, size_px.y - 44, 120, 40)
+			# Architect's title strip sitting on the outer wall.
 			var c: Color = Style.c("dim")
-			draw_rect(r, c, false, 1.0)
-			draw_line(r.position + Vector2(0, 14), Vector2(r.end.x, r.position.y + 14), c, 1.0)
-			draw_string(font, r.position + Vector2(4, 11), Loc.t("plan_block1"), HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
-			draw_string(font, r.position + Vector2(4, 26), Loc.t("plan_block2"), HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
-			draw_string(font, r.position + Vector2(4, 37), "SCALE 1:100", HORIZONTAL_ALIGNMENT_LEFT, 112, 9, c)
+			var txt := "%s  ·  %s  ·  1:100" % [Loc.t("plan_block1"), Loc.t("plan_block2")]
+			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
+			var p := Vector2(size_px.x - w - 8, 1)
+			draw_rect(Rect2(p - Vector2(4, 8), Vector2(w + 8, 11)), Style.c("bg"))
+			draw_string(font, p, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, c)
 
 
 func _dashed_rect(r: Rect2, col: Color) -> void:

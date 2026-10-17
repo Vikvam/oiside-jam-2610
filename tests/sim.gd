@@ -26,6 +26,7 @@ func _init() -> void:
 func _play(seed_value: int, policy: String, verbose: bool) -> Dictionary:
 	var g := Game.new()
 	g.difficulty = diff
+	g.rearranged = OS.get_environment("REARRANGE") != ""
 	g.setup(seed_value)
 	g.rescuer = MockRescuer.new(g)
 	var bot := Bot.new(g, policy)

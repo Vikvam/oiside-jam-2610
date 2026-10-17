@@ -289,18 +289,27 @@ func exit_flavor(oid: String) -> String:
 var rooms := {}          # id -> room dict
 var room_ids: Array[String] = []
 var adj := {}            # id -> {dir: other_id}
+var doors: Array = []    # [[a, b], ...] for this instance
 var object_room := {}    # object id -> room id
 var _dist := {}          # id -> {id: int}
 
 
 func _init() -> void:
 	for r in ROOMS:
-		rooms[r.id] = r
+		rooms[r.id] = r.duplicate(true)
 		room_ids.append(r.id)
-		adj[r.id] = {}
 		for o in r.objects:
 			object_room[o.id] = r.id
-	for d in DOORS:
+	_build(DOORS)
+
+
+func _build(door_list: Array) -> void:
+	doors = door_list.duplicate(true)
+	adj.clear()
+	_dist.clear()
+	for id in room_ids:
+		adj[id] = {}
+	for d in doors:
 		var a: String = d[0]
 		var b: String = d[1]
 		var dir := direction_between(a, b)
@@ -308,6 +317,63 @@ func _init() -> void:
 		adj[b][opposite(dir)] = a
 	for a in room_ids:
 		_dist[a] = _bfs(a)
+
+
+## "Rearranged house" variant: random doors (a spanning tree plus a couple of
+## loops), random phones and random room sounds. Room names, positions and
+## objects stay, so memories and the plan still make sense.
+func rearrange() -> void:
+	var pairs := []
+	for a in room_ids:
+		for b in room_ids:
+			if a < b and rect(a).grow(0.01).intersects(rect(b)) and _shared_edge(a, b):
+				pairs.append([a, b])
+	pairs.shuffle()
+	# Kruskal with union-find for a random spanning tree.
+	var parent := {}
+	for id in room_ids:
+		parent[id] = id
+	var find := func(x): return x
+	find = func(x):
+		while parent[x] != x:
+			x = parent[x]
+		return x
+	var chosen := []
+	var spare := []
+	for pr in pairs:
+		var ra = find.call(pr[0])
+		var rb = find.call(pr[1])
+		if ra != rb:
+			parent[ra] = rb
+			chosen.append(pr)
+		else:
+			spare.append(pr)
+	for i in mini(randi_range(2, 3), spare.size()):
+		chosen.append(spare[i])
+	_build(chosen)
+	# Phones: 6 of 9 rooms.
+	var ids := room_ids.duplicate()
+	ids.shuffle()
+	for i in ids.size():
+		rooms[ids[i]].phone = i < 6
+	# Sounds: random, every room has at least one.
+	var odds := {"clock": 0.45, "fan": 0.35, "rain": 0.5, "radiator": 0.4}
+	for id in room_ids:
+		var f := []
+		for k in FEATURES:
+			if randf() < odds[k]:
+				f.append(k)
+		if f.is_empty():
+			f.append(FEATURES.pick_random())
+		rooms[id].features = f
+
+
+func _shared_edge(a: String, b: String) -> bool:
+	var ra := rect(a)
+	var rb := rect(b)
+	var ox := minf(ra.end.x, rb.end.x) - maxf(ra.position.x, rb.position.x)
+	var oy := minf(ra.end.y, rb.end.y) - maxf(ra.position.y, rb.position.y)
+	return (ox > 0.5 and absf(oy) < 0.01) or (oy > 0.5 and absf(ox) < 0.01)
 
 
 static func opposite(dir: String) -> String:
