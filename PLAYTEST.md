@@ -30,6 +30,8 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 - **The plan shows all sound icons.** Too easy? The alternative is that only visited rooms show them.
 - **Game length.** I estimate 3–6 minutes per game.
 
+- **Czech texts** (title → Čeština): I'm not a native speaker. Please proofread `scripts/core/loc.gd`, `House.CS_*` in `house.gd`, `MockRescuer.L` and the intro in `main.gd`. Nicknames: Pan Knoflík, Kapitán, Starý Řehoř, Duchovka, Pípův palác.
+
 ## 3. Verified by me
 
 - Headless simulations of the core loop (`tests/sim.gd`), thousands of bot games.
@@ -40,7 +42,6 @@ All sound is synthesised in `scripts/audio/synth.gd` and mixed in `scripts/audio
 
 - Balance is based on bots only.
 - The mock rescuer is simple: one direction per turn, and it doesn't play along with lies.
-- No pause menu (Esc does nothing).
 - Web export is untested. `SystemFont` falls back to Godot's default font there, and the proxy sends CORS headers.
 
 ## 5. What I learned from testing

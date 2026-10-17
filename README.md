@@ -10,7 +10,13 @@ See [DESIGN.md](DESIGN.md) for the original concept, [DECISIONS.md](DECISIONS.md
 godot --path .            # Godot 4.7, the Compatibility renderer
 ```
 
-On the title screen, pick a **look** (Blueprint, Phosphor CRT or Ink & Paper), **her voice** (scripted, Haiku proxy or API) and how sharp **he** is.
+On the title screen, pick:
+- a **look**: Blueprint, Phosphor CRT or Ink & Paper
+- **her voice**: scripted, Haiku proxy or API
+- how sharp **he** is
+- the **plan mode**: all sounds known, or learned by exploring
+- **hints**
+- the **language**: English or Čeština
 
 ### In game
 
@@ -27,6 +33,7 @@ On the title screen, pick a **look** (Blueprint, Phosphor CRT or Ink & Paper), *
 | F3 | cheat/debug: show the murderer, his candidate rooms, the exit and his thoughts |
 | F4 | show or hide her guess of where you are |
 | F11 | fullscreen |
+| Esc | put the call on hold (pause) |
 
 ## Her voice: Claude Haiku through the local proxy
 

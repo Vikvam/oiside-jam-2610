@@ -4,6 +4,8 @@ extends SceneTree
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
+	if OS.get_environment("LANG_CS") != "":
+		Loc.lang = "cs"
 	var g := Game.new()
 	g.setup(5)
 	for l in [

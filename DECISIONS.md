@@ -102,3 +102,13 @@ Bot simulations are only a rough guide. The bots are much dumber than a human (`
 - `tests/sim.gd`: thousands of headless bot games. The bots are poor players, so only trends matter.
 - `tests/play_cli.gd`: **I played games by hand** in text mode, perceiving only what the player perceives. I won 2 of 5 games. The 2 unfair deaths (no warning) led to the cue fixes above. Wins came from deduction, silencing rooms, reading the fake hang-up tell, and lucky misdirection from overheard words.
 - `tests/llm_game.gd`: a full real-time game with the Haiku rescuer (4 calls), plus scripted prompt checks via `tests/dump_prompt.gd` and curl.
+
+## Language: English plus Czech (stretch goal reached)
+
+- **`Loc` (`scripts/core/loc.gd`):** a simple key → [en, cs] table. The language is toggled on the title screen and saved.
+- **Czech house data** (`House.CS_ROOMS`, `CS_OBJECTS`, `CS_EXIT_FLAVOR`) includes case forms: nominative, "v knihovně", "do knihovny". This avoids broken declension like "v místnosti Knihovna".
+- **The parser is bilingual and stem-based.** Words are folded (lower case, no diacritics), and keys ending in `*` are prefixes. So "kuchyň / kuchyni / kuchyně" all match `kuchyn*`. The murderer understands both languages at once.
+  - *Kept on purpose:* Czech "východ" means both "east" and "exit", so asking "kde je východ?" makes him think you're heading east. The LLM is warned about it.
+- **Shared memories in Czech use "you two" plural** ("Oba jste přísahali…"), so the player's gender is never fixed.
+- **The LLM** gets the English system prompt plus a Czech section: whisper in informal Czech, using the Czech names and nicknames. Tested: *"Jdi jižními dveřmi do spíže. Prohledej police se zavařeninami, máš tři pokusy."*
+- **Bug found on the way:** the English dumbwaiter had the keyword "lift", which made its nickname "the ghost lift" unsafe. Removed.
