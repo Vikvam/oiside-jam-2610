@@ -77,6 +77,9 @@ Two formats are supported:
 ## Dev tools
 
 ```sh
+# One-command regression check (compile + sims for every house variant + GUI soak)
+bash tests/run_all.sh
+
 # Headless balance simulation: bot player + scripted rescuer vs the murderer
 godot --headless --path . -s tests/sim.gd -- 300 smart q normal   # policies: random follow careful smart silent
 
