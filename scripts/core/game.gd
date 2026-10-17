@@ -220,6 +220,7 @@ func _leave_hiding() -> bool:
 
 ## Break reference cycles so finished games are freed.
 func dispose() -> void:
+	_busy_done = Callable()
 	for c in event.get_connections():
 		event.disconnect(c.callable)
 	if murderer:
@@ -385,7 +386,11 @@ func _start_busy(label: String, dur: float, done: Callable) -> void:
 func on_murderer_entered(r: String) -> void:
 	var d := house.distance(player_room, r)
 	if r == player_room and moving_to != "" and move_timer < move_total * 0.5:
-		return  # you were already halfway through the far door
+		var came_from: String = murderer.trail[-2] if murderer.trail.size() > 1 else ""
+		if came_from != moving_to:
+			return  # you were already halfway through the far door
+		_end(false, "caught")  # you met him in the doorway
+		return
 	if r == player_room:
 		if hidden and moving_to == "":
 			var chance := find_chance_pass

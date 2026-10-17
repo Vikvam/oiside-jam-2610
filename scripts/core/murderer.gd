@@ -178,7 +178,7 @@ func on_line_noise(what: String) -> void:
 func on_words(speaker: String, text: String) -> void:
 	if not listening:
 		return
-	var rooms := Words.rooms_named(text)
+	var rooms := Words.rooms_named(text, house)
 	for o in Words.objects_named(text, house, seen):
 		if o.room not in rooms:
 			rooms.append(o.room)

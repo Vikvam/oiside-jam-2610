@@ -72,6 +72,8 @@ class Bot:
 		match t:
 			"rescuer_says":
 				var txt: String = d.text
+				if txt.contains("One tap yes") or txt.contains("Tap once for yes"):
+					g.tap()
 				var dirs := Words.directions(txt)
 				if not dirs.is_empty():
 					plan_dir = dirs[0]

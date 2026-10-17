@@ -13,7 +13,8 @@ var line_amb := {}             # feature -> player (the other extension)
 var hiss: AudioStreamPlayer
 var heart: AudioStreamPlayer
 var drone: AudioStreamPlayer
-## Mood drone loudness (calm / in danger). Set DRONE_DB_CALM to -80 to disable.
+## Mood drone loudness (calm / in danger). DRONE_ON = false disables it.
+const DRONE_ON := true
 const DRONE_DB_CALM := -30.0
 const DRONE_DB_DANGER := -20.0
 var voices: Array = []
@@ -241,7 +242,7 @@ func _process(dt: float) -> void:
 		_fade(line_amb[f], FEATURE_DB[f] - 12.0 if f in theirs else -80.0, dt)
 	_fade(heart, lerpf(-40.0, -4.0, danger) if danger > 0.05 else -80.0, dt * 2.0)
 	heart.pitch_scale = lerpf(0.9, 1.35, danger)
-	_fade(drone, lerpf(DRONE_DB_CALM, DRONE_DB_DANGER, danger), dt * 0.5)
+	_fade(drone, lerpf(DRONE_DB_CALM, DRONE_DB_DANGER, danger) if DRONE_ON else -80.0, dt * 0.5)
 
 
 func _fade(p: AudioStreamPlayer, target: float, dt: float) -> void:

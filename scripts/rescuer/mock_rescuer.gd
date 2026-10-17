@@ -14,6 +14,7 @@ var pending_q := {}       # {feature, cands} — asked "tap once if you hear X"
 var bg_cands: Array = []
 var imposter := false
 var played_along := false
+var confirm_room := ""     # asked "did you make it?" about this room
 var _pending := -1.0
 var _read := 0            # line_log index already processed
 const L := {
@@ -31,6 +32,7 @@ const L := {
 		"the": "the ",
 		"imposter": ["That wasn't me! Don't go anywhere he tells you.", "That voice — it wasn't me. Stay put."],
 		"play_along": ["Okay. Stay %s. Don't move, I'm thinking.", "Right, %s. Hide there. Don't make a sound."],
+		"confirm": ["Did you make it — the room I sent you to? One tap yes, two no.", "Are you where I told you? Tap once for yes, twice for no."],
 	},
 	"cs": {
 		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
@@ -46,6 +48,7 @@ const L := {
 		"the": "",
 		"imposter": ["To jsem nebyla já! Nikam, kam ti řekne, nechoď.", "Ten hlas — to jsem nebyla já. Zůstaň, kde jsi."],
 		"play_along": ["Dobře. Zůstaň %s. Nehýbej se, přemýšlím.", "Jasně, %s. Schovej se tam. Ani muk."],
+		"confirm": ["Jsi tam, kam jsem tě poslala? Jedno ťuknutí ano, dvě ne.", "Jsi už tam, kde jsem říkala? Ťukni jednou pro ano, dvakrát pro ne."],
 	},
 }
 var min_delay := 1.2
@@ -95,6 +98,14 @@ func _compose() -> String:
 	var toks := Words.tokens(player_text)
 	if cautious and (low.contains("clear") or low.contains("gone") or low.contains("2 taps") or low.contains("hung up") or low.contains("pryc") or low.contains("cisto") or low.contains("zavesil")):
 		cautious = false
+	# Answer to "did you make it?"
+	if confirm_room != "" and not picked_up:
+		var yes1 := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
+		var no1 := low.contains("[2 taps") or "no" in toks or "ne" in toks
+		if yes1:
+			guess = confirm_room
+		if yes1 or no1:
+			confirm_room = ""
 	# Answer to our tap question?
 	if not pending_q.is_empty():
 		var yes := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
@@ -112,7 +123,12 @@ func _compose() -> String:
 	if picked_up and expect_next != "":
 		# Assume they followed us — but only if that's even possible:
 		# a room without a phone can't be calling, and the sounds must fit.
-		guess = expect_next if _plausible(expect_next, bg) else ""
+		guess = ""
+		if _plausible(expect_next, bg):
+			if bg != "" and _from_background(bg) == [expect_next]:
+				guess = expect_next  # the sounds confirm it
+			else:
+				confirm_room = expect_next  # ask before guiding
 		expect_next = ""
 	# Update the guess from words, strongest first.
 	var hits: Array = Words.nicknames_named(player_text, h)
@@ -122,7 +138,7 @@ func _compose() -> String:
 		guess = hits[0].room
 		expect_next = ""
 	else:
-		var rooms := Words.rooms_named(player_text)
+		var rooms := Words.rooms_named(player_text, h)
 		if not rooms.is_empty():
 			guess = rooms[0]
 			expect_next = ""
@@ -138,7 +154,7 @@ func _compose() -> String:
 		return _pick(tx.imposter)
 	if cautious:
 		# A room named while he's listening is probably a lure: play along.
-		var lure := Words.rooms_named(player_text)
+		var lure := Words.rooms_named(player_text, h)
 		if not lure.is_empty() and not played_along:
 			played_along = true
 			return _pick(tx.play_along) % h.room_in(lure[0])
@@ -146,6 +162,8 @@ func _compose() -> String:
 			return ""
 		said_cautious = true
 		return _pick(tx.cautious)
+	if confirm_room != "" and guess == "":
+		return _pick(tx.confirm)
 	if guess == "" and bg_cands.size() > 1:
 		# Ask about a sound that splits the candidates.
 		for f in House.FEATURES:
@@ -171,7 +189,7 @@ func _compose() -> String:
 			return _cap(_pick(tx.last) % dir)
 		return _cap(_pick(tx.step) % dir)
 	if od.has("nick"):
-		return _pick(tx.exit_nick) % h.obj_nick(game.exit_obj)
+		return _pick(tx.exit_nick) % _cap(h.obj_nick(game.exit_obj))
 	return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
 
 

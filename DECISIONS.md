@@ -140,3 +140,13 @@ A reviewer agent found 11 issues, all fixed:
 - **Post-game:** your route is drawn on the map next to his, and a "Look at the call" toggle lets you reread the transcript.
 - **Large house** (title toggle): a fourth column with the Billiard Room, Music Room and Bathroom, with full EN/CS content and two more nicknames ("the Cyclops", "the Singing Box"). The plan scales and centres itself automatically. In simulations games last longer, and a silent player survives about 14 minutes.
 - **Keyboard play:** arrows/WASD walk, Shift sneaks, H hides, Enter focuses the whisper field, and Esc leaves it. The text field is focused when a call starts, because typing is the main verb.
+- **Second review pass**, all fixed:
+  - large-house room words could crash the 9-room house (the parser now filters by the actual house)
+  - "Look at the call" couldn't scroll
+  - the first ringback was muted
+  - games ending during an action leaked
+  - over-broad Czech stems
+  - the drone couldn't really be disabled
+  - dev runs touched the settings file
+  - you could pass *through* him in a doorway (now: meeting him head-on in the door you're walking through gets you caught)
+- **The offline voice no longer blindly assumes you followed her.** After you pick up, she accepts her guess only if the background sounds confirm it. Otherwise she asks: "Did you make it — the room I sent you to? One tap yes, two no." *Why:* in two hand-played games her stale guesses sent me the wrong way with confidence.

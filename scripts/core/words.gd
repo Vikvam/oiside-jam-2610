@@ -66,7 +66,8 @@ static func directions(text: String) -> Array:
 	return out
 
 
-static func rooms_named(text: String) -> Array:
+## Rooms mentioned that exist in `house` (the large house has more names).
+static func rooms_named(text: String, house: House) -> Array:
 	var out := []
 	var toks := tokens(text)
 	for w in toks:
@@ -77,6 +78,7 @@ static func rooms_named(text: String) -> Array:
 		for rid in table:
 			if rid not in out and _any(toks, table[rid][3]):
 				out.append(rid)
+	out = out.filter(func(r): return house.rooms.has(r))
 	return out
 
 

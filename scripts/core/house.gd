@@ -232,14 +232,14 @@ const CS_EXTRA_ROOMS := {
 }
 const CS_EXTRA_OBJECTS := {
 	"billiard_table": ["kulečníkový stůl", "Kulečníkový stůl. Na suknu zbyla jediná koule: osmička.", ["kulecnik*", "sukn*"]],
-	"cue_rack": ["stojan s tágy", "Stojan s tágy. Jedno je zlomené vejpůl.", ["tag*", "tago"]],
+	"cue_rack": ["stojan s tágy", "Stojan s tágy. Jedno je zlomené vejpůl.", ["taga", "tago", "tagy", "tagem"]],
 	"dartboard": ["terč na šipky", "Terč, ze kterého trčí staré šipky.", ["terc*", "sipk*"], "Kyklop", "Terč… Kyklop. Ani jednou jste se mu netrefili do oka."],
-	"gramophone": ["gramofon", "Gramofon s prasklou deskou.", ["gramofon*", "desk*"], "Zpívající skříňka", "Gramofon… Zpívající skříňka. Hrál pořád jen jeden valčík."],
+	"gramophone": ["gramofon", "Gramofon s prasklou deskou.", ["gramofon*", "deska", "desku", "desky"], "Zpívající skříňka", "Gramofon… Zpívající skříňka. Hrál pořád jen jeden valčík."],
 	"harp": ["harfa", "Vysoká harfa, chybějí jí tři struny.", ["harf*", "strun*"]],
 	"music_stand": ["notový stojan", "Notový stojan. List na něm je prázdný.", ["noty", "notov*", "partitur*"]],
 	"bathtub": ["vana na nožičkách", "Vana na lvích nožičkách se šedým okrajem.", ["vana", "vane", "vanu", "vanou"]],
 	"medicine_cabinet": ["lékárnička", "Lékárnička plná hnědých lahviček.", ["lekarn*", "prasky", "leky", "lahvic*"]],
-	"laundry_chute": ["shoz na prádlo", "Dvířka shozu na prádlo.", ["shoz*", "prad*"]],
+	"laundry_chute": ["shoz na prádlo", "Dvířka shozu na prádlo.", ["shoz*", "pradlo", "pradla", "pradel"]],
 }
 const CS_EXTRA_FLAVOR := {
 	"billiard_table": "břidlicová deska kulečníku se odsune nad schodiště",

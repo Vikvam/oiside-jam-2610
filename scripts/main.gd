@@ -178,7 +178,7 @@ func _load_settings() -> void:
 
 
 func _save_settings() -> void:
-	if _dev:
+	if _dev or not OS.get_cmdline_user_args().is_empty():
 		return  # dev/test runs never overwrite the player's settings
 	_settings.set_value("ui", "style", Style.current)
 	_settings.set_value("ui", "backend", backend)
@@ -483,7 +483,10 @@ func _build_over() -> void:
 	peek.toggle_mode = true
 	peek.toggled.connect(func(on):
 		over_text.visible = not on
-		over_panel.self_modulate.a = 0.0 if on else 1.0)
+		over_panel.self_modulate.a = 0.0 if on else 1.0
+		# Let the mouse wheel reach the transcript underneath.
+		for c in [over_panel, over_panel.get_child(0), over_panel.get_child(0).get_child(0)]:
+			c.mouse_filter = Control.MOUSE_FILTER_IGNORE if on else Control.MOUSE_FILTER_STOP)
 	row.add_child(peek)
 	var again := Button.new()
 	again.text = Loc.t("again")
@@ -667,6 +670,7 @@ func _start_game() -> void:
 	phone.input.call_deferred("grab_focus")
 	_intro_queue = INTRO[Loc.lang].duplicate()
 	_intro_t = 4.6
+	sfx.active = true
 	sfx.ring_in()
 	phone.add_line("sound", Loc.t("ringing"))
 	if backend != "mock":
@@ -739,7 +743,7 @@ func _show_over() -> void:
 		t += Loc.t("notebook_empty") + "\n"
 	over_text.text = t
 	over_layer.visible = true
-	peek_btn.set_pressed_no_signal(false)
+	peek_btn.button_pressed = false
 	over_text.visible = true
 	over_panel.self_modulate.a = 1.0
 
