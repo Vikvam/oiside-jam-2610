@@ -17,6 +17,7 @@ var player_room := ""
 var moving_to := ""
 var sneaking := false
 var move_timer := 0.0
+var move_total := 1.0
 var busy := ""            # current action label
 var busy_timer := 0.0
 var _busy_done: Callable
@@ -225,6 +226,7 @@ func move_to(r: String, sneak := false) -> bool:
 	moving_to = r
 	sneaking = sneak
 	move_timer = player_sneak if sneak else player_walk
+	move_total = move_timer
 	emit("player_move_start", {"from": player_room, "to": r, "dur": move_timer, "sneak": sneak})
 	return true
 
@@ -346,6 +348,8 @@ func _start_busy(label: String, dur: float, done: Callable) -> void:
 
 func on_murderer_entered(r: String) -> void:
 	var d := house.distance(player_room, r)
+	if r == player_room and moving_to != "" and move_timer < move_total * 0.5:
+		return  # you were already halfway through the far door
 	if r == player_room:
 		if hidden and moving_to == "":
 			var chance := find_chance_pass

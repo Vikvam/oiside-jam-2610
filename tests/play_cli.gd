@@ -22,6 +22,8 @@ var think_time := 2.0
 func _init() -> void:
 	var a := OS.get_cmdline_user_args()
 	path = a[0]
+	if a.size() > 3:
+		Loc.lang = a[3]
 	g = Game.new()
 	g.difficulty = a[2] if a.size() > 2 else "normal"
 	g.setup(int(a[1]))

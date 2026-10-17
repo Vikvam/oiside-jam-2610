@@ -3,7 +3,7 @@ extends SceneTree
 ## the local Haiku proxy. Capped at MAX_CALLS requests. Prints a transcript.
 ##   godot --headless --path . -s tests/llm_game.gd -- [seed]
 
-const MAX_CALLS := 20
+const MAX_CALLS := 12
 const BotScript = preload("res://tests/sim.gd")
 
 var g: Game
@@ -14,6 +14,8 @@ var calls := 0
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
+	if args.size() > 1:
+		Loc.lang = args[1]
 	g = Game.new()
 	g.difficulty = "normal"
 	g.setup(int(args[0]) if args.size() > 0 else 42)
