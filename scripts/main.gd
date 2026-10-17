@@ -719,7 +719,6 @@ func _start_game() -> void:
 	for o in r.objects:
 		if o.has("memory"):
 			phone.add_line("memory", game.house.obj_memory(o.id))
-	phone.hint("start")
 	phone.input.call_deferred("grab_focus")
 	_intro_queue = INTRO[Loc.lang].duplicate()
 	_intro_t = 4.6
@@ -731,6 +730,8 @@ func _start_game() -> void:
 
 
 func _on_game_event(t: String, d: Dictionary) -> void:
+	if t == "player_arrive":
+		phone.hint("start")  # the plan legend, once you start moving
 	if t == "player_says" and _intro_queue.size() > 0:
 		# They talk over her intro: she cuts it short with the essentials.
 		_intro_queue.clear()
