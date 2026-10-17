@@ -17,6 +17,8 @@ var _voice_i := 0
 var _char_n := 0
 var danger := 0.0              # perceived danger 0..1, decays
 var master_db := 0.0
+## Per-feature loudness in your room (the clock loop is sparse, so it gets more gain).
+const FEATURE_DB := {"clock": -1.0, "fan": -11.0, "rain": -9.0, "radiator": -8.0}
 
 
 func _ready() -> void:
@@ -86,7 +88,7 @@ func _generate() -> void:
 	s.breath = Synth.to_wav(Synth.breath())
 	s.bell = Synth.to_wav(Synth.bell(392.0))
 	s.crash = Synth.to_wav(Synth.crash())
-	s.toggle = Synth.to_wav(Synth.tick(800.0, 0.08))
+	s.toggle = Synth.to_wav(Synth.fade_out(Synth.tick(800.0, 0.08), 0.02))
 	# Her voice: a handful of vowel syllables around a female-ish pitch.
 	var vowels := [[800.0, 1200.0], [500.0, 1900.0], [330.0, 2300.0], [520.0, 950.0], [380.0, 900.0], [650.0, 1700.0]]
 	s.syll = []
@@ -207,7 +209,7 @@ func _process(dt: float) -> void:
 	danger = maxf(0.0, danger - dt * 0.12)
 	var mine := game.active_features(game.player_room) if game.moving_to == "" else []
 	for f in House.FEATURES:
-		var target := -9.0 if f in mine else -80.0
+		var target: float = FEATURE_DB[f] if f in mine else -80.0
 		if f == "rain" and game.raining and game.house.has_feature(game.player_room, "rain") and not game.room_state[game.player_room].window:
 			target = -24.0  # muffled through the closed window
 		_fade(room_amb[f], target, dt)
@@ -215,7 +217,7 @@ func _process(dt: float) -> void:
 	_fade(hiss, -20.0 if on else -80.0, dt * 2.0)
 	var theirs := game.active_features(game.murderer.room) if (on and game.murderer.on_line) else []
 	for f in House.FEATURES:
-		_fade(line_amb[f], -20.0 if f in theirs else -80.0, dt)
+		_fade(line_amb[f], FEATURE_DB[f] - 12.0 if f in theirs else -80.0, dt)
 	_fade(heart, lerpf(-40.0, -4.0, danger) if danger > 0.05 else -80.0, dt * 2.0)
 	heart.pitch_scale = lerpf(0.9, 1.35, danger)
 

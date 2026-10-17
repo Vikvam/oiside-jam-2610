@@ -79,6 +79,14 @@ static func resonate(b: PackedFloat32Array, freq: float, q: float) -> PackedFloa
 	return out
 
 
+## Fade the last `sec` seconds to silence (avoids clicks at the end).
+static func fade_out(b: PackedFloat32Array, sec := 0.01) -> PackedFloat32Array:
+	var n := mini(int(sec * RATE), b.size())
+	for i in n:
+		b[b.size() - 1 - i] *= float(i) / n
+	return b
+
+
 static func add_into(dst: PackedFloat32Array, src: PackedFloat32Array, at: int, gain := 1.0) -> void:
 	for i in src.size():
 		var j := (at + i) % dst.size()
@@ -184,7 +192,7 @@ static func receiver_click() -> PackedFloat32Array:
 		var t := float(i) / RATE
 		thump[i] = sin(TAU * (120.0 - t * 200.0) * t) * exp(-t * 30.0)
 	add_into(b, thump, int(RATE * 0.04), 0.5)
-	return normalize(b, 0.9)
+	return fade_out(normalize(b, 0.9), 0.02)
 
 
 static func tap_knock() -> PackedFloat32Array:
@@ -192,28 +200,31 @@ static func tap_knock() -> PackedFloat32Array:
 	for i in b.size():
 		var t := float(i) / RATE
 		b[i] = (sin(TAU * 520.0 * t) + sin(TAU * 1310.0 * t) * 0.5 + (randf() - 0.5)) * exp(-t * 70.0)
-	return normalize(b, 0.8)
+	return fade_out(normalize(b, 0.8), 0.02)
 
 
 static func footstep(heavy := true) -> PackedFloat32Array:
-	var b := blank(0.35)
-	var f0 := 70.0 if heavy else 110.0
+	var b := blank(0.4)
+	var f0 := 52.0 if heavy else 85.0
+	var phase := 0.0
 	for i in b.size():
 		var t := float(i) / RATE
-		b[i] = sin(TAU * (f0 + 40.0 * exp(-t * 30.0)) * t) * exp(-t * 18.0)
-	var n := lowpass(noise(0.35), 900.0)
+		phase += (f0 + 45.0 * exp(-t * 35.0)) / RATE
+		b[i] = sin(TAU * phase) * exp(-t * (14.0 if heavy else 22.0))
+	# heel scuff: low-passed noise, short
+	var n := lowpass(lowpass(noise(0.4), 350.0), 350.0)
 	for i in b.size():
 		var t := float(i) / RATE
-		b[i] += n[i] * 3.0 * exp(-t * 40.0)
-	# floorboard creak on some steps
-	if randf() < 0.4:
+		b[i] += n[i] * 4.0 * exp(-t * 45.0)
+	# floorboard creak on some steps (quiet, mid-range)
+	if randf() < 0.35:
 		var cr := blank(0.3)
-		var f := randf_range(500.0, 800.0)
+		var f := randf_range(320.0, 520.0)
 		for i in cr.size():
 			var t := float(i) / RATE
-			cr[i] = sin(TAU * (f + 60.0 * sin(t * 25.0)) * t) * sin(PI * t / 0.3) * 0.15
-		add_into(b, cr, 0, 1.0)
-	return normalize(b, 0.9)
+			cr[i] = sin(TAU * (f + 40.0 * sin(t * 25.0)) * t) * sin(PI * t / 0.3) * 0.06
+		add_into(b, cr, int(RATE * 0.05), 1.0)
+	return fade_out(normalize(b, 0.9), 0.03)
 
 
 static func breath() -> PackedFloat32Array:
@@ -256,7 +267,7 @@ static func crash() -> PackedFloat32Array:
 	add_into(b, clank(310.0), int(RATE * 0.05), 0.8)
 	add_into(b, clank(470.0), int(RATE * 0.2), 0.5)
 	add_into(b, footstep(true), int(RATE * 0.4), 0.7)
-	return normalize(b, 0.95)
+	return fade_out(normalize(b, 0.95), 0.2)
 
 
 static func heartbeat() -> PackedFloat32Array:

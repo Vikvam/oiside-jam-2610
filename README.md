@@ -58,6 +58,12 @@ godot --headless --path . -s tests/sim.gd -- 300 smart q normal   # policies: ra
 # Screenshot harness
 godot --path . -- --play --style=ink --seed=3 --at=8 --shot=/tmp/x.png [--debug] [--backend=proxy] [--say="..."]
 
+# Export every synthesised sound to WAV (to listen to or analyse)
+godot --headless --path . -s tests/export_audio.gd -- /tmp/wavs
+
+# Play in text mode (perceive only what the player perceives); append commands to cmd.txt
+godot --headless --path . -s tests/play_cli.gd -- cmd.txt <seed> normal
+
 # Dump the rescuer prompt for a scenario
 godot --headless --path . -s tests/dump_prompt.gd -- out.json "[background on the line: ticking clock]" "player line"
 ```
