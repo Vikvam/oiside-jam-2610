@@ -40,6 +40,8 @@ var explore_mode := false
 var hints_on := true
 var rearranged := false
 var large := false
+var stats := {"calls": 0, "escapes": 0, "best": 0.0}
+var stats_label: Label
 var running := false
 var _intro_queue: Array = []
 var _intro_t := 0.0
@@ -167,6 +169,7 @@ func _load_settings() -> void:
 	hints_on = _settings.get_value("ui", "hints", true)
 	rearranged = _settings.get_value("ui", "rearranged", false)
 	large = _settings.get_value("ui", "large", false)
+	stats = _settings.get_value("stats", "all", stats)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
 	if rc.load("res://rescuer_config.cfg") == OK or rc.load("user://rescuer_config.cfg") == OK:
@@ -185,6 +188,7 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "hints", hints_on)
 	_settings.set_value("ui", "rearranged", rearranged)
 	_settings.set_value("ui", "large", large)
+	_settings.set_value("stats", "all", stats)
 	_settings.save("user://settings.cfg")
 
 
@@ -393,6 +397,11 @@ func _build_title() -> void:
 	start.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start.pressed.connect(_start_game)
 	v.add_child(start)
+	stats_label = Label.new()
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_label.add_theme_font_size_override("font_size", 12)
+	v.add_child(stats_label)
+	_refresh_stats()
 	_refresh_title_buttons()
 
 
@@ -410,6 +419,18 @@ func _set_lang(lg: String) -> void:
 	header_label.text = Loc.t("header")
 	_apply_style()
 	_show_title()
+
+
+func _refresh_stats() -> void:
+	if stats_label == null:
+		return
+	if stats.calls == 0:
+		stats_label.text = ""
+		return
+	var best := ""
+	if stats.best > 0.0:
+		best = "  ·  " + Loc.t("stats_best", [int(stats.best) / 60, int(stats.best) % 60])
+	stats_label.text = Loc.t("stats", [stats.calls, stats.escapes]) + best
 
 
 func _refresh_title_buttons() -> void:
@@ -672,6 +693,14 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 			_start_game()
 			_attach_bot())
 		return
+	if t == "game_over" and not _dev:
+		stats.calls += 1
+		if d.won:
+			stats.escapes += 1
+			if stats.best <= 0.0 or game.time < stats.best:
+				stats.best = game.time
+		_save_settings()
+		_refresh_stats()
 	if t == "game_over":
 		running = false
 		var ended := game
