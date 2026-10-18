@@ -205,7 +205,7 @@ func _dev_args() -> void:
 
 func _load_settings() -> void:
 	_settings.load("user://settings.cfg")
-	Style.current = _settings.get_value("ui", "style", "blueprint")
+	Style.current = _settings.get_value("ui", "style", "phosphor")
 	backend = _settings.get_value("ui", "backend", "mock")
 	difficulty = _settings.get_value("ui", "difficulty", "gentle")
 	Loc.lang = _settings.get_value("ui", "lang", "en")
