@@ -850,8 +850,8 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 
 ## Every finished call is written to user://games/ so it can be reviewed.
 func _write_game_log(d: Dictionary) -> void:
-	if _dev and _soak_left > 0:
-		return
+	if _dev and not OS.get_cmdline_user_args().has("--log"):
+		return  # dev/test runs don't fill the player's game folder (unless --log)
 	DirAccess.make_dir_recursive_absolute("user://games")
 	var stamp := Time.get_datetime_string_from_system().replace(":", "-")
 	var f := FileAccess.open("user://games/%s_%s.txt" % [stamp, game.end_reason], FileAccess.WRITE)
