@@ -1,7 +1,7 @@
 class_name RoomPanel
 extends PanelContainer
 ## What's in the room you're in: objects (each a possible hidden exit),
-## things you can switch off, doors.
+## hiding, sneaking and the things you can switch off. Doors live on the plan.
 
 signal move_requested(room: String, sneak: bool)
 
@@ -11,7 +11,6 @@ var busy_bar: ProgressBar
 var busy_label: Label
 var objects_box: HFlowContainer
 var actions_box: HFlowContainer
-var doors_box: HFlowContainer
 var sneak_toggle: CheckButton
 var sneak := false
 var armed := ""
@@ -39,8 +38,6 @@ func _ready() -> void:
 	v.add_child(objects_box)
 	actions_box = HFlowContainer.new()
 	v.add_child(actions_box)
-	doors_box = HFlowContainer.new()
-	v.add_child(doors_box)
 
 
 func bind(g: Game) -> void:
@@ -102,7 +99,7 @@ func _small(parent: Node, text: String) -> void:
 func rebuild() -> void:
 	if game == null:
 		return
-	for box in [objects_box, actions_box, doors_box]:
+	for box in [objects_box, actions_box]:
 		for c in box.get_children():
 			c.queue_free()
 	var h := game.house
@@ -110,60 +107,40 @@ func rebuild() -> void:
 	var ok := game.can_act()
 	title.text = Loc.t("tries", [h.room_name(game.player_room).to_upper(), "● ".repeat(game.attempts_left) + "○ ".repeat(3 - game.attempts_left)])
 	if game.moving_to != "":
-		title.text = Loc.t("walking_to", [h.room_to(game.moving_to)])
+		title.text = Loc.t("walking_to", [h.room_to(game.moving_to) if game.visited.has(game.moving_to) else "?"])
+	# Row 1: what you can search (each is a possible hidden exit).
 	_small(objects_box, Loc.t("search"))
-	var tagged := false
 	for o in r.objects:
 		var label: String = h.obj_name(o.id)
 		var tip := Loc.t("obj_tip", [h.obj_desc(o.id)])
 		if h.is_obvious(o.id):
 			label += " ◉"
 			tip += Loc.t("obj_tip_obvious")
-			tagged = true
 		elif o.has("nick"):
 			label += " ♥ " + h.obj_nick(o.id)
 			tip += Loc.t("obj_tip_nick", [h.obj_nick(o.id)])
-			tagged = true
 		if game.tried.has(o.id):
 			label += " ✗"
 		if armed == o.id:
 			label = Loc.t("really")
 		var b := _btn(objects_box, label, func(): _search(o.id), ok and not game.tried.has(o.id))
 		b.tooltip_text = tip
-	if tagged:
-		var lg := Label.new()
-		lg.text = Loc.t("obj_legend")
-		lg.add_theme_font_size_override("font_size", 11)
-		lg.add_theme_color_override("font_color", Style.c("dim"))
-		objects_box.add_child(lg)
-	_small(actions_box, Loc.t("sounds"))
-	var s: Dictionary = game.room_state[game.player_room]
-	var any := false
-	if h.has_feature(game.player_room, "clock"):
-		_btn(actions_box, Loc.t("clock_stop_b") if s.clock else Loc.t("clock_wind_b"), func(): game.toggle_feature("clock"), ok)
-		any = true
-	if h.has_feature(game.player_room, "fan"):
-		_btn(actions_box, Loc.t("fan_off_b") if s.fan else Loc.t("fan_on_b"), func(): game.toggle_feature("fan"), ok)
-		any = true
-	if h.has_feature(game.player_room, "rain"):
-		_btn(actions_box, Loc.t("win_close_b") if s.window else Loc.t("win_open_b"), func(): game.toggle_feature("rain"), ok)
-		any = true
-	if h.has_feature(game.player_room, "radiator"):
-		_small(actions_box, Loc.t("radiator_on") if game.heating else Loc.t("radiator_off"))
-	if not any and not h.has_feature(game.player_room, "radiator"):
-		_small(actions_box, Loc.t("silent_room"))
-	_small(doors_box, Loc.t("doors"))
-	for dir in House.DIRS:
-		var to := h.step(game.player_room, dir)
-		if to != "":
-			var dest := h.room_name(to) if game.visited.has(to) else "?"
-			_btn(doors_box, "%s · %s → %s" % [Loc.t("rel_" + House.relative(game.facing, dir)), Loc.t(dir.capitalize()), dest], func():
-				move_requested.emit(to, sneak), ok)
-	var hb := _btn(doors_box, Loc.t("hidden_btn") if game.hidden else Loc.t("hide"), func(): game.toggle_hide(), ok)
+	# Row 2: hide, sneak, and the things in this room that make noise.
+	# (Doors are on the plan: click a room, or use the arrow keys.)
+	var hb := _btn(actions_box, Loc.t("hidden_btn") if game.hidden else Loc.t("hide"), func(): game.toggle_hide(), ok)
 	hb.tooltip_text = Loc.t("hide_tip")
 	sneak_toggle = CheckButton.new()
 	sneak_toggle.text = Loc.t("sneak")
 	sneak_toggle.focus_mode = Control.FOCUS_NONE
 	sneak_toggle.button_pressed = sneak
 	sneak_toggle.toggled.connect(func(v): sneak = v)
-	doors_box.add_child(sneak_toggle)
+	actions_box.add_child(sneak_toggle)
+	var s: Dictionary = game.room_state[game.player_room]
+	if h.has_feature(game.player_room, "clock"):
+		_btn(actions_box, Loc.t("clock_stop_b") if s.clock else Loc.t("clock_wind_b"), func(): game.toggle_feature("clock"), ok)
+	if h.has_feature(game.player_room, "fan"):
+		_btn(actions_box, Loc.t("fan_off_b") if s.fan else Loc.t("fan_on_b"), func(): game.toggle_feature("fan"), ok)
+	if h.has_feature(game.player_room, "rain"):
+		_btn(actions_box, Loc.t("win_close_b") if s.window else Loc.t("win_open_b"), func(): game.toggle_feature("rain"), ok)
+	if h.has_feature(game.player_room, "radiator"):
+		_small(actions_box, Loc.t("radiator_on") if game.heating else Loc.t("radiator_off"))

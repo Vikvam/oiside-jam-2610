@@ -5,9 +5,10 @@ extends Control
 
 signal room_clicked(room: String, sneak: bool)
 
-const BOX := Vector2(624, 468)  # pixel box the plan must fit in
-var U := 52.0                   # pixels per plan unit (recomputed per house)
-var origin := Vector2(4, 4)     # top-left of the drawn plan (centred in BOX)
+const MIN_SIZE := Vector2(420, 280)  # the plan grows to fill whatever is left
+const WIDTH := 632.0                 # the left column's width
+var U := 52.0                   # pixels per plan unit (recomputed on resize)
+var origin := Vector2(4, 4)     # top-left of the drawn plan (centred in the control)
 const DOOR_W := 0.9
 
 var game: Game
@@ -29,15 +30,25 @@ var _redraw_acc := 0.0
 
 
 func _ready() -> void:
-	custom_minimum_size = BOX + Vector2(8, 8)
+	custom_minimum_size = MIN_SIZE
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	resized.connect(_fit)
+
+
+## Scale the house to fill the control, keeping its proportions.
+func _fit() -> void:
+	if game == null:
+		return
+	var units := game.house.size_units()
+	var box := size - Vector2(8, 8)
+	U = minf(box.x / units.x, box.y / units.y)
+	origin = Vector2(4, 4) + (box - units * U) * 0.5
 
 
 func bind(g: Game) -> void:
 	game = g
-	var units := g.house.size_units()
-	U = minf(BOX.x / units.x, BOX.y / units.y)
-	origin = Vector2(4, 4) + (BOX - units * U) * 0.5
+	_fit()
 	guess = ""
 	ripples.clear()
 	g.event.connect(_on_event)
@@ -251,7 +262,9 @@ func _draw() -> void:
 			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - (66 if h.has_camera(id) else 40), maxi(10, int(14 * U / 52.0)), name_col)
 		if known:
 			_draw_icons(id, rc)
-		if game.visited.has(id):
+		# Remembered contents of rooms you've left (your own room's are in the
+		# room panel, and its doors carry the turn markers).
+		if game.visited.has(id) and (id != game.player_room or game.over):
 			var y := rc.position.y + 22.0 + maxf(12.0, U * 0.33)
 			var fs := 11 if U >= 45.0 else 10
 			for o in h.rooms[id].objects:
@@ -315,10 +328,45 @@ func _draw() -> void:
 		lc.a = 0.6
 		draw_arc(pp, 15.0, -PI * 0.8, -PI * 0.2, 12, lc, 1.5, true)
 		draw_arc(pp, 20.0, -PI * 0.75, -PI * 0.25, 12, lc, 1.5, true)
+	# Turn markers at your doors: her "left / right / straight / back".
+	if not game.over and game.moving_to == "":
+		_draw_turns(font)
 	# Hover hint
 	if hover != "" and hover in reachable:
 		var hr := _rect(hover)
-		draw_string(font, hr.position + Vector2(10, hr.size.y - 34), Loc.t("walk_hint"), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Style.c("accent"))
+		var dir := h.door_to(game.player_room, hover)
+		var lbl := "%s · %s" % [Loc.t("rel_" + House.relative(game.facing, dir)), Loc.t(dir.capitalize())]
+		draw_string(font, hr.position + Vector2(10, hr.size.y - 34), lbl, HORIZONTAL_ALIGNMENT_LEFT, hr.size.x - 16, 12, Style.c("accent"))
+		draw_string(font, hr.position + Vector2(10, hr.size.y - 20), Loc.t("walk_hint"), HORIZONTAL_ALIGNMENT_LEFT, hr.size.x - 16, 10, Style.c("dim"))
+
+
+## A small arrow and word just inside each door of your room, pointing out.
+func _draw_turns(font: Font) -> void:
+	var h := game.house
+	var c := _c(game.player_room)
+	var col: Color = Style.c("you")
+	var fs := maxi(10, int(12 * U / 52.0))
+	for dir in House.DIRS:
+		var to := h.step(game.player_room, dir)
+		if to == "":
+			continue
+		var dp := _door_point(game.player_room, to)
+		var out := Vector2(House.DIR_VEC[dir])
+		var p := dp - out * U * 0.42  # just inside the room
+		var tip := p + out * U * 0.2
+		draw_line(p - out * U * 0.12, tip, col, 2.0, true)
+		draw_line(tip, tip - out * 6.0 + out.orthogonal() * 4.5, col, 2.0, true)
+		draw_line(tip, tip - out * 6.0 - out.orthogonal() * 4.5, col, 2.0, true)
+		var word := Loc.t("turn_" + House.relative(game.facing, dir))
+		var tw := font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		# Put the word beside the arrow, towards the room's centre.
+		var side := (c - p).normalized()
+		var at := p + (Vector2(0, -8) if out.x != 0 else Vector2(8, 4))
+		if out.y != 0 and side.x < 0:
+			at.x -= tw + 16
+		if out.x > 0:
+			at.x -= tw
+		draw_string(font, at, word, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 
 func _draw_reveal(font: Font) -> void:

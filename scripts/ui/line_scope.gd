@@ -19,7 +19,7 @@ var _redraw_acc := 0.0
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(0, 46)
+	custom_minimum_size = Vector2(0, 30)
 	line.resize(N)
 	foreign.resize(N)
 	line.fill(0.0)

@@ -195,3 +195,13 @@ After 5 more games (0 escapes) the user asked for:
 - **Walking into him isn't instant death on Gentle and Normal:** you see him in the doorway and stumble back, and he knows exactly where you are and comes for you. Run or hide. Hard keeps instant death.
 - She warns when he's off the cameras ("listen at the door before you open it"). She no longer says "west, then west". The Czech yes/no questions are fixed ("Máš v té místnosti hodiny?").
 - Sims: about 50–60% escapes on gentle, 35–50% on normal.
+
+## UI rework (after round 3)
+
+The user couldn't play: at 1280×720 the left column needed 725–775 px of 688, which pushed the phone's text field and buttons off-screen. Review and plan: UI_REWORK.md. Done:
+- **The plan is flexible** (`PlanView._fit` on resize) and fills the space the room panel leaves. No more fixed 624×468 box.
+- **Doors live on the plan:** turn markers (← left, ↑ ahead, → right, ↓ back) inside each door of your room, and the hover label says "→ right · East". The door-button row is gone; clicking and the arrow keys are unchanged. Your own room's object list isn't drawn on the plan (it's in the room panel).
+- **Compact room panel, two rows:** Search chips; then Hide/Come out, sneak (Shift) and the sound switches. The ◉/♥ legend moved to tooltips and help.
+- **The title and call timer moved to the right column**; the house box is 112 px and the line scope 30 px.
+- **The window opens at about 80% of the usable screen (16:9)** when that's bigger than 1280×720, for the user's 4608×2880 display.
+- **`tests/layout.gd`** (part of run_all) fails if the plan, the room panel rows, the house box, the phone, the text field or the Tap/Hang-up buttons leave the 1280×720 view, in EN/CS × classic/large. With aspect "expand" the virtual screen is never smaller than 1280×720, so that's the worst case.

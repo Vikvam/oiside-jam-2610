@@ -39,6 +39,7 @@ On the title screen, pick:
 | Ctrl+H / Hang up · Pick up | the receiver |
 | Search buttons | try an object as the hidden exit (click twice; a wrong try is LOUD; 3 tries) |
 | Sounds buttons | stop the clock, switch off the fan, close the window |
+| Turn markers on the plan | ← left / ↑ ahead / → right / ↓ back at your doors, matching her directions |
 | Hide / Come out | hide in the room (hangs up). Safe while he only passes through; if he came for your room, sneak out another door |
 | F2 | cycle the visual style |
 | F3 | cheat/debug: show the murderer, his candidate rooms, the exit and his thoughts |

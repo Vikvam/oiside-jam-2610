@@ -64,6 +64,7 @@ func _attach_bot() -> void:
 
 func _ready() -> void:
 	_load_settings()
+	_fit_window()
 	bg = ColorRect.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -84,6 +85,22 @@ func _ready() -> void:
 	randomize()  # setup() seeded the global RNG; don't make every first game identical
 	plan.bind(demo)
 	_dev_args()
+
+
+## On big or dense screens a 1280×720 window is tiny: open at ~80% of the
+## usable screen (16:9, centred). canvas_items stretch scales everything.
+func _fit_window() -> void:
+	if not OS.get_cmdline_user_args().is_empty() or DisplayServer.get_name() == "headless":
+		return
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
+		return
+	var scr := DisplayServer.screen_get_usable_rect()
+	var w := mini(int(scr.size.x * 0.8), int(scr.size.y * 0.8 * 16.0 / 9.0))
+	var sz := Vector2i(w, int(w * 9.0 / 16.0))
+	if sz.x <= 1280:
+		return
+	DisplayServer.window_set_size(sz)
+	DisplayServer.window_set_position(scr.position + (scr.size - sz) / 2)
 
 
 ## Dev harness: godot --path . -- --shot=/tmp/x.png --style=ink --at=8 --play --debug --seed=3
@@ -147,21 +164,7 @@ func _dev_args() -> void:
 					ev.global_position = pos
 					Input.parse_input_event(ev)
 					await get_tree().process_frame
-				print("clicktest plan: target=%s moving_to=%s" % [target, game.moving_to])
-				await get_tree().create_timer(3.0).timeout
-				# Now press the first door button in the room panel.
-				var btns := room_panel.doors_box.get_children().filter(func(c): return c is Button and not c is CheckButton and not c.disabled)
-				var b: Button = btns[0]
-				var bp: Vector2 = b.get_global_rect().get_center()
-				for pressed in [true, false]:
-					var ev2 := InputEventMouseButton.new()
-					ev2.button_index = MOUSE_BUTTON_LEFT
-					ev2.pressed = pressed
-					ev2.position = bp
-					ev2.global_position = bp
-					Input.parse_input_event(ev2)
-					await get_tree().process_frame
-				print("clicktest button '%s': moving_to=%s" % [b.text, game.moving_to]))
+				print("clicktest plan: target=%s moving_to=%s" % [target, game.moving_to]))
 		if a.has("keytest"):
 			get_tree().create_timer(2.0).timeout.connect(func():
 				var ev := InputEventKey.new()
@@ -255,19 +258,19 @@ func _build_game_ui() -> void:
 	margin.add_child(h)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 10)
-	left.custom_minimum_size.x = PlanView.BOX.x + 8
+	left.custom_minimum_size.x = PlanView.WIDTH
 	left.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	h.add_child(left)
 	var header := Label.new()
 	header.text = Loc.t("header")
+	header.clip_text = true
 	header_label = header
-	left.add_child(header)
 	plan = PlanView.new()
 	plan.room_clicked.connect(_on_room_clicked)
 	left.add_child(plan)
 	room_panel = RoomPanel.new()
-	room_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	room_panel.custom_minimum_size.x = PlanView.BOX.x + 8
+	room_panel.size_flags_vertical = Control.SIZE_SHRINK_END  # as tall as its rows; the plan takes the rest
+	room_panel.custom_minimum_size.x = PlanView.WIDTH
 	room_panel.clip_contents = true
 	room_panel.move_requested.connect(func(r, sn): if game: game.move_to(r, sn))
 	left.add_child(room_panel)
@@ -277,8 +280,9 @@ func _build_game_ui() -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.add_theme_constant_override("separation", 8)
 	h.add_child(right)
+	right.add_child(header)  # title + call timer, above the two sound boxes
 	var house_box := PanelContainer.new()
-	house_box.custom_minimum_size.y = 128
+	house_box.custom_minimum_size.y = 112
 	right.add_child(house_box)
 	var hb := VBoxContainer.new()
 	hb.add_theme_constant_override("separation", 2)

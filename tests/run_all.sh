@@ -15,6 +15,10 @@ for env in "" "LARGE=1" "REARRANGE=1" "LARGE=1 REARRANGE=1"; do
   echo "[$env] $line"
   echo "$line" | grep -q "SCRIPT ERROR" && fail=1
 done
+echo "== layout (1280x720, EN/CS, classic/large)"
+out=$(timeout 90 godot --path . -s tests/layout.gd 2>&1)
+echo "$out" | grep -E "^layout|FAIL"
+echo "$out" | grep -q "layout.*OK" || fail=1
 echo "== GUI soak"
 out=$(timeout 600 godot --headless --path . -- --play --backend=mock --autoplay=smart --speed=10 --soak=5 2>&1)
 echo "$out" | grep -E "soak done"
