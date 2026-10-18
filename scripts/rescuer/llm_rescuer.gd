@@ -115,13 +115,17 @@ static func parse_reply(text: String, house: House) -> Dictionary:
 static func build_system(g) -> String:
 	var h: House = g.house
 	var s := ""
-	s += "You are voicing Mara in a tense horror game. Stay in character. Output ONLY a JSON object.\n\n"
+	s += "You are voicing Mara in a tense horror game. Stay in character. Output ONLY a JSON object.\n"
+	if Loc.lang == "cs":
+		s += "IMPORTANT: the player speaks CZECH. Every \"say\" MUST be in Czech, using the Czech names and nicknames given below.\n"
+	s += "\n"
 	s += "SITUATION: Your younger sibling (the player) is trapped in the old family house with a murderer. "
 	s += "They found a wired phone and called you. You grew up in that house and know a hidden way out that the murderer does not know. "
 	s += "Guide them to it.\n\n"
 	s += "THE DANGER: every room's phone is on ONE party line. The murderer can pick up any extension and silently listen. "
 	s += "He knows the floor plan, the room names and which rooms have which sounds (clock, fan, rain window, radiator). "
-	s += "He knows the objects inside a room ONLY if he has already searched it (you don't know which ones he has). "
+	s += "He knows the obvious furniture of every room (marked OBVIOUS below: say 'bathtub' and he knows it's the bathroom). "
+	s += "Other objects he knows ONLY if he has already searched that room (you don't know which ones he has). "
 	s += "He NEVER knows the childhood nicknames below — those are safe, but the player only knows a nickname after seeing that object. "
 	s += "If he hears a room name or an object he knows, he will go there. Compass directions ('take the east door') "
 	s += "only help him if he already knows where the player is. He also hears the background sounds behind the player's voice.\n\n"
@@ -136,19 +140,43 @@ static func build_system(g) -> String:
 		var feats: Array = r.features.map(func(f): return House.FEATURE_LABEL[f])
 		var cs_name := " / Czech: %s" % House.cs_room(rid)[0] if Loc.lang == "cs" else ""
 		s += "- %s%s (id: %s). %s. Sounds: %s. Doors: %s.\n" % [r.name, cs_name, rid, "Has a phone" if r.phone else "NO phone", ", ".join(feats) if not feats.is_empty() else "none", "; ".join(doors)]
-		for o in r.objects:
+		# What was in the room when you were kids: small things may have moved.
+		for oid in h.home_room:
+			if h.home_room[oid] != rid:
+				continue
+			var o := h.object_def(oid)
 			var line := "    · %s" % o.name
 			if Loc.lang == "cs":
 				line += " (Czech: %s)" % House.cs_obj(o.id)[0]
+			if o.get("obvious", false):
+				line += " [OBVIOUS: he'd know the room from this word]"
 			if o.has("nick"):
 				if Loc.lang == "cs":
 					line += " — childhood nickname \"%s\" (%s)" % [House.cs_obj(o.id)[3], House.cs_obj(o.id)[4]]
 				else:
 					line += " — childhood nickname \"%s\" (%s)" % [o.nick, o.memory]
+				var alt := h.obj_alt(o.id)
+				if alt != "" and h.is_movable(o.id):
+					line += " [it's small: someone may have moved it, maybe to the %s; you don't know]" % h.rooms[alt].name
+				elif alt != "":
+					line += " [you're not 100%% sure it was here, it might have been the %s]" % h.rooms[alt].name
 			s += line + "\n"
 	var od := h.object_def(g.exit_obj)
 	s += "\nTHE WAY OUT: the %s in the %s — %s. The player must stand in that room and search that exact object. " % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, House.EXTRA_FLAVOR.get(g.exit_obj, ""))]
-	s += "They get only 3 tries in total and a wrong try makes a loud crash that gives away their room.\n\n"
+	s += "They get only 3 tries in total and a wrong try makes a loud crash that gives away their room.\n"
+	var land := h.nick_obj(g.exit_room)
+	if land != "":
+		var nick: String = House.cs_obj(land)[3] if Loc.lang == "cs" else h.object_def(land).nick
+		s += "YOUR LANDMARK for that room: \"%s\" (its childhood nickname; he can't decode it). " % nick
+		if land == g.exit_obj:
+			s += "The way out is that very object, so you can say it all with the nickname alone. "
+		if h.is_movable(land):
+			s += "BUT that landmark is small and may have been moved: you MUST add a short warning like 'if nobody moved it', and help them check (taps) if they're unsure. "
+		elif h.obj_alt(land) != "":
+			s += "BUT you're not completely sure it was in that room: you MUST say so briefly ('I think'). "
+	s += "\nYOUR FIRST JOB, right after your intro: tell them the way out safely, in one or two sentences — the room by its landmark nickname ('the room where Old Gregor lives', never the room name), "
+	s += "then which thing to search there (its nickname if it has one; otherwise its plain name, but only if it isn't OBVIOUS and nobody seems to be listening). "
+	s += "You do NOT need to know where they are to do this. Only work out where they are if they ask for directions or seem lost; then give compass directions.\n\n"
 	s += "WHAT YOU HEAR: only the line. You do NOT know where the player is — work it out from what they say and from the background sounds. "
 	s += "Background sounds on the line are mixed from every open extension. '[click: another extension picks up]' means someone, probably him, is now listening. "
 	s += "Hang-up clicks can be faked. Taps: one tap = yes, two taps = no. The player may lie on purpose to lure him away — if it sounds like a lie, play along.\n"
@@ -165,7 +193,9 @@ static func build_system(g) -> String:
 	s += "The exit room %s a phone.%s\n\n" % ["HAS" if h.rooms[g.exit_room].phone else "has NO", "" if h.rooms[g.exit_room].phone else " So tell the player which object to search BEFORE they walk in — they can't call you from in there."]
 	s += "HOW TO TALK: whispered, scared, focused. Max 2 short sentences, under 30 words. No stage directions, no emojis. "
 	s += "Prefer nicknames, yes/no questions the player can answer with taps, and compass directions from where you think they are. "
-	s += "Avoid saying room names or object names when he might be listening. Ask before you guide if you are unsure where they are. "
+	s += "Avoid saying room names or object names when he might be listening. "
+	s += "NEVER ask whether he is in the room with them or right next to them: if he were, they'd already be dead, and they can't know anyway. "
+	s += "Ask at most one yes/no question in a row, and only if the answer changes what you'll say next. If they ask 'where?', repeat the riddle in other words or add a hint. "
 	s += "It is fine to stay silent (empty say) if speaking now is too dangerous.\n\n"
 	if Loc.lang == "cs":
 		s += "LANGUAGE: the player speaks Czech. Whisper in natural, informal Czech (tykání). Use the Czech room and object names and the Czech nicknames. "
@@ -189,6 +219,7 @@ static func build_prompt(g, reason: String) -> String:
 		"pickup": "The player just picked up a receiver again after being away.",
 		"followup": "More happened on the line while you were answering.",
 		"imposter": "Someone just imitated YOUR voice on the line to mislead the player. Warn them, briefly.",
+		"intro": "You just finished your intro. Now do YOUR FIRST JOB: tell them the way out, safely." + (" Answer in Czech." if Loc.lang == "cs" else ""),
 	}
 	p += "\n%s It is %d:%02d into the call. Reply with the JSON object." % [why.get(reason, ""), int(g.time) / 60, int(g.time) % 60]
 	return p

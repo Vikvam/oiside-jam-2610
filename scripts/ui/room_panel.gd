@@ -112,14 +112,30 @@ func rebuild() -> void:
 	if game.moving_to != "":
 		title.text = Loc.t("walking_to", [h.room_to(game.moving_to)])
 	_small(objects_box, Loc.t("search"))
+	var tagged := false
 	for o in r.objects:
 		var label: String = h.obj_name(o.id)
+		var tip := Loc.t("obj_tip", [h.obj_desc(o.id)])
+		if h.is_obvious(o.id):
+			label += " ◉"
+			tip += Loc.t("obj_tip_obvious")
+			tagged = true
+		elif o.has("nick"):
+			label += " ♥ " + h.obj_nick(o.id)
+			tip += Loc.t("obj_tip_nick", [h.obj_nick(o.id)])
+			tagged = true
 		if game.tried.has(o.id):
 			label += " ✗"
 		if armed == o.id:
 			label = Loc.t("really")
 		var b := _btn(objects_box, label, func(): _search(o.id), ok and not game.tried.has(o.id))
-		b.tooltip_text = Loc.t("obj_tip", [h.obj_desc(o.id)])
+		b.tooltip_text = tip
+	if tagged:
+		var lg := Label.new()
+		lg.text = Loc.t("obj_legend")
+		lg.add_theme_font_size_override("font_size", 11)
+		lg.add_theme_color_override("font_color", Style.c("dim"))
+		objects_box.add_child(lg)
 	_small(actions_box, Loc.t("sounds"))
 	var s: Dictionary = game.room_state[game.player_room]
 	var any := false
@@ -142,11 +158,8 @@ func rebuild() -> void:
 		if to != "":
 			_btn(doors_box, "%s → %s" % [Loc.t(dir.capitalize()), h.room_name(to)], func():
 				move_requested.emit(to, sneak), ok)
-	if game.hidden:
-		_btn(doors_box, Loc.t("hidden_btn"), func(): pass, false)
-	else:
-		var hb := _btn(doors_box, Loc.t("hide"), func(): game.hide(), ok)
-		hb.tooltip_text = Loc.t("hide_tip")
+	var hb := _btn(doors_box, Loc.t("hidden_btn") if game.hidden else Loc.t("hide"), func(): game.toggle_hide(), ok)
+	hb.tooltip_text = Loc.t("hide_tip")
 	sneak_toggle = CheckButton.new()
 	sneak_toggle.text = Loc.t("sneak")
 	sneak_toggle.focus_mode = Control.FOCUS_NONE

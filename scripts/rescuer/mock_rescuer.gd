@@ -15,6 +15,8 @@ var bg_cands: Array = []
 var imposter := false
 var played_along := false
 var confirm_room := ""     # asked "did you make it?" about this room
+var told_way := false      # she has given the riddle: the way out by its landmark
+var _lost_asks := 0
 var _pending := -1.0
 var _read := 0            # line_log index already processed
 const L := {
@@ -33,6 +35,13 @@ const L := {
 		"imposter": ["That wasn't me! Don't go anywhere he tells you.", "That voice — it wasn't me. Stay put."],
 		"play_along": ["Okay. Stay %s. Don't move, I'm thinking.", "Right, %s. Hide there. Don't make a sound."],
 		"confirm": ["Did you make it — the room I sent you to? One tap yes, two no.", "Are you where I told you? Tap once for yes, twice for no."],
+		"riddle": ["The way out is in the room with %s.", "It's where %s is. That room."],
+		"riddle_self": [" It's %s itself.", " Search %s itself."],
+		"riddle_obj": [" In there, search the %s.", " Try the %s there."],
+		"riddle_quiet": [" I'll tell you what to search when it's quiet.", " The rest when he's gone."],
+		"hedge_moved": [" If nobody's moved it — it's small.", " Unless someone carried it off…"],
+		"hedge_unsure": [" I think. Or was that the other room?", " I'm… almost sure."],
+		"lost": ["If you're lost, tell me one thing you see. Not the room.", "Tell me something you can see and I'll guide you. Not the room's name."],
 	},
 	"cs": {
 		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
@@ -49,6 +58,13 @@ const L := {
 		"imposter": ["To jsem nebyla já! Nikam, kam ti řekne, nechoď.", "Ten hlas — to jsem nebyla já. Zůstaň, kde jsi."],
 		"play_along": ["Dobře. Zůstaň %s. Nehýbej se, přemýšlím.", "Jasně, %s. Schovej se tam. Ani muk."],
 		"confirm": ["Jsi tam, kam jsem tě poslala? Jedno ťuknutí ano, dvě ne.", "Jsi už tam, kde jsem říkala? Ťukni jednou pro ano, dvakrát pro ne."],
+		"riddle": ["Cesta ven je v místnosti, kde je %s.", "Je to tam, kde je %s. V té místnosti."],
+		"riddle_self": [" Je to přímo %s.", " Prohledej přímo: %s."],
+		"riddle_obj": [" Tam prohledej: %s.", " Tam zkus: %s."],
+		"riddle_quiet": [" Co tam prohledat, ti řeknu, až bude ticho.", " Zbytek, až odejde."],
+		"hedge_moved": [" Jestli to nikdo nepřenesl — je to malé.", " Pokud to někdo neodnesl…"],
+		"hedge_unsure": [" Myslím. Nebo to byla ta druhá místnost?", " Skoro jistě."],
+		"lost": ["Jestli ses ztratil, řekni mi jednu věc, kterou vidíš. Ne místnost.", "Řekni mi, co vidíš, a navedu tě. Ne název místnosti."],
 	},
 }
 var min_delay := 1.2
@@ -152,6 +168,10 @@ func _compose() -> String:
 	if imposter:
 		imposter = false
 		return _pick(tx.imposter)
+	# First things first: where the way out is, in words he can't decode.
+	if not told_way:
+		told_way = true
+		return _riddle(not cautious)
 	if cautious:
 		# A room named while he's listening is probably a lure: play along.
 		var lure := Words.rooms_named(player_text, h)
@@ -175,6 +195,10 @@ func _compose() -> String:
 				pending_q = {"feature": f, "cands": bg_cands.duplicate()}
 				return _pick(tx.ask_feat) % tx.things[f]
 	if guess == "":
+		# Remind them of the riddle first; only then ask where they are.
+		_lost_asks += 1
+		if _lost_asks % 2 == 1:
+			return _riddle(true) + " " + _pick(tx.lost)
 		return _pick(tx.pickup) if picked_up else _pick(tx.unknown)
 	var od := h.object_def(game.exit_obj)
 	var what: String = h.obj_nick(game.exit_obj) if od.has("nick") else tx.the + h.obj_name(game.exit_obj)
@@ -191,6 +215,26 @@ func _compose() -> String:
 	if od.has("nick"):
 		return _pick(tx.exit_nick) % _cap(h.obj_nick(game.exit_obj))
 	return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
+
+
+## "The way out is in the room with Old Gregor. Search the china cabinet there."
+func _riddle(full: bool) -> String:
+	var h: House = game.house
+	var tx: Dictionary = L[Loc.lang]
+	var land := h.nick_obj(game.exit_room)
+	if land == "":
+		return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
+	var nick := h.obj_nick(land)
+	var out: String = _pick(tx.riddle) % nick
+	if h.obj_alt(land) != "":
+		out += _pick(tx.hedge_moved) if h.is_movable(land) else _pick(tx.hedge_unsure)
+	if land == game.exit_obj:
+		out += _pick(tx.riddle_self) % nick
+	elif full:
+		out += _pick(tx.riddle_obj) % h.obj_name(game.exit_obj)
+	else:
+		out += _pick(tx.riddle_quiet)
+	return out
 
 
 func _cap(t: String) -> String:

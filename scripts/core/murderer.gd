@@ -10,6 +10,7 @@ enum S { THINK, MOVE, LISTEN, FAKE_HANGUP, SEARCH, GUARD }
 var game  # Game (untyped to avoid a cyclic class reference)
 var house: House
 var room := ""
+var prev_room := ""       # where he came in from (that door is blocked)
 var state := S.THINK
 var timer := 4.0
 var path: Array = []
@@ -48,6 +49,8 @@ var listen_min := 12.0
 var listen_max := 20.0
 var just_listened := false
 var gained := false        # new evidence during the current listen
+var empty_listens := 0     # listens in a row that taught him nothing
+var sweep_after := 2       # ...before he gives up on the phones and looks around
 var hunt_threshold := 2
 var identify_time := 5.0
 var fake_hangup_chance := 0.3
@@ -385,9 +388,13 @@ func _decide() -> void:
 		note(Loc.t("m_special", [house.room_name(t)]))
 		_go(t, "suspect")
 		return
-	# Listened and learned nothing? Go and look around instead.
-	if just_listened and not gained:
+	# He is a listener: an empty listen sends him to another phone. Only
+	# after several empty ones in a row does he go and look around.
+	if just_listened:
+		empty_listens = 0 if gained else empty_listens + 1
+	if just_listened and empty_listens >= sweep_after:
 		just_listened = false
+		empty_listens = 0
 		var pool := []
 		for r in candidates:
 			if house.distance(room, r) <= 2 and r != room:
@@ -398,19 +405,35 @@ func _decide() -> void:
 			note(Loc.t("m_sweep", [house.room_in(t)]))
 			_go(t, "sweep")
 			return
+	var moved_on := just_listened and not gained
 	just_listened = false
-	# Go listen at a phone. Prefer one not used recently.
+	# Go listen at a phone: not the one he just used, preferably not one
+	# used recently, and preferably not right next door to it.
 	var phones := []
 	for p in house.phone_rooms():
-		if game.time - last_listen_at.get(p, -100.0) > 25.0:
+		if p != room and game.time - last_listen_at.get(p, -100.0) > 25.0:
 			phones.append(p)
 	if phones.is_empty():
+		phones = house.phone_rooms().filter(func(p): return p != room)
+	if phones.is_empty():
 		phones = house.phone_rooms()
+	var far := phones.filter(func(p): return house.distance(room, p) >= 2)
+	if moved_on and not far.is_empty():
+		phones = far
 	var t := _nearest(phones)
+	if moved_on:
+		note(Loc.t("m_other_phone", [house.room_to(t)]))
 	_go(t, "phone")
 
 
+## Stand still for at least `t` seconds (searching the room the player is in).
+func hold(t: float) -> void:
+	state = S.THINK
+	timer = maxf(timer, t)
+
+
 func _enter(r: String) -> void:
+	prev_room = room
 	room = r
 	trail.append(r)
 	game.on_murderer_entered(r)

@@ -33,13 +33,13 @@ On the title screen, pick:
 | Input | What |
 |---|---|
 | Click a neighbouring room / door buttons / arrows or WASD | walk (shift, or the toggle, to **sneak**: slower, rarely heard). The keys work when the text field isn't focused (Esc leaves it, Enter returns) |
-| H | hide |
+| H | hide / come out |
 | Type + Enter | whisper into the receiver (only while on the line, in a room with a phone) |
 | Ctrl+T / Tap | tap the receiver (1 = yes, 2 = no) |
 | Ctrl+H / Hang up · Pick up | the receiver |
 | Search buttons | try an object as the hidden exit (click twice; a wrong try is LOUD; 3 tries) |
 | Sounds buttons | stop the clock, switch off the fan, close the window |
-| Hide | hide in the room (hangs up) |
+| Hide / Come out | hide in the room (hangs up). Safe while he only passes through; if he came for your room, sneak out another door |
 | F2 | cycle the visual style |
 | F3 | cheat/debug: show the murderer, his candidate rooms, the exit and his thoughts |
 | F4 | show or hide her guess of where you are |

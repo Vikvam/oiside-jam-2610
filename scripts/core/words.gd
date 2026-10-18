@@ -92,14 +92,16 @@ static func features_named(text: String) -> Array:
 
 
 ## Objects mentioned, restricted to objects in `known_rooms` (null = all).
+## Obvious furniture (a bathtub, a stove) counts as known everywhere.
 ## Returns [{obj, room}].
 static func objects_named(text: String, house: House, known_rooms = null) -> Array:
 	var toks := tokens(text)
 	var out := []
 	for rid in house.room_ids:
-		if known_rooms != null and not known_rooms.has(rid):
-			continue
+		var known: bool = known_rooms == null or known_rooms.has(rid)
 		for o in house.rooms[rid].objects:
+			if not known and not o.get("obvious", false):
+				continue
 			var keys: Array = o.keys.duplicate()
 			keys.append_array(House.cs_obj(o.id)[2])
 			if _any(toks, keys):

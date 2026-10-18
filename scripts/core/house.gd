@@ -22,10 +22,11 @@ const ROOMS := [
 		"id": "library", "name": "Library", "rect": [0, 0, 4, 3], "phone": true,
 		"features": ["clock", "rain"],
 		"objects": [
-			{"id": "bookcase", "name": "tall bookcase", "keys": ["bookcase", "bookshelf", "shelf", "shelves", "books"],
+			{"id": "bookcase", "obvious": true, "name": "tall bookcase", "keys": ["bookcase", "bookshelf", "shelf", "shelves", "books"],
 				"desc": "A tall bookcase. One volume is missing, leaving a dark gap."},
 			{"id": "globe", "name": "old globe", "keys": ["globe", "world", "map"],
-				"desc": "A dusty globe. Someone drew a tiny skull on Bohemia."},
+				"desc": "A dusty globe. Someone drew a tiny skull on Bohemia.", "nick": "Doctor Skull", "alt": "study", "movable": true,
+				"memory": "The dusty globe... Doctor Skull. You spun him to choose where you'd run away to."},
 			{"id": "armchair", "name": "leather armchair", "keys": ["armchair", "leather", "chair"],
 				"desc": "A cracked leather armchair, still warm-looking somehow."},
 		],
@@ -34,10 +35,10 @@ const ROOMS := [
 		"id": "study", "name": "Study", "rect": [4, 0, 4, 3], "phone": true,
 		"features": ["clock", "fan"],
 		"objects": [
-			{"id": "desk", "name": "heavy oak desk", "keys": ["desk", "oak", "drawer", "drawers"],
+			{"id": "desk", "obvious": true, "name": "heavy oak desk", "keys": ["desk", "oak", "drawer", "drawers"],
 				"desc": "A heavy oak desk. The drawers are locked."},
 			{"id": "horse_painting", "name": "painting of a horse", "keys": ["painting", "horse", "portrait", "picture", "frame"],
-				"desc": "A painting of a grey horse.", "nick": "Captain",
+				"desc": "A painting of a grey horse.", "nick": "Captain", "alt": "hall",
 				"memory": "A grey horse in a gilt frame... Captain. You used to salute him every morning."},
 			{"id": "typewriter", "name": "typewriter", "keys": ["typewriter", "typing", "keys"],
 				"desc": "A black typewriter with a half-written letter in it."},
@@ -48,9 +49,9 @@ const ROOMS := [
 		"features": ["rain", "radiator"],
 		"objects": [
 			{"id": "bear", "name": "stuffed bear", "keys": ["bear", "teddy", "stuffed", "toy"],
-				"desc": "A stuffed bear with one button eye.", "nick": "Mr. Buttons",
+				"desc": "A stuffed bear with one button eye.", "nick": "Mr. Buttons", "alt": "parlor", "movable": true,
 				"memory": "A one-eyed stuffed bear... Mr. Buttons! He used to guard your bed."},
-			{"id": "rocking_horse", "name": "rocking horse", "keys": ["rocking", "horse"],
+			{"id": "rocking_horse", "obvious": true, "name": "rocking horse", "keys": ["rocking", "rockinghorse"],
 				"desc": "A wooden rocking horse. It creaks when you look at it."},
 			{"id": "dollhouse", "name": "dollhouse", "keys": ["dollhouse", "dolls", "doll", "miniature"],
 				"desc": "A dollhouse — a tiny copy of this very house."},
@@ -60,12 +61,13 @@ const ROOMS := [
 		"id": "parlor", "name": "Parlor", "rect": [0, 3, 4, 3], "phone": true,
 		"features": ["clock", "radiator"],
 		"objects": [
-			{"id": "piano", "name": "grand piano", "keys": ["piano", "keys", "grand"],
+			{"id": "piano", "obvious": true, "name": "grand piano", "keys": ["piano", "grand"],
 				"desc": "Grandma's grand piano, lid closed."},
 			{"id": "fireplace", "name": "fireplace", "keys": ["fireplace", "fire", "hearth", "chimney", "mantel"],
 				"desc": "A cold fireplace full of grey ash."},
 			{"id": "mirror", "name": "tall mirror", "keys": ["mirror", "reflection"],
-				"desc": "A tall mirror. You don't look at it for long."},
+				"desc": "A tall mirror. You don't look at it for long.", "nick": "the Other Room",
+				"memory": "The tall mirror... the Other Room. You used to say the other you lived in there."},
 		],
 	},
 	{
@@ -75,7 +77,7 @@ const ROOMS := [
 			{"id": "stag", "name": "stag head", "keys": ["stag", "antlers", "deer", "trophy"],
 				"desc": "A mounted stag head with glass eyes.", "nick": "Old Gregor",
 				"memory": "The stag head... Old Gregor. You both swore he blinked once."},
-			{"id": "staircase", "name": "staircase", "keys": ["stairs", "staircase", "steps", "banister"],
+			{"id": "staircase", "obvious": true, "name": "staircase", "keys": ["stairs", "staircase", "steps", "banister"],
 				"desc": "A broad staircase. The upstairs is boarded off."},
 			{"id": "umbrella_stand", "name": "umbrella stand", "keys": ["umbrella", "umbrellas", "stand", "cane"],
 				"desc": "An umbrella stand made from an elephant's foot. Grim."},
@@ -85,7 +87,7 @@ const ROOMS := [
 		"id": "kitchen", "name": "Kitchen", "rect": [8, 3, 4, 3], "phone": true,
 		"features": ["fan", "rain", "radiator"],
 		"objects": [
-			{"id": "stove", "name": "iron stove", "keys": ["stove", "oven", "iron", "cooker"],
+			{"id": "stove", "obvious": true, "name": "iron stove", "keys": ["stove", "oven", "iron", "cooker"],
 				"desc": "A big iron stove. The floorboards in front of it are loose."},
 			{"id": "dumbwaiter", "name": "dumbwaiter", "keys": ["dumbwaiter", "hatch", "shaft"],
 				"desc": "A dumbwaiter hatch in the wall.", "nick": "the ghost lift",
@@ -99,9 +101,9 @@ const ROOMS := [
 		"features": ["rain"],
 		"objects": [
 			{"id": "birdcage", "name": "empty birdcage", "keys": ["birdcage", "cage", "bird", "canary"],
-				"desc": "An empty brass birdcage.", "nick": "Pip's palace",
+				"desc": "An empty brass birdcage.", "nick": "Pip's palace", "alt": "parlor", "movable": true,
 				"memory": "The brass birdcage... Pip's palace. Pip was the canary. You buried him by the roses."},
-			{"id": "fern", "name": "dead fern", "keys": ["fern", "plant", "plants", "pot"],
+			{"id": "fern", "obvious": true, "name": "dead fern", "keys": ["fern", "plant", "plants", "pot"],
 				"desc": "A huge dead fern in a cracked pot."},
 			{"id": "wicker_chair", "name": "wicker chair", "keys": ["wicker", "chair"],
 				"desc": "A wicker chair, rocking slightly. There is no wind."},
@@ -111,12 +113,13 @@ const ROOMS := [
 		"id": "dining", "name": "Dining Room", "rect": [4, 6, 4, 3], "phone": true,
 		"features": ["fan", "radiator"],
 		"objects": [
-			{"id": "long_table", "name": "long table", "keys": ["table", "tablecloth", "dinner"],
+			{"id": "long_table", "obvious": true, "name": "long table", "keys": ["table", "tablecloth", "dinner"],
 				"desc": "A long table set for twelve. Nobody has eaten here in years."},
 			{"id": "china_cabinet", "name": "china cabinet", "keys": ["cabinet", "china", "plates", "porcelain", "cups"],
 				"desc": "A cabinet of porcelain. Every cup has a chip."},
 			{"id": "chandelier", "name": "chandelier", "keys": ["chandelier", "crystal", "crystals"],
-				"desc": "A crystal chandelier, swaying very slightly."},
+				"desc": "A crystal chandelier, swaying very slightly.", "nick": "the Jellyfish",
+				"memory": "The chandelier... the Jellyfish. You were sure it stung anyone who sat under it."},
 		],
 	},
 	{
@@ -124,8 +127,9 @@ const ROOMS := [
 		"features": ["radiator"],
 		"objects": [
 			{"id": "jam_shelf", "name": "shelf of jam jars", "keys": ["jam", "jars", "jar", "preserves"],
-				"desc": "Shelves of jam jars, labelled in a shaky hand: 1987, 1988, 1989..."},
-			{"id": "flour_sacks", "name": "flour sacks", "keys": ["flour", "sacks", "sack", "bags"],
+				"desc": "Shelves of jam jars, labelled in a shaky hand: 1987, 1988, 1989...", "nick": "Granny's museum",
+				"memory": "The jam jars... Granny's museum. Nobody was ever allowed to open the 1987."},
+			{"id": "flour_sacks", "obvious": true, "name": "flour sacks", "keys": ["flour", "sacks", "sack", "bags"],
 				"desc": "A pile of flour sacks. Something small has nested in them."},
 			{"id": "meat_hook", "name": "meat hook", "keys": ["hook", "hooks", "meat"],
 				"desc": "A rusty meat hook on a rail. It is empty. Thankfully."},
@@ -178,7 +182,7 @@ const EXTRA_ROOMS := [
 		"id": "billiard", "name": "Billiard Room", "rect": [12, 0, 4, 3], "phone": true,
 		"features": ["fan"],
 		"objects": [
-			{"id": "billiard_table", "name": "billiard table", "keys": ["billiard", "billiards", "pool", "felt"],
+			{"id": "billiard_table", "obvious": true, "name": "billiard table", "keys": ["billiard", "billiards", "pool", "felt"],
 				"desc": "A billiard table. One ball left on the felt: the eight."},
 			{"id": "cue_rack", "name": "cue rack", "keys": ["cue", "cues", "rack"],
 				"desc": "A rack of cues. One is snapped in half."},
@@ -192,9 +196,9 @@ const EXTRA_ROOMS := [
 		"features": ["clock", "rain"],
 		"objects": [
 			{"id": "gramophone", "name": "gramophone", "keys": ["gramophone", "phonograph", "record", "records"],
-				"desc": "A gramophone with a cracked record on it.", "nick": "the Singing Box",
+				"desc": "A gramophone with a cracked record on it.", "nick": "the Singing Box", "alt": "billiard", "movable": true,
 				"memory": "The gramophone... the Singing Box. It only ever played one waltz."},
-			{"id": "harp", "name": "harp", "keys": ["harp", "strings"],
+			{"id": "harp", "obvious": true, "name": "harp", "keys": ["harp", "strings"],
 				"desc": "A tall harp with three strings missing."},
 			{"id": "music_stand", "name": "music stand", "keys": ["sheet", "sheets", "score"],
 				"desc": "A music stand. The sheet on it is blank."},
@@ -204,12 +208,13 @@ const EXTRA_ROOMS := [
 		"id": "bathroom", "name": "Bathroom", "rect": [12, 6, 4, 3], "phone": true,
 		"features": ["fan", "radiator"],
 		"objects": [
-			{"id": "bathtub", "name": "clawfoot bathtub", "keys": ["bathtub", "bath", "tub"],
+			{"id": "bathtub", "obvious": true, "name": "clawfoot bathtub", "keys": ["bathtub", "bath", "tub"],
 				"desc": "A clawfoot bathtub with a grey ring around it."},
 			{"id": "medicine_cabinet", "name": "medicine cabinet", "keys": ["medicine", "pills", "bottles"],
 				"desc": "A medicine cabinet full of brown bottles."},
 			{"id": "laundry_chute", "name": "laundry chute", "keys": ["chute", "laundry", "linen"],
-				"desc": "The little door of a laundry chute."},
+				"desc": "The little door of a laundry chute.", "nick": "the Dragon's Throat",
+				"memory": "The laundry chute... the Dragon's Throat. You fed it your socks so it wouldn't eat you."},
 		],
 	},
 ]
@@ -239,7 +244,7 @@ const CS_EXTRA_OBJECTS := {
 	"music_stand": ["notový stojan", "Notový stojan. List na něm je prázdný.", ["noty", "notov*", "partitur*"]],
 	"bathtub": ["vana na nožičkách", "Vana na lvích nožičkách se šedým okrajem.", ["vana", "vane", "vanu", "vanou"]],
 	"medicine_cabinet": ["lékárnička", "Lékárnička plná hnědých lahviček.", ["lekarn*", "prasky", "leky", "lahvic*"]],
-	"laundry_chute": ["shoz na prádlo", "Dvířka shozu na prádlo.", ["shoz*", "pradlo", "pradla", "pradel"]],
+	"laundry_chute": ["shoz na prádlo", "Dvířka shozu na prádlo.", ["shoz*", "pradlo", "pradla", "pradel"], "Dračí chřtán", "Shoz na prádlo… Dračí chřtán. Krmili jste ho ponožkami, aby nesežral vás."],
 }
 const CS_EXTRA_FLAVOR := {
 	"billiard_table": "břidlicová deska kulečníku se odsune nad schodiště",
@@ -269,17 +274,17 @@ const CS_ROOMS := {
 ## object id -> [name, desc, keys, nick, memory]
 const CS_OBJECTS := {
 	"bookcase": ["vysoký regál s knihami", "Vysoký regál s knihami. Jeden svazek chybí a zbyla po něm tmavá mezera.", ["regal*", "svazk*", "knizk*"]],
-	"globe": ["starý glóbus", "Zaprášený glóbus. Někdo na něj nakreslil malou lebku na místo Čech.", ["glob*"]],
+	"globe": ["starý glóbus", "Zaprášený glóbus. Někdo na něj nakreslil malou lebku na místo Čech.", ["glob*"], "Doktor Lebka", "Zaprášený glóbus… Doktor Lebka. Točili jste s ním, abyste vybrali, kam utečete."],
 	"armchair": ["kožené křeslo", "Popraskané kožené křeslo. Nějak pořád vypadá teple.", ["kresl*", "kozen*"]],
 	"desk": ["těžký dubový stůl", "Těžký dubový psací stůl. Šuplíky jsou zamčené.", ["dubov*", "suplik*", "supl*"]],
 	"horse_painting": ["obraz koně", "Obraz šedého koně.", ["obraz*", "malb*", "kun", "kone", "koni", "konem"], "Kapitán", "Šedý kůň ve zlaceném rámu… Kapitán. Každé ráno jste mu spolu salutovali."],
 	"typewriter": ["psací stroj", "Černý psací stroj s rozepsaným dopisem.", ["stroj*", "psaci"]],
 	"bear": ["plyšový medvěd", "Plyšový medvěd s jedním knoflíkovým okem.", ["medv*", "plys*", "hrack*"], "Pan Knoflík", "Jednooký plyšový medvěd… Pan Knoflík! Hlídal ti postel."],
-	"rocking_horse": ["houpací kůň", "Dřevěný houpací kůň. Zavrže, jen když se na něj podíváš.", ["houpac*", "kun", "kone", "koni", "konem"]],
+	"rocking_horse": ["houpací kůň", "Dřevěný houpací kůň. Zavrže, jen když se na něj podíváš.", ["houpac*"]],
 	"dollhouse": ["domeček pro panenky", "Domeček pro panenky — maličká kopie tohohle domu.", ["domec*", "panenk*"]],
 	"piano": ["babiččin klavír", "Babiččin klavír se zavřeným víkem.", ["klavir*", "piano*", "kridl*"]],
 	"fireplace": ["krb", "Studený krb plný šedého popela.", ["krb*", "komin*", "popel*"]],
-	"mirror": ["vysoké zrcadlo", "Vysoké zrcadlo. Dlouho se do něj nedíváš.", ["zrcad*"]],
+	"mirror": ["vysoké zrcadlo", "Vysoké zrcadlo. Dlouho se do něj nedíváš.", ["zrcad*"], "Druhý pokoj", "Vysoké zrcadlo… Druhý pokoj. Říkávali jste, že tam bydlí tvoje druhé já."],
 	"stag": ["jelení hlava", "Vycpaná jelení hlava se skleněnýma očima.", ["jelen*", "parohy", "paroh*", "trofej*"], "Starý Řehoř", "Jelení hlava… Starý Řehoř. Oba jste přísahali, že jednou mrkl."],
 	"staircase": ["schodiště", "Široké schodiště. Patro je zatlučené prkny.", ["schod*", "zabradl*"]],
 	"umbrella_stand": ["stojan na deštníky", "Stojan na deštníky ze sloní nohy. Hrůza.", ["destnik*", "stojan*", "hul", "hole"]],
@@ -291,8 +296,8 @@ const CS_OBJECTS := {
 	"wicker_chair": ["proutěné křeslo", "Proutěné křeslo se lehce houpe. Nefouká.", ["prouten*", "kresl*"]],
 	"long_table": ["dlouhý stůl", "Dlouhý stůl prostřený pro dvanáct. Roky tu nikdo nejedl.", ["stol*", "stul", "ubrus*", "tabul*"]],
 	"china_cabinet": ["vitrína s porcelánem", "Vitrína s porcelánem. Každý šálek je otlučený.", ["vitrin*", "porcelan*", "salk*", "salek", "talir*"]],
-	"chandelier": ["lustr", "Křišťálový lustr, který se nepatrně houpe.", ["lustr*", "kristal*"]],
-	"jam_shelf": ["police se zavařeninami", "Police se zavařeninami, popsané roztřesenou rukou: 1987, 1988, 1989…", ["zavaren*", "marmelad*", "sklenic*", "dzem*"]],
+	"chandelier": ["lustr", "Křišťálový lustr, který se nepatrně houpe.", ["lustr*", "kristal*"], "Medúza", "Křišťálový lustr… Medúza. Byli jste si jistí, že žahá každého, kdo pod ní sedí."],
+	"jam_shelf": ["police se zavařeninami", "Police se zavařeninami, popsané roztřesenou rukou: 1987, 1988, 1989…", ["zavaren*", "marmelad*", "sklenic*", "dzem*"], "Babiččino muzeum", "Zavařeniny… Babiččino muzeum. Ročník 1987 nesměl nikdy nikdo otevřít."],
 	"flour_sacks": ["pytle mouky", "Hromada pytlů s moukou. Něco malého si v nich udělalo hnízdo.", ["pytl*", "pytel", "mouk*"]],
 	"meat_hook": ["hák na maso", "Rezavý hák na maso na kolejnici. Prázdný. Naštěstí.", ["hak", "haku", "hakem", "haky", "hak*"]],
 }
@@ -364,6 +369,48 @@ func obj_memory(oid: String) -> String:
 	return cs_obj(oid)[4] if Loc.lang == "cs" else o.memory
 
 
+## Furniture anyone would guess the room from ("the bathtub"): he
+## understands it even in rooms he hasn't searched.
+func is_obvious(oid: String) -> bool:
+	return object_def(oid).get("obvious", false)
+
+
+## The nicknamed object that *belonged* in this room when they were kids
+## (it may have been moved since: see relocate_movables).
+func nick_obj(rid: String) -> String:
+	for oid in home_room:
+		if home_room[oid] == rid and object_def(oid).has("nick"):
+			return oid
+	return ""
+
+
+## Where she remembers it might be instead ("" if she's sure).
+func obj_alt(oid: String) -> String:
+	var a: String = object_def(oid).get("alt", "")
+	return a if rooms.has(a) else ""
+
+
+func is_movable(oid: String) -> bool:
+	return object_def(oid).get("movable", false) and obj_alt(oid) != ""
+
+
+## Small things get carried around: each movable one has a coin-flip chance
+## of having ended up in its other room. Only the player can see where.
+func relocate_movables(chance := 0.5) -> void:
+	for oid in home_room.keys():
+		if is_movable(oid) and randf() < chance:
+			var from: String = home_room[oid]
+			var to := obj_alt(oid)
+			var o := object_def(oid)
+			rooms[from].objects.erase(o)
+			rooms[to].objects.append(o)
+			object_room[oid] = to
+
+
+func was_moved(oid: String) -> bool:
+	return object_room.get(oid, "") != home_room.get(oid, "")
+
+
 func exit_flavor(oid: String) -> String:
 	if Loc.lang == "cs":
 		return CS_EXIT_FLAVOR.get(oid, CS_EXTRA_FLAVOR.get(oid, ""))
@@ -374,6 +421,7 @@ var room_ids: Array[String] = []
 var adj := {}            # id -> {dir: other_id}
 var doors: Array = []    # [[a, b], ...] for this instance
 var object_room := {}    # object id -> room id
+var home_room := {}      # object id -> room it belonged to in their childhood
 var _dist := {}          # id -> {id: int}
 
 
@@ -384,6 +432,7 @@ func _init(large := false) -> void:
 		room_ids.append(r.id)
 		for o in r.objects:
 			object_room[o.id] = r.id
+			home_room[o.id] = r.id
 	_build(DOORS + (EXTRA_DOORS if large else []))
 
 

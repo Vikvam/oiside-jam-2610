@@ -1,21 +1,24 @@
 extends SceneTree
 ## One real-time game: smart bot player vs murderer, with the LLM rescuer via
-## the local Haiku proxy. Capped at MAX_CALLS requests. Prints a transcript.
-##   godot --headless --path . -s tests/llm_game.gd -- [seed]
+## the local Haiku proxy. Capped at max_calls requests. Prints a transcript.
+##   godot --headless --path . -s tests/llm_game.gd -- [seed] [lang] [max_calls]
 
-const MAX_CALLS := 12
 const BotScript = preload("res://tests/sim.gd")
 
 var g: Game
 var bot
 var r: LlmRescuer
 var calls := 0
+var max_calls := 12
 
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
+	var intros: Dictionary = load("res://scripts/main.gd").INTRO  # load before setting Loc.lang
 	if args.size() > 1:
 		Loc.lang = args[1]
+	if args.size() > 2:
+		max_calls = int(args[2])
 	g = Game.new()
 	g.difficulty = "normal"
 	g.setup(int(args[0]) if args.size() > 0 else 42)
@@ -24,12 +27,10 @@ func _init() -> void:
 	r.mode = "proxy"
 	r.fallback = MockRescuer.new(g)
 	root.add_child.call_deferred(r)
-	var wrapped := {"r": r}
 	g.rescuer = self
-	for l in ["It's me. Don't say my name. Listen.", "There's a way out of the house. He doesn't know about it. I'll get you there.",
-			"But every phone in that house is on one line. If he picks up an extension, he hears every word.",
-			"So don't tell me where you are. Not straight out. One tap means yes, two taps mean no."]:
+	for l in intros[Loc.lang]:
 		g.line_log.append({"who": "rescuer", "text": l})
+	g._ask_rescuer.call_deferred("intro")  # her first real line: the way out
 	bot = BotScript.Bot.new(g, "smart")
 	g.event.connect(bot.on_event)
 	g.event.connect(func(t, d):
@@ -40,7 +41,7 @@ func _init() -> void:
 
 func request(ctx: Dictionary) -> void:
 	calls += 1
-	if calls > MAX_CALLS:
+	if calls > max_calls:
 		r.fallback.request(ctx)
 	else:
 		r.request(ctx)

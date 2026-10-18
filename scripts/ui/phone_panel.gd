@@ -13,7 +13,9 @@ var input: LineEdit
 var tap_btn: Button
 var hook_btn: Button
 var tap_hint: Label
-var lines: Array = []        # {kind, text, shown}
+var lines: Array = []        # {kind, text, shown, house, tap, heard}
+var house_view: RichTextLabel  # the strip under the plan: what you hear in the HOUSE
+var _tapped := false         # as far as the player can tell, someone else is on the line
 var reveal_speed := 30.0     # chars per second for her voice
 var _acc := 0.0
 var _think_t := 0.0
@@ -80,13 +82,25 @@ func bind(g: Game) -> void:
 	_is_thinking = false
 	scope.bind(g)
 	lines.clear()
+	_tapped = false
 	_dirty = true
 	g.event.connect(_on_event)
 
 
-func add_line(kind: String, text: String, instant := true) -> void:
-	lines.append({"kind": kind, "text": text, "shown": text.length() if instant else 0})
+func add_line(kind: String, text: String, instant := true, heard := false) -> void:
+	lines.append({"kind": kind, "text": text, "shown": text.length() if instant else 0, "house": false, "tap": _tapped, "heard": heard})
 	_dirty = true
+
+
+## Sounds of the house (not of the line) go to the strip under the plan.
+func house_line(kind: String, text: String) -> void:
+	lines.append({"kind": kind, "text": text, "shown": text.length(), "house": true, "tap": false, "heard": false})
+	_dirty = true
+
+
+func _rule(key: String, on: bool) -> void:
+	_tapped = on
+	add_line("rule", Loc.t(key))
 
 
 func hint(key: String) -> void:
@@ -145,14 +159,14 @@ func _on_event(t: String, d: Dictionary) -> void:
 	var h: House = game.house
 	match t:
 		"player_says":
-			add_line("you", d.text)
+			add_line("you", d.text, true, d.get("heard", false))
 			if d.get("loud", false):
 				add_line("danger", Loc.t("shouted"))
 		"player_tap":
-			add_line("sound", Loc.t("tap"))
+			add_line("sound", Loc.t("tap"), true, d.get("heard", false))
 		"rescuer_says":
 			if game.player_on_line():
-				add_line("her", d.text, false)
+				add_line("her", d.text, false, d.get("heard", false))
 			else:
 				add_line("sound", Loc.t("her_missed"))
 		"imposter_says":
@@ -164,13 +178,14 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"rescuer_thinking":
 			_is_thinking = d.on
 		"line_click":
-			add_line("danger", Loc.t("click_" + d.kind))
+			_rule("rule_" + d.kind, d.kind == "pickup")
 			if d.kind == "pickup":
 				hint("click")
 		"line_breath":
 			add_line("danger", Loc.t("breath_line"))
 		"line_quiet_presence":
 			add_line("danger", Loc.t("open_line"))
+			_rule("rule_open", true)
 		"line_background":
 			hint("bg")
 			var labels: Array = d.features.map(func(f): return Loc.feature(f))
@@ -180,53 +195,69 @@ func _on_event(t: String, d: Dictionary) -> void:
 				add_line("danger", Loc.t("his_sounds", [", ".join(labels)]))
 		"receiver":
 			add_line("sound", Loc.t("pickup_me") if d.up else Loc.t("hangup_me"))
+			if not d.up:
+				_tapped = false  # off the line you can't tell any more
 		"footsteps":
 			hint("steps")
 			var kind := Loc.t("steps_run") if d.running else Loc.t("steps_heavy")
 			var dr := Loc.dir(d.dir)
+			var txt := ""
 			if d.get("leaving", false):
-				add_line("danger", Loc.t("steps_leave", [Loc.t("steps_right") if d.dist == 1 else Loc.t("steps_some"), dr, kind]))
+				txt = Loc.t("steps_leave", [Loc.t("steps_right") if d.dist == 1 else Loc.t("steps_some"), dr, kind])
 			elif d.dist == 1:
-				add_line("danger", Loc.t("steps_1", [kind, dr]))
+				txt = Loc.t("steps_1", [kind, dr])
 			elif d.dist == 2:
-				add_line("danger", Loc.t("steps_2", [kind, dr]))
+				txt = Loc.t("steps_2", [kind, dr])
 			else:
-				add_line("danger", Loc.t("steps_3", [kind, dr]))
+				txt = Loc.t("steps_3", [kind, dr])
+			if d.get("for_you", false):
+				txt += Loc.t("for_you")
+			house_line("danger", txt)
 		"player_arrive":
 			var r: Dictionary = h.rooms[d.room]
-			add_line("narr", Loc.t("slip_in", [h.room_to(d.room)]) + ("" if r.phone else Loc.t("no_phone_here")))
+			house_line("narr", Loc.t("slip_in", [h.room_to(d.room)]) + ("" if r.phone else Loc.t("no_phone_here")))
 			if r.phone and not game.receiver_up:
 				hint("pickup")
 			if d.first:
 				for o in r.objects:
 					if o.has("memory"):
-						add_line("memory", h.obj_memory(o.id))
+						var m := h.obj_memory(o.id)
+						if h.was_moved(o.id):
+							m += Loc.t("moved_note", [h.room_in(h.home_room[o.id])])
+						house_line("memory", m)
 		"feature_toggled":
 			var what := {"clock": ["clock_stop", "clock_go"], "fan": ["fan_off", "fan_on"], "window": ["win_shut", "win_open"]}
-			add_line("narr", Loc.t(what[d.feature][1 if d.on else 0]))
+			house_line("narr", Loc.t(what[d.feature][1 if d.on else 0]))
 		"weather":
-			add_line("narr", Loc.t("rain_on") if d.raining else Loc.t("rain_off"))
+			house_line("narr", Loc.t("rain_on") if d.raining else Loc.t("rain_off"))
 		"heating":
 			if h.has_feature(game.player_room, "radiator"):
-				add_line("narr", Loc.t("heat_on") if d.on else Loc.t("heat_off"))
+				house_line("narr", Loc.t("heat_on") if d.on else Loc.t("heat_off"))
 		"clock_strike":
-			add_line("narr", Loc.t("strike_here") if game.room_state[game.player_room].clock else Loc.t("strike_far"))
+			house_line("narr", Loc.t("strike_here") if game.room_state[game.player_room].clock else Loc.t("strike_far"))
 		"exit_try":
 			if d.ok:
-				add_line("narr", Loc.t("exit_ok"))
+				house_line("narr", Loc.t("exit_ok"))
 			else:
-				add_line("danger", Loc.t("exit_bad", [d.attempts_left]))
+				house_line("danger", Loc.t("exit_bad", [d.attempts_left]))
 		"presence":
-			add_line("danger", Loc.t("presence", [Loc.dir(d.dir)]))
+			house_line("danger", Loc.t("presence", [Loc.dir(d.dir)]))
 			hint("presence")
 		"hidden":
-			add_line("narr", Loc.t("hide_on") if d.on else Loc.t("hide_off"))
+			house_line("narr", Loc.t("hide_on") if d.on else Loc.t("hide_off"))
 		"murderer_in_room":
-			add_line("danger", Loc.t("in_room_still") if d.get("still", false) else Loc.t("in_room"))
+			house_line("danger", Loc.t("in_room"))
+		"murderer_searching":
+			house_line("danger", Loc.t("searching", [Loc.dir(d.dir)]))
+		"slipped_out":
+			house_line("narr", Loc.t("slipped_out"))
 		"murderer_found_exit":
-			add_line("danger", Loc.t("found_exit"))
+			house_line("danger", Loc.t("found_exit"))
+		"game_over":
+			_dirty = true  # re-render with what he really heard
 		"line_fake_tell":
 			add_line("danger", Loc.t("fake_tell"))
+			_tapped = true
 		"rescuer_error":
 			add_line("sound", Loc.t("llm_err"))
 
@@ -289,13 +320,27 @@ func _process(dt: float) -> void:
 
 func _render() -> void:
 	var out := ""
-	var fresh_from := lines.size() - 10  # older lines fade back
-	for idx in range(maxi(0, lines.size() - 120), lines.size()):  # only the recent past
-		var l: Dictionary = lines[idx]
+	var phone_lines := lines.filter(func(l): return not l.house)
+	var fresh_from := phone_lines.size() - 10  # older lines fade back
+	var truth := game.over  # after the call: what he REALLY heard
+	var danger_hex := (Style.c("danger") as Color).to_html(false)
+	for idx in range(maxi(0, phone_lines.size() - 120), phone_lines.size()):  # only the recent past
+		var l: Dictionary = phone_lines[idx]
 		var txt: String = l.text.substr(0, l.shown).replace("[", "[lb]")
 		var a := "8c" if idx < fresh_from and not game.over else ""
 		var col := func(k: String) -> String: return (Style.c(k) as Color).to_html(false) + a
+		var mark := ""
+		if l.kind in ["you", "her", "sound"]:
+			if truth and l.heard:
+				mark = "[color=#%s]◉[/color] " % danger_hex
+			elif not truth and l.tap:
+				mark = "[color=#%s]┃[/color] " % (danger_hex + a)
+				if idx >= fresh_from:
+					txt = "[shake rate=7.0 level=3 connected=1]%s[/shake]" % txt
+		out += mark
 		match l.kind:
+			"rule":
+				out += "[center][color=#%s]──── %s ────[/color][/center]\n" % [col.call("danger"), txt]
 			"you":
 				out += "[color=#%s]%s[/color] %s\n" % [col.call("you"), Loc.t("you"), txt]
 			"her":
@@ -316,3 +361,16 @@ func _render() -> void:
 			_:
 				out += "[color=#%s]%s[/color]\n" % [col.call("text"), txt]
 	log_view.text = out
+	if house_view:
+		var hv := ""
+		# Newest on top, so the latest warning is never cut off.
+		var house := lines.filter(func(l): return l.house)
+		for idx in range(house.size() - 1, maxi(-1, house.size() - 6), -1):
+			var l: Dictionary = house[idx]
+			var a := "" if idx == house.size() - 1 else ("bb" if idx >= house.size() - 3 else "77")
+			var k: String = {"danger": "danger", "memory": "accent"}.get(l.kind, "text")
+			var t: String = l.text.replace("[", "[lb]")
+			if l.kind == "danger" or l.kind == "memory":
+				t = "[i]%s[/i]" % t
+			hv += "[color=#%s]%s[/color]\n" % [(Style.c(k) as Color).to_html(false) + a, t]
+		house_view.text = hv

@@ -1,18 +1,16 @@
 extends Node
 ## Builds the whole UI in code, runs the game loop, switches styles.
 
+## Her intro is short, and he doesn't move until it's over (or you act).
+## Straight after it she asks herself for the first real line: the way out.
 const INTRO := {
 	"en": [
-		"It's me. Don't say my name. Listen.",
-		"There's a way out of the house. He doesn't know about it. I'll get you there.",
-		"But every phone in that house is on one line. If he picks up an extension, he hears every word.",
-		"So don't tell me where you are. Not straight out. One tap means yes, two taps mean no.",
+		"It's me. Every phone in that house is on one line: he can pick up any of them and hear every word.",
+		"One tap means yes, two mean no. Now listen, I know the way out.",
 	],
 	"cs": [
-		"To jsem já. Neříkej moje jméno. Poslouchej.",
-		"Z domu vede cesta ven. On o ní neví. Dostanu tě tam.",
-		"Ale všechny telefony v tom domě jsou na jedné lince. Když zvedne jiný telefon, slyší každé slovo.",
-		"Tak mi neříkej, kde jsi. Ne přímo. Jedno ťuknutí je ano, dvě jsou ne.",
+		"To jsem já. Všechny telefony v tom domě jsou na jedné lince: může zvednout kterýkoli a slyší každé slovo.",
+		"Jedno ťuknutí je ano, dvě ne. A teď poslouchej, vím, kudy ven.",
 	],
 }
 
@@ -29,6 +27,8 @@ var over_layer: CanvasLayer
 var over_text: RichTextLabel
 var over_panel: PanelContainer
 var header_label: Label
+var house_view: RichTextLabel
+var house_title: Label
 var peek_btn: Button
 var cord: Cord
 var flash: ColorRect
@@ -121,15 +121,15 @@ func _dev_args() -> void:
 		if a.has("soak"):
 			_soak_left = int(a.soak)
 		if a.has("hidetest"):
+			# --hidetest (he passes through) or --hidetest=search (he came for you)
 			get_tree().create_timer(3.0).timeout.connect(func():
-				game.find_chance_pass = 0.0
-				game.find_chance_stay = 0.0
+				game.wake()
 				game.hang_up()
 				game.hidden = true
 				game.emit("hidden", {"on": true})
 				var n: String = game.house.neighbors(game.player_room)[0]
 				game.murderer.room = n
-				game.murderer._go(game.player_room, "phone"))
+				game.murderer._go(game.player_room, "hunt" if a.hidetest == "search" else "phone"))
 		if a.has("imitatetest"):
 			get_tree().create_timer(14.0).timeout.connect(func():
 				game.murderer.room = game.house.neighbors(game.player_room)[0]
@@ -271,10 +271,32 @@ func _build_game_ui() -> void:
 	room_panel.clip_contents = true
 	room_panel.move_requested.connect(func(r, sn): if game: game.move_to(r, sn))
 	left.add_child(room_panel)
+	# Right column: what you hear in the HOUSE (steps, creaks, your own
+	# movements) on top, the phone LINE below. Two channels, two boxes.
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 8)
+	h.add_child(right)
+	var house_box := PanelContainer.new()
+	house_box.custom_minimum_size.y = 128
+	right.add_child(house_box)
+	var hb := VBoxContainer.new()
+	hb.add_theme_constant_override("separation", 2)
+	house_box.add_child(hb)
+	house_title = Label.new()
+	house_title.add_theme_font_size_override("font_size", 12)
+	hb.add_child(house_title)
+	house_view = RichTextLabel.new()
+	house_view.bbcode_enabled = true
+	house_view.scroll_active = false
+	house_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	house_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hb.add_child(house_view)
 	phone = PhonePanel.new()
-	phone.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	phone.house_view = house_view
+	phone.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	phone.voice_char.connect(func(c, k, contour): sfx.on_voice_char(c, k, contour))
-	h.add_child(phone)
+	right.add_child(phone)
 	cord = Cord.new()
 	cord.plan = plan
 	cord.phone = phone
@@ -705,6 +727,9 @@ func _apply_style() -> void:
 	(post.material as ShaderMaterial).set_shader_parameter("danger_color", Style.c("danger"))
 	if phone:
 		phone._dirty = true
+	if house_title:
+		house_title.text = Loc.t("in_house")
+		house_title.add_theme_color_override("font_color", Style.c("dim"))
 	_save_settings()
 
 
@@ -739,7 +764,7 @@ func _start_game() -> void:
 	game.rearranged = rearranged
 	game.large = large
 	game.setup(randi() % 100000)
-	game.murderer.timer += 15.0  # let the call connect and her finish the intro
+	game.murderer_awake = false  # he waits until her intro is over, or you act
 	game.rescuer = _make_rescuer(game)
 	game.event.connect(_on_game_event)
 	plan.bind(game)
@@ -754,13 +779,13 @@ func _start_game() -> void:
 	over_layer.visible = false
 	running = true
 	var r: Dictionary = game.house.rooms[game.player_room]
-	phone.add_line("narr", Loc.t("start_narr", [game.house.room_in(game.player_room)]))
+	phone.house_line("narr", Loc.t("start_narr", [game.house.room_in(game.player_room)]))
 	for o in r.objects:
 		if o.has("memory"):
-			phone.add_line("memory", game.house.obj_memory(o.id))
+			phone.house_line("memory", game.house.obj_memory(o.id))
 	phone.input.call_deferred("grab_focus")
 	_intro_queue = INTRO[Loc.lang].duplicate()
-	_intro_t = 4.6
+	_intro_t = 3.6
 	sfx.active = true
 	sfx.ring_in()
 	phone.add_line("sound", Loc.t("ringing"))
@@ -777,6 +802,7 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 		var short := Loc.t("intro_short")
 		game.line_log.append({"who": "rescuer", "text": short})
 		phone.add_line.call_deferred("her", short, false)  # after your own line
+		game.rescuer_again = true  # then the way out, after answering you
 	if t == "game_over" and _soak_left > 0:
 		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
 		_soak_left -= 1
@@ -838,10 +864,10 @@ func _write_game_log(d: Dictionary) -> void:
 	f.store_line("his route: %s" % " > ".join(game.murderer.trail))
 	f.store_line("\n## The line (what she heard)")
 	for e in game.line_log:
-		f.store_line("%s: %s" % [e.who, e.text])
+		f.store_line("%s%s: %s" % ["[HEARD] " if e.get("heard", false) else "", e.who, e.text])
 	f.store_line("\n## What you saw")
 	for l in phone.lines:
-		f.store_line("[%s] %s" % [l.kind, l.text])
+		f.store_line("[%s%s%s] %s" % [l.kind, " house" if l.house else "", " tapped?" if l.tap else "", l.text])
 	f.store_line("\n## His notebook")
 	for e in game.murderer.log:
 		f.store_line("%5.1f  %s" % [e.t, e.text])
@@ -862,7 +888,8 @@ func _show_over() -> void:
 	var col := ac if g.won else dc
 	var t := "[color=#%s][font_size=34]%s[/font_size][/color]\n" % [col, Loc.t("end_" + g.end_reason)]
 	t += Loc.t("end_way", [h.obj_name(g.exit_obj), h.room_name(g.exit_room), h.exit_flavor(g.exit_obj)]) + "\n"
-	t += "[color=#%s]%s[/color]\n\n" % [dm, Loc.t("end_time", [int(g.time) / 60, int(g.time) % 60])]
+	t += "[color=#%s]%s[/color]\n" % [dm, Loc.t("end_time", [int(g.time) / 60, int(g.time) % 60])]
+	t += "[color=#%s]%s[/color]\n\n" % [dm, Loc.t("heard_legend")]
 	t += Loc.t("notebook") + "\n"
 	for e in g.murderer.log:
 		t += "[color=#%s]%d:%02d[/color]  %s\n" % [dm, int(e.t) / 60, int(e.t) % 60, str(e.text).replace("[", "[lb]")]
@@ -885,7 +912,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		if e.keycode == KEY_H:
-			game.hide()
+			game.toggle_hide()
 			get_viewport().set_input_as_handled()
 			return
 		if e.keycode == KEY_ENTER or e.keycode == KEY_KP_ENTER:
@@ -937,6 +964,8 @@ func _process(dt: float) -> void:
 			_intro_t = 0.6
 			if _intro_queue.is_empty():
 				phone.hint("first")
+				game.wake()
+				game._ask_rescuer("intro")  # her first real line: the way out
 	game.tick(dt)
 	var cursor := (" █" if int(game.time * 2.0) % 2 == 0 else "  ") if Style.current == "phosphor" else ""
 	header_label.text = "%s     %s%s" % [Loc.t("header"), Loc.t("call_time", [int(game.time) / 60, int(game.time) % 60]), cursor]

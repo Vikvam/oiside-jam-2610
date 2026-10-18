@@ -65,6 +65,10 @@ class Bot:
 	var danger_room := ""
 	var danger_t := 0.0
 	var line_hot := 0.0
+	var target := ""        # room the riddle points to
+	var target_obj := ""    # what to search there
+	var riddle_nick := ""   # nickname object she named; its room is unknown until seen
+	var riddle_text := ""
 
 	func _init(game, p: String) -> void:
 		g = game
@@ -79,7 +83,12 @@ class Bot:
 				var dirs := Words.directions(txt)
 				if not dirs.is_empty():
 					plan_dir = dirs[0]
-				var hits: Array = Words.nicknames_named(txt, g.house)
+				var nh: Array = Words.nicknames_named(txt, g.house)
+				if riddle_nick == "" and target == "" and not nh.is_empty() and policy != "random":
+					riddle_nick = nh[0].obj
+					riddle_text = txt
+					_resolve_riddle()
+				var hits: Array = nh
 				if hits.is_empty():
 					hits = Words.objects_named(txt, g.house, {g.player_room: true})
 				for h in hits:
@@ -88,6 +97,11 @@ class Bot:
 			"presence":
 				danger_room = g.house.step(g.player_room, d.dir)
 				danger_t = 10.0
+			"murderer_searching":
+				# Slip out through another door than his.
+				var opts: Array = g.house.neighbors(g.player_room).filter(func(n): return n != g._search_from)
+				if not opts.is_empty() and policy != "silent":
+					g.move_to(opts[randi() % opts.size()], false)
 			"line_click":
 				if policy in ["careful", "smart"] and d.kind == "pickup":
 					hiding = randf_range(6.0, 12.0)
@@ -117,8 +131,24 @@ class Bot:
 					if not opts.is_empty():
 						g.move_to(opts[randi() % opts.size()])
 
+	## The player only knows a nickname's room once they've been in it.
+	func _resolve_riddle() -> void:
+		if riddle_nick == "":
+			return
+		var at: String = g.house.object_room[riddle_nick]
+		if not g.visited.has(at):
+			return
+		# Seen it and it was moved? Then it's the room it used to be in.
+		target = g.house.home_room[riddle_nick] if g.house.was_moved(riddle_nick) else at
+		target_obj = riddle_nick
+		for oh in Words.objects_named(riddle_text, g.house):
+			if g.house.home_room[oh.obj] == target:
+				target_obj = oh.obj
+		riddle_nick = ""
+
 	func tick(dt: float) -> void:
 		think -= dt
+		_resolve_riddle()
 		danger_t -= dt
 		if policy == "silent":
 			if not g.hidden and g.can_act():
@@ -156,6 +186,30 @@ class Bot:
 			plan_obj = ""
 			if g.try_exit(o):
 				return
+		if riddle_nick != "" and target == "":
+			# Explore: the nearest room not seen yet.
+			var best := ""
+			var bd := 99
+			for r in g.house.room_ids:
+				if not g.visited.has(r) and g.house.distance(g.player_room, r) < bd:
+					bd = g.house.distance(g.player_room, r)
+					best = r
+			if best != "":
+				var p0: Array = g.house.path(g.player_room, best)
+				if not p0.is_empty() and not (policy == "smart" and p0[0] == danger_room and danger_t > 0.0):
+					g.move_to(p0[0], policy == "smart" and danger_t > 0.0)
+					return
+		if target != "":
+			if g.player_room == target:
+				var o2 := target_obj
+				target = ""
+				if g.house.object_room.get(o2, "") == g.player_room and g.try_exit(o2):
+					return
+			else:
+				var p: Array = g.house.path(g.player_room, target)
+				if not p.is_empty() and not (policy == "smart" and p[0] == danger_room and danger_t > 0.0):
+					g.move_to(p[0], policy == "smart" and danger_t > 0.0)
+					return
 		if plan_dir != "":
 			var to: String = g.house.step(g.player_room, plan_dir)
 			plan_dir = ""

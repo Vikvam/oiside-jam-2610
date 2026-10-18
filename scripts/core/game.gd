@@ -23,7 +23,9 @@ var busy_timer := 0.0
 var _busy_done: Callable
 var receiver_up := true
 var hidden := false
-var _seek_timer := 0.0
+var _searching := false     # he came for this room and is searching it
+var _search_timer := 0.0
+var _search_from := ""      # the room he came in from: that door is blocked
 var _presence_timer := 0.0
 var attempts_left := 3
 var tried := {}           # obj id -> true
@@ -42,6 +44,7 @@ var exit_room := ""
 var exit_obj := ""
 
 var murderer: Murderer
+var murderer_awake := true  # main keeps him still until her intro is over
 var rescuer               # backend with request(ctx) and optional tick(dt)
 var rescuer_pending := false
 var rescuer_again := false
@@ -57,14 +60,16 @@ var explore_mode := false   # player only knows sounds of visited rooms
 var rearranged := false     # random doors/phones/sounds each game
 var large := false          # 12-room house
 const DIFFICULTY := {
-	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "find_chance_hunt": 0.55, "find_chance_pass": 0.1},
-	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "find_chance_hunt": 0.65, "find_chance_pass": 0.15},
-	"hard": {"identify_time": 4.0, "hunt_threshold": 2, "far_step_chance": 0.5, "fake_hangup_chance": 0.35, "find_chance_hunt": 0.8, "find_chance_pass": 0.25, "imitate_chance": 0.6},
+	"gentle": {"identify_time": 8.0, "hunt_threshold": 1, "far_step_chance": 0.15, "fake_hangup_chance": 0.15, "walk_time": 5.5, "hunt_time": 3.6, "search_time": 5.0},
+	"normal": {"identify_time": 6.0, "hunt_threshold": 2, "far_step_chance": 0.3, "fake_hangup_chance": 0.25, "walk_time": 4.0, "hunt_time": 2.6, "search_time": 4.0},
+	"hard": {"identify_time": 4.0, "hunt_threshold": 2, "far_step_chance": 0.5, "fake_hangup_chance": 0.35, "walk_time": 4.0, "hunt_time": 2.6, "search_time": 3.0, "imitate_chance": 0.6},
 }
 var hide_time := 1.0
-var find_chance_hunt := 0.75   # he came for this room
-var find_chance_pass := 0.2    # he's just passing through
-var find_chance_stay := 0.08   # per 5 s while he lingers in your room
+var unhide_time := 0.6
+## Hiding has one visible rule, no dice: if he only passes through, he
+## doesn't see you while you keep still. If he came FOR this room, he searches
+## it and finds you after search_time, unless you slip out another door.
+var search_time := 4.0
 var player_walk := 2.0
 var player_sneak := 4.5
 var toggle_time := 2.0
@@ -82,6 +87,7 @@ func setup(seed_value := -1) -> void:
 		house = House.new(true)
 	if rearranged:
 		house.rearrange()
+	house.relocate_movables()
 	for r in house.room_ids:
 		room_state[r] = default_room_state(r)
 	raining = true
@@ -102,7 +108,12 @@ func setup(seed_value := -1) -> void:
 		if not far.is_empty():
 			break
 	exit_room = far[randi() % far.size()]
-	var objs: Array = house.rooms[exit_room].objects
+	# A hidden passage is built in: never obvious furniture, never something
+	# that gets carried around.
+	var objs: Array = house.rooms[exit_room].objects.filter(func(o):
+		return not o.get("obvious", false) and not house.is_movable(o.id) and house.home_room[o.id] == exit_room)
+	if objs.is_empty():
+		objs = house.rooms[exit_room].objects
 	exit_obj = objs[randi() % objs.size()].id
 	# Murderer: at least three rooms away if possible.
 	var mstart := []
@@ -218,6 +229,13 @@ func _leave_hiding() -> bool:
 	return true
 
 
+## The first thing the player does (or the end of her intro) wakes him.
+func wake() -> void:
+	if not murderer_awake:
+		murderer_awake = true
+		murderer.timer = minf(murderer.timer, 6.0)
+
+
 ## Break reference cycles so finished games are freed.
 func dispose() -> void:
 	_busy_done = Callable()
@@ -239,6 +257,7 @@ func dispose() -> void:
 func hide() -> bool:
 	if not can_act() or hidden:
 		return false
+	wake()
 	if receiver_up and house.rooms[player_room].phone:
 		hang_up()
 	_start_busy(Loc.t("busy_hide"), hide_time, func():
@@ -248,15 +267,33 @@ func hide() -> bool:
 	return true
 
 
+func unhide() -> bool:
+	if not hidden or not can_act():
+		return false
+	if not _leave_hiding():
+		return true
+	_start_busy(Loc.t("busy_unhide"), unhide_time, func(): pass)
+	return true
+
+
+func toggle_hide() -> bool:
+	return unhide() if hidden else hide()
+
+
 # ---------------------------------------------------------------- player verbs
 
 func move_to(r: String, sneak := false) -> bool:
 	if not can_act() or house.door_to(player_room, r) == "":
 		return false
+	wake()
 	if hidden and murderer.room == player_room:
 		_unhide()
-		_end(false, "caught")
-		return true
+		if not (_searching and r != _search_from):
+			_end(false, "caught")
+			return true
+		# Slipping out the other door while he searches the corners.
+		_searching = false
+		emit("slipped_out", {})
 	_unhide()
 	if receiver_up and house.rooms[player_room].phone:
 		hang_up()
@@ -302,10 +339,12 @@ func say(text: String) -> bool:
 	text = text.strip_edges()
 	if text == "" or over or not player_on_line():
 		return false
-	transcript.append({"t": time, "who": "you", "text": text})
+	wake()
+	var heard := murderer.listening
+	transcript.append({"t": time, "who": "you", "text": text, "heard": heard})
 	var loud := is_shouting(text)
-	line_log.append({"who": "player", "text": text + (" [shouted]" if loud else "")})
-	emit("player_says", {"text": text, "loud": loud})
+	line_log.append({"who": "player", "text": text + (" [shouted]" if loud else ""), "heard": heard})
+	emit("player_says", {"text": text, "loud": loud, "heard": heard})
 	if loud:
 		murderer.on_shout(player_room)
 	murderer.on_line_noise("m_n_voice")
@@ -329,7 +368,8 @@ static func is_shouting(text: String) -> bool:
 func tap() -> bool:
 	if over or not player_on_line():
 		return false
-	emit("player_tap", {})
+	wake()
+	emit("player_tap", {"heard": murderer.listening})
 	murderer.on_line_noise("m_n_tap")
 	_tap_count += 1
 	_tap_timer = 1.6
@@ -408,23 +448,28 @@ func on_murderer_entered(r: String) -> void:
 		return
 	if r == player_room:
 		if hidden and moving_to == "":
-			var chance := find_chance_pass
+			var came_from: String = murderer.prev_room
 			if murderer.goal_room == r and murderer.goal in ["hunt", "suspect"]:
-				chance = find_chance_hunt
-			elif murderer.goal_room == r and murderer.goal in ["sweep", "phone"]:
-				chance = (find_chance_hunt + find_chance_pass) * 0.5
-			if randf() >= chance:
-				_seek_timer = 5.0
+				_searching = true
+				_search_timer = search_time
+				_search_from = came_from
+				emit("murderer_searching", {"dir": house.door_to(r, came_from), "dur": search_time})
+				murderer.note(Loc.t("m_searching", [house.room_in(r)]))
+			else:
 				emit("murderer_in_room", {})
 				murderer.note(Loc.t("m_nobody", [house.room_in(r)]))
-				return
+			return
 		_end(false, "caught")
 		return
 	var running := murderer.goal == "hunt"
 	if d <= 2 or (running and d <= 3):
 		var p := house.path(player_room, r)
 		var dir := house.door_to(player_room, p[0]) if not p.is_empty() else ""
-		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": running})
+		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": running, "for_you": _coming_for_you()})
+
+
+func _coming_for_you() -> bool:
+	return murderer.goal_room == player_room and murderer.goal in ["hunt", "suspect"]
 
 
 func on_murderer_sets_off(r: String) -> void:
@@ -432,7 +477,7 @@ func on_murderer_sets_off(r: String) -> void:
 	if r != player_room and d <= 2:
 		var p := house.path(player_room, r)
 		var dir := house.door_to(player_room, p[0]) if not p.is_empty() else ""
-		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": murderer.goal == "hunt", "leaving": true})
+		emit("footsteps", {"room": r, "dist": d, "dir": dir, "running": murderer.goal == "hunt", "leaving": true, "for_you": _coming_for_you()})
 
 
 func on_murderer_pickup() -> void:
@@ -495,9 +540,10 @@ func rescuer_says(text: String, guess := "") -> void:
 		return
 	text = text.strip_edges()
 	if text != "":
-		transcript.append({"t": time, "who": "rescuer", "text": text})
-		line_log.append({"who": "rescuer", "text": text})
-		emit("rescuer_says", {"text": text, "guess": guess})
+		var heard := murderer.listening
+		transcript.append({"t": time, "who": "rescuer", "text": text, "heard": heard})
+		line_log.append({"who": "rescuer", "text": text, "heard": heard})
+		emit("rescuer_says", {"text": text, "guess": guess, "heard": heard})
 		murderer.on_words("rescuer", text)
 	elif guess != "":
 		emit("rescuer_guess", {"guess": guess})
@@ -569,26 +615,31 @@ func tick(dt: float) -> void:
 			var n := _tap_count
 			_tap_count = 0
 			var txt := "[%d tap%s on the receiver]" % [n, "" if n == 1 else "s"]
-			transcript.append({"t": time, "who": "you", "text": txt})
-			line_log.append({"who": "player", "text": txt})
+			transcript.append({"t": time, "who": "you", "text": txt, "heard": murderer.listening})
+			line_log.append({"who": "player", "text": txt, "heard": murderer.listening})
 			_ask_rescuer("tap")
 	if _bg_timer >= 0.0:
 		_bg_timer -= dt
 		if _bg_timer < 0.0:
 			_emit_backgrounds()
 	_tick_world(dt)
+	if not murderer_awake:
+		return
 	murderer.tick(dt)
+	if over:
+		return
 	_presence_timer -= dt
 	if _presence_timer <= 0.0:
 		_check_presence(false)
-	if hidden and not over and murderer.room == player_room:
-		_seek_timer -= dt
-		if _seek_timer <= 0.0:
-			_seek_timer = 5.0
-			if randf() < find_chance_stay:
+	if _searching:
+		if not hidden or murderer.room != player_room:
+			_searching = false
+		else:
+			murderer.hold(0.5)  # he stays until he has looked everywhere
+			_search_timer -= dt
+			if _search_timer <= 0.0:
+				_searching = false
 				_end(false, "caught")
-			else:
-				emit("murderer_in_room", {"still": true})
 
 
 func _check_presence(arrived: bool) -> void:

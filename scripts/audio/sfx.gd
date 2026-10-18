@@ -249,10 +249,9 @@ func _on_event(t: String, d: Dictionary) -> void:
 		"presence":
 			one_shot_panned("breath", "Walls", -6.0, pan_for(d.dir))
 			danger = maxf(danger, 0.75)
-		"murderer_in_room":
+		"murderer_in_room", "murderer_searching":
 			one_shot("breath", "Room", -4.0, 0.85)
-			if not d.get("still", false):
-				steps(2, true, "Room", -2.0, 0.6)
+			steps(2 if t == "murderer_in_room" else 4, true, "Room", -2.0, 0.6)
 			danger = 1.0
 		"murderer_found_exit":
 			one_shot("crash", "Walls", -10.0, 0.8)
