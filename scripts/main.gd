@@ -2,17 +2,17 @@ extends Node
 ## Builds the whole UI in code, runs the game loop, switches styles.
 
 ## Her intro is short, and he doesn't move until it's over (or you act).
-## Straight after it she asks herself for the first real line: the way out.
 const INTRO := {
 	"en": [
-		"It's me. Every phone in that house is on one line: he can pick up any of them and hear every word.",
-		"One tap means yes, two mean no. Now listen, I know the way out.",
+		"It's me. I've got the house cameras up, but they're terrible: I can see someone moving, not who.",
+		"Every phone is on one line, so he can listen. Don't say where you are. One tap yes, two no. Now — where are you?",
 	],
 	"cs": [
-		"To jsem já. Všechny telefony v tom domě jsou na jedné lince: může zvednout kterýkoli a slyší každé slovo.",
-		"Jedno ťuknutí je ano, dvě ne. A teď poslouchej, vím, kudy ven.",
+		"To jsem já. Mám tu domácí kamery, ale jsou příšerné: vidím, že se někdo hýbe, ne kdo.",
+		"Všechny telefony jsou na jedné lince, takže může poslouchat. Neříkej, kde jsi. Jedno ťuknutí ano, dvě ne. Tak — kde jsi?",
 	],
 }
+
 
 var game: Game
 var sfx: Sfx
@@ -802,7 +802,7 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 		var short := Loc.t("intro_short")
 		game.line_log.append({"who": "rescuer", "text": short})
 		phone.add_line.call_deferred("her", short, false)  # after your own line
-		game.rescuer_again = true  # then the way out, after answering you
+
 	if t == "game_over" and _soak_left > 0:
 		_soak_stats[game.end_reason] = _soak_stats.get(game.end_reason, 0) + 1
 		_soak_left -= 1
@@ -965,7 +965,6 @@ func _process(dt: float) -> void:
 			if _intro_queue.is_empty():
 				phone.hint("first")
 				game.wake()
-				game._ask_rescuer("intro")  # her first real line: the way out
 	game.tick(dt)
 	var cursor := (" █" if int(game.time * 2.0) % 2 == 0 else "  ") if Style.current == "phosphor" else ""
 	header_label.text = "%s     %s%s" % [Loc.t("header"), Loc.t("call_time", [int(game.time) / 60, int(game.time) % 60]), cursor]

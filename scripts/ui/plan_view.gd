@@ -240,10 +240,10 @@ func _draw() -> void:
 			# Hand-lettered: each label slightly crooked.
 			var ang := sin(float(id.hash() % 100)) * 0.05
 			draw_set_transform(rc.position + Vector2(10, 22), ang, Vector2.ONE)
-			draw_string(font, Vector2.ZERO, h.room_name(id), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, maxi(12, int(16 * U / 52.0)), name_col)
+			draw_string(font, Vector2.ZERO, h.room_name(id), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - (66 if h.has_camera(id) else 40), maxi(12, int(16 * U / 52.0)), name_col)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		else:
-			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - 40, maxi(10, int(14 * U / 52.0)), name_col)
+			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - (66 if h.has_camera(id) else 40), maxi(10, int(14 * U / 52.0)), name_col)
 		if not explore_mode or game.visited.has(id) or game.over:
 			_draw_icons(id, rc)
 		else:
@@ -263,6 +263,8 @@ func _draw() -> void:
 				y += maxf(11.0, U * 0.27)
 		if h.rooms[id].phone:
 			_icon_phone(rc.position + Vector2(rc.size.x - 22, 18), dim if id != game.player_room else Style.c("text"))
+		if h.has_camera(id):
+			_icon_camera(rc.position + Vector2(rc.size.x - 46, 18), Style.c("her") if not game.over else dim)
 	# Compass
 	_draw_compass(origin + Vector2(size_px.x - 34, size_px.y - 38))
 	_draw_flourish(size_px, font)
@@ -299,6 +301,12 @@ func _draw() -> void:
 	halo.a = 0.25 * pulse
 	draw_circle(pp, 13.0 + pulse * 3.0, halo)
 	wcircle(pp, 7.0, yc, 2.0, true)
+	# Which way you're facing: "left" and "right" depend on it.
+	var fv := Vector2(House.DIR_VEC[game.facing])
+	var tip := pp + fv * 17.0
+	draw_line(pp + fv * 9.0, tip, yc, 2.0, true)
+	draw_line(tip, tip - fv * 5.0 + fv.orthogonal() * 4.0, yc, 2.0, true)
+	draw_line(tip, tip - fv * 5.0 - fv.orthogonal() * 4.0, yc, 2.0, true)
 	if game.receiver_up and game.player_on_line():
 		var lc := yc
 		lc.a = 0.6
@@ -474,6 +482,16 @@ func _icon_radiator(p: Vector2, col: Color) -> void:
 		var x := p.x - 7 + i * 4.6
 		draw_line(Vector2(x, p.y - 7), Vector2(x, p.y + 7), col, 2.0)
 	draw_line(Vector2(p.x - 8, p.y + 5), Vector2(p.x + 8, p.y + 5), col, 1.0)
+
+
+## A security camera on a bracket: she can see movement in this room.
+func _icon_camera(p: Vector2, col: Color) -> void:
+	var body := PackedVector2Array([p + Vector2(-8, -2), p + Vector2(5, -5), p + Vector2(7, 1), p + Vector2(-6, 4)])
+	draw_colored_polygon(body, col)
+	draw_line(p + Vector2(-2, 3), p + Vector2(-4, 9), col, 1.5)
+	draw_line(p + Vector2(-8, 9), p + Vector2(0, 9), col, 1.5)
+	if int(_t * 1.5) % 2 == 0:
+		draw_circle(p + Vector2(4, -1), 1.3, Style.c("danger"))
 
 
 func _icon_phone(p: Vector2, col: Color) -> void:

@@ -1,12 +1,13 @@
 class_name LlmRescuer
 extends Node
-## The slow loop: the rescuer as an LLM. It gets only what came over the
-## line (game.line_log) plus her knowledge of the house, and must answer with
-## JSON {thinking, say, guess_room}. Code validates everything.
+## Optional Haiku voice. The scripted brain (MockRescuer) still decides what
+## she says; the LLM only rephrases the draft like a person and reads the
+## player's free text for a location hint. Code validates the rephrasing
+## (safe_rephrase) and urgent warnings skip the LLM entirely.
 ## mode "proxy": local proxy (proxy/rescuer_proxy.py) -> `claude -p --model haiku`
 ## mode "api":   an HTTP endpoint from rescuer_config.cfg (Anthropic Messages
 ##               format, or the same simple format as the proxy).
-## On any failure it falls back to the scripted MockRescuer for that turn.
+## On any failure she just says the draft.
 
 var game
 var mode := "proxy"
@@ -16,6 +17,9 @@ var http: HTTPRequest
 var busy := false
 var timeout_s := 40.0
 var last_error := ""
+var _draft := ""
+var _wait := -1.0
+var _ctx := {}
 
 
 func _ready() -> void:
@@ -26,13 +30,29 @@ func _ready() -> void:
 
 
 func tick(dt: float) -> void:
-	if fallback:
-		fallback.tick(dt)
+	if _wait >= 0.0:
+		_wait -= dt
+		if _wait < 0.0:
+			_send(_ctx)
 
 
 func request(ctx: Dictionary) -> void:
+	# Like the scripted voice: after a pickup, wait to hear the background.
+	_ctx = ctx
+	var reason: String = ctx.get("reason", "")
+	_wait = 2.4 if reason == "pickup" else (0.4 if reason == "camera" else 0.3)
+
+
+func _send(ctx: Dictionary) -> void:
+	# The scripted brain decides WHAT she says. Haiku only says it like a
+	# person would, and reads the player's free text for a location hint.
+	fallback._reason = ctx.get("reason", "")
+	_draft = fallback.decide()
+	if _draft == "" or fallback.last_draft_urgent or busy:
+		game.rescuer_says(_draft, fallback.guess)  # silence, or a warning: no time to wait
+		return
 	var system := build_system(game)
-	var prompt := build_prompt(game, ctx.get("reason", ""))
+	var prompt := build_prompt(game, ctx.get("reason", ""), _draft)
 	var url := ""
 	var headers := PackedStringArray(["Content-Type: application/json"])
 	var body := {}
@@ -42,7 +62,7 @@ func request(ctx: Dictionary) -> void:
 		headers.append("anthropic-version: 2023-06-01")
 		body = {
 			"model": cfg.get("model", "claude-haiku-5-5"),
-			"max_tokens": 400,
+			"max_tokens": 300,
 			"system": system,
 			"messages": [{"role": "user", "content": prompt}],
 		}
@@ -75,18 +95,44 @@ func _on_done(result: int, code: int, _headers: PackedStringArray, raw: PackedBy
 	if reply.is_empty():
 		_fail("unparseable: " + text.left(200), {})
 		return
-	game.rescuer_says(reply.say, reply.guess)
+	var say: String = reply.say
+	if not safe_rephrase(_draft, say, game):
+		say = _draft  # it added something he could use: say the draft instead
+	if reply.guess != "" and fallback.guess == "":
+		fallback.tentative = reply.guess  # a hint for her next turn, not a fact
+	game.rescuer_says(say, fallback.guess)
 
 
-func _fail(why: String, ctx: Dictionary) -> void:
+func _fail(why: String, _ctx: Dictionary) -> void:
 	busy = false
 	last_error = why
 	push_warning("Rescuer LLM failed: " + why)
 	game.emit("rescuer_error", {"why": why})
-	if fallback:
-		fallback.request(ctx)
-	else:
-		game.rescuer_says("", "")
+	game.rescuer_says(_draft, fallback.guess if fallback else "")
+
+
+## Haiku may change the words, never the facts. Reject a rephrasing that
+## names a room or object the draft didn't, or adds compass directions.
+static func safe_rephrase(draft: String, say: String, g) -> bool:
+	if say.strip_edges() == "":
+		return draft == ""
+	var h: House = g.house
+	for r in Words.rooms_named(say, h):
+		if r not in Words.rooms_named(draft, h):
+			return false
+	var d_objs := Words.objects_named(draft, h).map(func(o): return o.obj)
+	for o in Words.objects_named(say, h):
+		if o.obj not in d_objs:
+			return false
+	var d_dirs := Words.directions(draft)
+	var s_dirs := Words.directions(say)
+	for x in s_dirs:
+		if x not in d_dirs:
+			return false
+	for x in d_dirs:
+		if x not in s_dirs:
+			return false  # dropped the direction she meant
+	return say.length() <= draft.length() * 2 + 40
 
 
 ## Extract {say, guess} from the model output; tolerant of code fences.
@@ -115,111 +161,37 @@ static func parse_reply(text: String, house: House) -> Dictionary:
 static func build_system(g) -> String:
 	var h: House = g.house
 	var s := ""
-	s += "You are voicing Mara in a tense horror game. Stay in character. Output ONLY a JSON object.\n"
+	s += "You are the voice of Mara in a tense horror game. Output ONLY a JSON object.\n"
 	if Loc.lang == "cs":
-		s += "IMPORTANT: the player speaks CZECH. Every \"say\" MUST be in Czech, using the Czech names and nicknames given below.\n"
-	s += "\n"
-	s += "SITUATION: Your younger sibling (the player) is trapped in the old family house with a murderer. "
-	s += "They found a wired phone and called you. You grew up in that house and know a hidden way out that the murderer does not know. "
-	s += "Guide them to it.\n\n"
-	s += "THE DANGER: every room's phone is on ONE party line. The murderer can pick up any extension and silently listen. "
-	s += "He knows the floor plan, the room names and which rooms have which sounds (clock, fan, rain window, radiator). "
-	s += "He knows the obvious furniture of every room (marked OBVIOUS below: say 'bathtub' and he knows it's the bathroom). "
-	s += "Other objects he knows ONLY if he has already searched that room (you don't know which ones he has). "
-	s += "He NEVER knows the childhood nicknames below — those are safe, but the player only knows a nickname after seeing that object. "
-	s += "If he hears a room name or an object he knows, he will go there. Compass directions ('take the east door') "
-	s += "only help him if he already knows where the player is. He also hears the background sounds behind the player's voice.\n\n"
-	s += "THE HOUSE (single floor; doors listed by compass direction):\n"
+		s += "IMPORTANT: the player speaks CZECH. \"say\" MUST be natural, informal Czech (tykání).\n"
+	s += "\nSITUATION: Your younger sibling is hiding in your old family house from a murderer, whispering to you over a party-line phone. "
+	s += "He can listen on any extension. You watch grainy security cameras.\n\n"
+	s += "YOUR JOB: a planner has already decided what you say this turn (DRAFT). Say the same thing the way a terrified, loving sister would whisper it. "
+	s += "Keep every fact, door and instruction exactly; you may shorten, never add. "
+	s += "NEVER add a room name, an object name, or a compass direction that the draft doesn't have. Max 2 short sentences. No stage directions, no emojis.\n\n"
+	s += "ALSO: if the player's latest words describe where they are (an object, a nickname, a sound), put the room id in guess_room, else leave it empty. Room ids:\n"
 	for rid in h.room_ids:
-		var r: Dictionary = h.rooms[rid]
-		var doors := []
-		for d in House.DIRS:
-			var to := h.step(rid, d)
-			if to != "":
-				doors.append("%s door → %s" % [d, h.rooms[to].name])
-		var feats: Array = r.features.map(func(f): return House.FEATURE_LABEL[f])
-		var cs_name := " / Czech: %s" % House.cs_room(rid)[0] if Loc.lang == "cs" else ""
-		s += "- %s%s (id: %s). %s. Sounds: %s. Doors: %s.\n" % [r.name, cs_name, rid, "Has a phone" if r.phone else "NO phone", ", ".join(feats) if not feats.is_empty() else "none", "; ".join(doors)]
-		# What was in the room when you were kids: small things may have moved.
+		var objs := []
 		for oid in h.home_room:
-			if h.home_room[oid] != rid:
-				continue
-			var o := h.object_def(oid)
-			var line := "    · %s" % o.name
-			if Loc.lang == "cs":
-				line += " (Czech: %s)" % House.cs_obj(o.id)[0]
-			if o.get("obvious", false):
-				line += " [OBVIOUS: he'd know the room from this word]"
-			if o.has("nick"):
-				if Loc.lang == "cs":
-					line += " — childhood nickname \"%s\" (%s)" % [House.cs_obj(o.id)[3], House.cs_obj(o.id)[4]]
-				else:
-					line += " — childhood nickname \"%s\" (%s)" % [o.nick, o.memory]
-				var alt := h.obj_alt(o.id)
-				if alt != "" and h.is_movable(o.id):
-					line += " [it's small: someone may have moved it, maybe to the %s; you don't know]" % h.rooms[alt].name
-				elif alt != "":
-					line += " [you're not 100%% sure it was here, it might have been the %s]" % h.rooms[alt].name
-			s += line + "\n"
-	var od := h.object_def(g.exit_obj)
-	s += "\nTHE WAY OUT: the %s in the %s — %s. The player must stand in that room and search that exact object. " % [od.name, h.rooms[g.exit_room].name, House.EXIT_FLAVOR.get(g.exit_obj, House.EXTRA_FLAVOR.get(g.exit_obj, ""))]
-	s += "They get only 3 tries in total and a wrong try makes a loud crash that gives away their room.\n"
-	var land := h.nick_obj(g.exit_room)
-	if land != "":
-		var nick: String = House.cs_obj(land)[3] if Loc.lang == "cs" else h.object_def(land).nick
-		s += "YOUR LANDMARK for that room: \"%s\" (its childhood nickname; he can't decode it). " % nick
-		if land == g.exit_obj:
-			s += "The way out is that very object, so you can say it all with the nickname alone. "
-		if h.is_movable(land):
-			s += "BUT that landmark is small and may have been moved: you MUST add a short warning like 'if nobody moved it', and help them check (taps) if they're unsure. "
-		elif h.obj_alt(land) != "":
-			s += "BUT you're not completely sure it was in that room: you MUST say so briefly ('I think'). "
-	s += "\nYOUR FIRST JOB, right after your intro: tell them the way out safely, in one or two sentences — the room by its landmark nickname ('the room where Old Gregor lives', never the room name), "
-	s += "then which thing to search there (its nickname if it has one; otherwise its plain name, but only if it isn't OBVIOUS and nobody seems to be listening). "
-	s += "You do NOT need to know where they are to do this. Only work out where they are if they ask for directions or seem lost; then give compass directions.\n\n"
-	s += "WHAT YOU HEAR: only the line. You do NOT know where the player is — work it out from what they say and from the background sounds. "
-	s += "Background sounds on the line are mixed from every open extension. '[click: another extension picks up]' means someone, probably him, is now listening. "
-	s += "Hang-up clicks can be faked. Taps: one tap = yes, two taps = no. The player may lie on purpose to lure him away — if it sounds like a lie, play along.\n"
-	s += "Rooms without a phone: the player can't talk from there. '[shouted]' means the player raised their voice — he may have heard it through the walls.\n"
-	if g.explore_mode:
-		s += "The player sees a floor plan with every room's name and doors, but only knows the sounds and objects of rooms they have visited. "
-	else:
-		s += "The player sees a floor plan with every room's name, doors and sound icons, but not the objects of rooms they haven't visited. "
-	s += "Describing a room by its sounds ('the room with the clock and the fan') is as unsafe as naming it — he knows the sounds too.\n"
-	s += "After '[click: another extension picks up]' with no hang-up since, assume he IS listening: say almost nothing, or ask a yes/no question, or use a nickname. "
-	s += "If you hear '[a man's voice on the line ...]', he is sure where the player is — tell them to move, now, without naming where.\n"
-	s += "If NO other extension has picked up since the last hang-up, he is probably not listening right now: that is the moment to be clear and efficient — "
-	s += "give the next compass direction or the exact spot (prefer a nickname over an object name). Don't waste safe moments on questions you can already answer.\n"
-	s += "The exit room %s a phone.%s\n\n" % ["HAS" if h.rooms[g.exit_room].phone else "has NO", "" if h.rooms[g.exit_room].phone else " So tell the player which object to search BEFORE they walk in — they can't call you from in there."]
-	s += "HOW TO TALK: whispered, scared, focused. Max 2 short sentences, under 30 words. No stage directions, no emojis. "
-	s += "Prefer nicknames, yes/no questions the player can answer with taps, and compass directions from where you think they are. "
-	s += "Avoid saying room names or object names when he might be listening. "
-	s += "NEVER ask whether he is in the room with them or right next to them: if he were, they'd already be dead, and they can't know anyway. "
-	s += "Ask at most one yes/no question in a row, and only if the answer changes what you'll say next. If they ask 'where?', repeat the riddle in other words or add a hint. "
-	s += "It is fine to stay silent (empty say) if speaking now is too dangerous.\n\n"
-	if Loc.lang == "cs":
-		s += "LANGUAGE: the player speaks Czech. Whisper in natural, informal Czech (tykání). Use the Czech room and object names and the Czech nicknames. "
-		s += "Directions in Czech: severními / východními / jižními / západními dveřmi. Note: in Czech 'východ' means both 'east' and 'exit' — avoid the ambiguity.\n\n"
-	s += "OUTPUT FORMAT (JSON only, no prose around it):\n"
-	s += "{\"thinking\": \"one short private sentence\", \"say\": \"what you whisper\", \"guess_room\": \"room id where you think the player is, or empty\"}\n"
+			if h.home_room[oid] == rid:
+				var o := h.object_def(oid)
+				var nm: String = House.cs_obj(oid)[0] if Loc.lang == "cs" else o.name
+				if o.has("nick"):
+					nm += " (\"%s\")" % (House.cs_obj(oid)[3] if Loc.lang == "cs" else o.nick)
+				objs.append(nm)
+		s += "- %s: %s\n" % [rid, ", ".join(objs)]
+	s += "\nOUTPUT: {\"say\": \"...\", \"guess_room\": \"room id or empty\"}\n"
 	return s
 
 
-static func build_prompt(g, reason: String) -> String:
-	var p := "THE LINE SO FAR (oldest first):\n"
-	var lines: Array = g.line_log.slice(maxi(0, g.line_log.size() - 40))
+static func build_prompt(g, reason: String, draft := "") -> String:
+	var p := "THE LINE, LAST FEW EXCHANGES:\n"
+	var lines: Array = g.line_log.slice(maxi(0, g.line_log.size() - 10))
 	for e in lines:
 		match e.who:
 			"player": p += "PLAYER: %s\n" % e.text
-			"rescuer": p += "YOU (Mara): %s\n" % e.text
-			_: p += "%s\n" % e.text
-	var why := {
-		"speech": "The player just spoke.",
-		"tap": "The player just tapped.",
-		"pickup": "The player just picked up a receiver again after being away.",
-		"followup": "More happened on the line while you were answering.",
-		"imposter": "Someone just imitated YOUR voice on the line to mislead the player. Warn them, briefly.",
-		"intro": "You just finished your intro. Now do YOUR FIRST JOB: tell them the way out, safely." + (" Answer in Czech." if Loc.lang == "cs" else ""),
-	}
-	p += "\n%s It is %d:%02d into the call. Reply with the JSON object." % [why.get(reason, ""), int(g.time) / 60, int(g.time) % 60]
+			"rescuer": p += "YOU: %s\n" % e.text
+			_: pass
+	p += "\nDRAFT (say this, in your own words): %s\n" % draft
+	p += "Reply with the JSON object."
 	return p

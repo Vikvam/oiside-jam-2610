@@ -156,7 +156,7 @@ func rebuild() -> void:
 	for dir in House.DIRS:
 		var to := h.step(game.player_room, dir)
 		if to != "":
-			_btn(doors_box, "%s → %s" % [Loc.t(dir.capitalize()), h.room_name(to)], func():
+			_btn(doors_box, "%s · %s → %s" % [Loc.t("rel_" + House.relative(game.facing, dir)), Loc.t(dir.capitalize()), h.room_name(to)], func():
 				move_requested.emit(to, sneak), ok)
 	var hb := _btn(doors_box, Loc.t("hidden_btn") if game.hidden else Loc.t("hide"), func(): game.toggle_hide(), ok)
 	hb.tooltip_text = Loc.t("hide_tip")

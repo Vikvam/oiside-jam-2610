@@ -30,7 +30,6 @@ func _init() -> void:
 	g.rescuer = self
 	for l in intros[Loc.lang]:
 		g.line_log.append({"who": "rescuer", "text": l})
-	g._ask_rescuer.call_deferred("intro")  # her first real line: the way out
 	bot = BotScript.Bot.new(g, "smart")
 	g.event.connect(bot.on_event)
 	g.event.connect(func(t, d):

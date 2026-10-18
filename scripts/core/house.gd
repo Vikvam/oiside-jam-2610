@@ -19,7 +19,7 @@ const DIR_VEC := {"north": Vector2i(0, -1), "east": Vector2i(1, 0), "south": Vec
 ## features: what the room CAN sound like. "rain" means it has a window.
 const ROOMS := [
 	{
-		"id": "library", "name": "Library", "rect": [0, 0, 4, 3], "phone": true,
+		"id": "library", "name": "Library", "rect": [0, 0, 4, 3], "camera": true, "phone": true,
 		"features": ["clock", "rain"],
 		"objects": [
 			{"id": "bookcase", "obvious": true, "name": "tall bookcase", "keys": ["bookcase", "bookshelf", "shelf", "shelves", "books"],
@@ -71,7 +71,7 @@ const ROOMS := [
 		],
 	},
 	{
-		"id": "hall", "name": "Hall", "rect": [4, 3, 4, 3], "phone": true,
+		"id": "hall", "name": "Hall", "rect": [4, 3, 4, 3], "camera": true, "phone": true,
 		"features": ["clock", "rain"],
 		"objects": [
 			{"id": "stag", "name": "stag head", "keys": ["stag", "antlers", "deer", "trophy"],
@@ -84,20 +84,20 @@ const ROOMS := [
 		],
 	},
 	{
-		"id": "kitchen", "name": "Kitchen", "rect": [8, 3, 4, 3], "phone": true,
+		"id": "kitchen", "name": "Kitchen", "rect": [8, 3, 4, 3], "camera": true, "phone": true,
 		"features": ["fan", "rain", "radiator"],
 		"objects": [
 			{"id": "stove", "obvious": true, "name": "iron stove", "keys": ["stove", "oven", "iron", "cooker"],
 				"desc": "A big iron stove. The floorboards in front of it are loose."},
 			{"id": "dumbwaiter", "name": "dumbwaiter", "keys": ["dumbwaiter", "hatch", "shaft"],
-				"desc": "A dumbwaiter hatch in the wall.", "nick": "the ghost lift",
-				"memory": "The dumbwaiter... the ghost lift. You rode it once and got stuck for an hour."},
+				"desc": "A dumbwaiter hatch in the wall.", "nick": "Uncle Otto",
+				"memory": "The dumbwaiter... Uncle Otto. It groaned like him, and you rode it once and got stuck for an hour."},
 			{"id": "knife_block", "name": "knife block", "keys": ["knife", "knives", "block"],
 				"desc": "A knife block. One slot is empty. You try not to think about it."},
 		],
 	},
 	{
-		"id": "conservatory", "name": "Conservatory", "rect": [0, 6, 4, 3], "phone": false,
+		"id": "conservatory", "name": "Conservatory", "rect": [0, 6, 4, 3], "camera": true, "phone": false,
 		"features": ["rain"],
 		"objects": [
 			{"id": "birdcage", "name": "empty birdcage", "keys": ["birdcage", "cage", "bird", "canary"],
@@ -110,7 +110,7 @@ const ROOMS := [
 		],
 	},
 	{
-		"id": "dining", "name": "Dining Room", "rect": [4, 6, 4, 3], "phone": true,
+		"id": "dining", "name": "Dining Room", "rect": [4, 6, 4, 3], "camera": true, "phone": true,
 		"features": ["fan", "radiator"],
 		"objects": [
 			{"id": "long_table", "obvious": true, "name": "long table", "keys": ["table", "tablecloth", "dinner"],
@@ -127,8 +127,8 @@ const ROOMS := [
 		"features": ["radiator"],
 		"objects": [
 			{"id": "jam_shelf", "name": "shelf of jam jars", "keys": ["jam", "jars", "jar", "preserves"],
-				"desc": "Shelves of jam jars, labelled in a shaky hand: 1987, 1988, 1989...", "nick": "Granny's museum",
-				"memory": "The jam jars... Granny's museum. Nobody was ever allowed to open the 1987."},
+				"desc": "Shelves of jam jars, labelled in a shaky hand: 1987, 1988, 1989...", "nick": "Fort Knox",
+				"memory": "The jam jars... Fort Knox. Nobody was ever allowed to open the 1987."},
 			{"id": "flour_sacks", "obvious": true, "name": "flour sacks", "keys": ["flour", "sacks", "sack", "bags"],
 				"desc": "A pile of flour sacks. Something small has nested in them."},
 			{"id": "meat_hook", "name": "meat hook", "keys": ["hook", "hooks", "meat"],
@@ -179,7 +179,7 @@ const EXIT_FLAVOR := {
 ## The large house adds a fourth column.
 const EXTRA_ROOMS := [
 	{
-		"id": "billiard", "name": "Billiard Room", "rect": [12, 0, 4, 3], "phone": true,
+		"id": "billiard", "name": "Billiard Room", "rect": [12, 0, 4, 3], "camera": true, "phone": true,
 		"features": ["fan"],
 		"objects": [
 			{"id": "billiard_table", "obvious": true, "name": "billiard table", "keys": ["billiard", "billiards", "pool", "felt"],
@@ -196,8 +196,8 @@ const EXTRA_ROOMS := [
 		"features": ["clock", "rain"],
 		"objects": [
 			{"id": "gramophone", "name": "gramophone", "keys": ["gramophone", "phonograph", "record", "records"],
-				"desc": "A gramophone with a cracked record on it.", "nick": "the Singing Box", "alt": "billiard", "movable": true,
-				"memory": "The gramophone... the Singing Box. It only ever played one waltz."},
+				"desc": "A gramophone with a cracked record on it.", "nick": "Aunt Vera", "alt": "billiard", "movable": true,
+				"memory": "The gramophone... Aunt Vera. Like her, it only ever knew one waltz."},
 			{"id": "harp", "obvious": true, "name": "harp", "keys": ["harp", "strings"],
 				"desc": "A tall harp with three strings missing."},
 			{"id": "music_stand", "name": "music stand", "keys": ["sheet", "sheets", "score"],
@@ -205,7 +205,7 @@ const EXTRA_ROOMS := [
 		],
 	},
 	{
-		"id": "bathroom", "name": "Bathroom", "rect": [12, 6, 4, 3], "phone": true,
+		"id": "bathroom", "name": "Bathroom", "rect": [12, 6, 4, 3], "camera": true, "phone": true,
 		"features": ["fan", "radiator"],
 		"objects": [
 			{"id": "bathtub", "obvious": true, "name": "clawfoot bathtub", "keys": ["bathtub", "bath", "tub"],
@@ -239,7 +239,7 @@ const CS_EXTRA_OBJECTS := {
 	"billiard_table": ["kulečníkový stůl", "Kulečníkový stůl. Na suknu zbyla jediná koule: osmička.", ["kulecnik*", "sukn*"]],
 	"cue_rack": ["stojan s tágy", "Stojan s tágy. Jedno je zlomené vejpůl.", ["taga", "tago", "tagy", "tagem"]],
 	"dartboard": ["terč na šipky", "Terč, ze kterého trčí staré šipky.", ["terc*", "sipk*"], "Kyklop", "Terč… Kyklop. Ani jednou jste se mu netrefili do oka."],
-	"gramophone": ["gramofon", "Gramofon s prasklou deskou.", ["gramofon*", "deska", "desku", "desky"], "Zpívající skříňka", "Gramofon… Zpívající skříňka. Hrál pořád jen jeden valčík."],
+	"gramophone": ["gramofon", "Gramofon s prasklou deskou.", ["gramofon*", "deska", "desku", "desky"], "Teta Věra", "Gramofon… Teta Věra. Stejně jako ona uměl jen jeden valčík."],
 	"harp": ["harfa", "Vysoká harfa, chybějí jí tři struny.", ["harf*", "strun*"]],
 	"music_stand": ["notový stojan", "Notový stojan. List na něm je prázdný.", ["noty", "notov*", "partitur*"]],
 	"bathtub": ["vana na nožičkách", "Vana na lvích nožičkách se šedým okrajem.", ["vana", "vane", "vanu", "vanou"]],
@@ -289,7 +289,7 @@ const CS_OBJECTS := {
 	"staircase": ["schodiště", "Široké schodiště. Patro je zatlučené prkny.", ["schod*", "zabradl*"]],
 	"umbrella_stand": ["stojan na deštníky", "Stojan na deštníky ze sloní nohy. Hrůza.", ["destnik*", "stojan*", "hul", "hole"]],
 	"stove": ["litinová kamna", "Velká litinová kamna. Prkna před nimi se viklají.", ["kamn*", "sporak*"]],
-	"dumbwaiter": ["jídelní výtah", "Dvířka jídelního výtahu ve zdi.", ["vytah*", "sacht*", "dvirk*"], "Duchovka", "Jídelní výtah… Duchovka. Jednou jste v ní uvízli na celou hodinu."],
+	"dumbwaiter": ["jídelní výtah", "Dvířka jídelního výtahu ve zdi.", ["vytah*", "sacht*", "dvirk*"], "Strýc Ota", "Jídelní výtah… Strýc Ota. Skřípal jako on a jednou jste v něm uvízli na celou hodinu."],
 	"knife_block": ["stojan na nože", "Stojan na nože. Jedna škvíra je prázdná. Snažíš se na to nemyslet.", ["noz*", "nuz*"]],
 	"birdcage": ["prázdná ptačí klec", "Prázdná mosazná klec.", ["klec*", "ptac*", "kanar*"], "Pípův palác", "Mosazná klec… Pípův palác. Píp byl kanárek. Pohřbili jste ho u růží."],
 	"fern": ["uschlá kapradina", "Obrovská uschlá kapradina v prasklém květináči.", ["kaprad*", "kvetin*", "rostlin*"]],
@@ -297,7 +297,7 @@ const CS_OBJECTS := {
 	"long_table": ["dlouhý stůl", "Dlouhý stůl prostřený pro dvanáct. Roky tu nikdo nejedl.", ["stol*", "stul", "ubrus*", "tabul*"]],
 	"china_cabinet": ["vitrína s porcelánem", "Vitrína s porcelánem. Každý šálek je otlučený.", ["vitrin*", "porcelan*", "salk*", "salek", "talir*"]],
 	"chandelier": ["lustr", "Křišťálový lustr, který se nepatrně houpe.", ["lustr*", "kristal*"], "Medúza", "Křišťálový lustr… Medúza. Byli jste si jistí, že žahá každého, kdo pod ní sedí."],
-	"jam_shelf": ["police se zavařeninami", "Police se zavařeninami, popsané roztřesenou rukou: 1987, 1988, 1989…", ["zavaren*", "marmelad*", "sklenic*", "dzem*"], "Babiččino muzeum", "Zavařeniny… Babiččino muzeum. Ročník 1987 nesměl nikdy nikdo otevřít."],
+	"jam_shelf": ["police se zavařeninami", "Police se zavařeninami, popsané roztřesenou rukou: 1987, 1988, 1989…", ["zavaren*", "marmelad*", "sklenic*", "dzem*"], "Fort Knox", "Zavařeniny… Fort Knox. Ročník 1987 nesměl nikdy nikdo otevřít."],
 	"flour_sacks": ["pytle mouky", "Hromada pytlů s moukou. Něco malého si v nich udělalo hnízdo.", ["pytl*", "pytel", "mouk*"]],
 	"meat_hook": ["hák na maso", "Rezavý hák na maso na kolejnici. Prázdný. Naštěstí.", ["hak", "haku", "hakem", "haky", "hak*"]],
 }
@@ -505,6 +505,10 @@ func rearrange() -> void:
 	ids.shuffle()
 	for i in ids.size():
 		rooms[ids[i]].phone = i < ids.size() * 2 / 3
+	# Cameras: about half the rooms.
+	ids.shuffle()
+	for i in ids.size():
+		rooms[ids[i]].camera = i < (ids.size() + 1) / 2
 	# Sounds: random, every room has at least one.
 	var odds := {"clock": 0.45, "fan": 0.35, "rain": 0.5, "radiator": 0.4}
 	for id in room_ids:
@@ -609,6 +613,29 @@ func phone_rooms() -> Array:
 		if rooms[r].phone:
 			out.append(r)
 	return out
+
+
+func has_camera(id: String) -> bool:
+	return rooms[id].get("camera", false)
+
+
+## Turn a compass door into a turn, for someone who walked in facing `facing`:
+## "straight", "left", "right" or "back".
+static func relative(facing: String, dir: String) -> String:
+	if dir == facing:
+		return "straight"
+	if dir == opposite(facing):
+		return "back"
+	var left := {"north": "west", "west": "south", "south": "east", "east": "north"}
+	return "left" if left[facing] == dir else "right"
+
+
+## The inverse: which compass door is "left" for someone facing `facing`.
+static func absolute(facing: String, rel: String) -> String:
+	for d in DIRS:
+		if relative(facing, d) == rel:
+			return d
+	return ""
 
 
 func has_feature(id: String, f: String) -> bool:

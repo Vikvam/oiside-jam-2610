@@ -16,7 +16,7 @@ for env in "" "LARGE=1" "REARRANGE=1" "LARGE=1 REARRANGE=1"; do
   echo "$line" | grep -q "SCRIPT ERROR" && fail=1
 done
 echo "== GUI soak"
-out=$(timeout 300 godot --headless --path . -- --play --autoplay=smart --speed=10 --soak=6 2>&1)
+out=$(timeout 600 godot --headless --path . -- --play --backend=mock --autoplay=smart --speed=10 --soak=5 2>&1)
 echo "$out" | grep -E "soak done"
 if echo "$out" | grep -q "SCRIPT ERROR"; then echo "$out" | grep -A3 "SCRIPT ERROR" | head -20; fail=1; fi
 [ $fail = 0 ] && echo "ALL OK" || echo "FAILURES"

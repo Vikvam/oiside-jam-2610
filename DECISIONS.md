@@ -167,3 +167,22 @@ The logs showed four problems: he moved during her 35 s intro, hiding was a hidd
 - **Marks for what he heard.** Live: a `──── click — someone picked up ────` rule, then a red bar and shaking text until a hang-up click. This is your own perception, so a fake hang-up fools it. After the call, ◉ marks every line he really heard, and the game log tags them `[HEARD]`.
 - **Haiku prompt:** riddle first. Never ask "is he in the room with you". At most one yes/no question in a row. Czech is required up front when playing in Czech.
 - Sims (careful bot that has to explore to find nicknames): about 50% escapes on gentle and normal, versus about 5% before.
+
+## Joint session, round 2: CCTV (replaces the riddle)
+
+The riddle-first rescuer overcorrected. The user's next two games were won in 31 s and 1:26: the nicknames described their objects ("the Singing Box" is obviously in the Music Room), and her first, always-safe line gave everything away. The user proposed DESIGN.md's open "CCTV" idea, and we chose these variants together:
+
+- **She watches grainy cameras in about half the rooms** (camera icon on the plan). She sees a *figure move*, never who. Standing still, nobody shows up. *Why:* she needs her own information all game long, or the call stops mattering. Blind rooms and motion-only mean your ears still matter.
+- **She works out which figure is you.** A figure moving while your receiver is up must be him. Otherwise she asks one tap question ("did you just come through a door?"), or uses your words, nicknames and background sounds as before.
+- **She guides one door at a time, around him** (her route avoids his last sighting and the rooms next to it). She warns you when he's next to you ("he's right behind the door on your left"). She doesn't say the exit until you're in its room. A room with no phone gets two steps at once.
+- **Directions in three registers** (user's call: "a mix of all 3"):
+  - compass when the line seems quiet
+  - turns relative to the way you face (an arrow on your dot; doors labelled "← left · West → …") when he may be listening
+  - a nickname of a room she thinks you've seen
+  - *Why:* compass words tell a listener you're not in an edge room. Turns are useless without your heading.
+- **Opaque nicknames:** the ghost lift → Uncle Otto, the Singing Box → Aunt Vera, Granny's museum → Fort Knox.
+- **The scripted voice is her brain; Haiku is an optional voice.** In Haiku mode the script still decides. Haiku only rephrases the draft and suggests a room from your free text. `safe_rephrase` rejects any new room, object or compass word. Warnings skip Haiku entirely. *Why:* about 7 s of latency is fatal for "he's behind your door", and code reasons about two anonymous figures reliably.
+- **New cue: "Footsteps go out through the north door… He's gone — for now."** It plays when he has actually left your room (not when he starts walking), so you know when to come out of hiding.
+- **He gets bored of guarding a found exit** after 40 s and goes hunting for 45 s. *Why:* the soak found a stalemate.
+- Tests always use the scripted voice (`run_all.sh` passes `--backend=mock`), so they never spend the user's Haiku usage.
+- Sims: careful bot 44% escapes on gentle (median 52 s), 36% on normal. The smart bot gets 53% on gentle with a median of 3 minutes.

@@ -31,6 +31,7 @@ var attempts_left := 3
 var tried := {}           # obj id -> true
 var visited := {}         # rooms the player has seen
 var trail: Array = []     # rooms the player walked through, in order
+var facing := "north"     # the way you walked in (you start facing the phone wall)
 var off_line_since := 0.0
 
 # World
@@ -49,6 +50,12 @@ var rescuer               # backend with request(ctx) and optional tick(dt)
 var rescuer_pending := false
 var rescuer_again := false
 var line_log: Array = []  # what the rescuer heard: [{who, text}]
+## What her monitors show: anonymous figures moving in camera rooms.
+## [{t, room, kind ("in"/"out"), dir, text, who}] — `who` is for tests
+## and the post-game log only; the rescuer must never read it.
+var cam_log: Array = []
+var cam_ask_gap := 10.0     # at most one "something changed on the monitors" per this
+var _last_cam_ask := -100.0
 var transcript: Array = []
 var _bg_timer := -1.0
 var _tap_count := 0
@@ -299,6 +306,7 @@ func move_to(r: String, sneak := false) -> bool:
 		hang_up()
 	moving_to = r
 	sneaking = sneak
+	_cam(player_room, "out", house.door_to(player_room, r), "p")
 	move_timer = player_sneak if sneak else player_walk
 	move_total = move_timer
 	emit("player_move_start", {"from": player_room, "to": r, "dur": move_timer, "sneak": sneak})
@@ -440,6 +448,10 @@ func _start_busy(label: String, dur: float, done: Callable) -> void:
 
 func on_murderer_entered(r: String) -> void:
 	var d := house.distance(player_room, r)
+	_cam(r, "in", house.door_to(r, murderer.prev_room), "m")
+	if murderer.prev_room == player_room and moving_to == "":
+		# Only now is he really out: the doorway takes a few seconds.
+		emit("murderer_left", {"dir": house.door_to(player_room, r)})
 	if r == player_room and moving_to != "" and move_timer < move_total * 0.5:
 		var came_from: String = murderer.trail[-2] if murderer.trail.size() > 1 else ""
 		if came_from != moving_to:
@@ -472,8 +484,15 @@ func _coming_for_you() -> bool:
 	return murderer.goal_room == player_room and murderer.goal in ["hunt", "suspect"]
 
 
+## He walks out of room `r` towards `next`.
+func on_murderer_leaves(r: String, next: String) -> void:
+	_cam(r, "out", house.door_to(r, next), "m")
+
+
 func on_murderer_sets_off(r: String) -> void:
 	var d := house.distance(player_room, r)
+	if not murderer.path.is_empty():
+		on_murderer_leaves(r, murderer.path[0])
 	if r != player_room and d <= 2:
 		var p := house.path(player_room, r)
 		var dir := house.door_to(player_room, p[0]) if not p.is_empty() else ""
@@ -516,10 +535,26 @@ func on_murderer_breath() -> void:
 		_line_note("[slow breathing on the line]")
 
 
+# ---------------------------------------------------------------- cameras
+
+## A figure moved in a camera room. Standing still, nobody shows up on her
+## grainy monitors: she only sees movement.
+func _cam(room: String, kind: String, dir: String, who: String) -> void:
+	if not house.has_camera(room) or over:
+		return
+	var verb := "comes in through the %s door" if kind == "in" else "leaves through the %s door"
+	var text := "[monitor, %s] a figure %s" % [house.rooms[room].name, verb % dir]
+	cam_log.append({"t": time, "room": room, "kind": kind, "dir": dir, "text": text, "who": who})
+	# She'll want to say something about it, if you're there to hear it.
+	if player_on_line() and time - _last_cam_ask >= cam_ask_gap:
+		_last_cam_ask = time
+		_ask_rescuer("camera")
+
+
 # ---------------------------------------------------------------- rescuer
 
 func _line_note(text: String) -> void:
-	line_log.append({"who": "line", "text": text})
+	line_log.append({"who": "line", "text": text, "t": time})
 
 
 func _ask_rescuer(reason: String) -> void:
@@ -587,7 +622,9 @@ func tick(dt: float) -> void:
 			var from := player_room
 			player_room = moving_to
 			moving_to = ""
+			facing = house.door_to(from, player_room)
 			trail.append(player_room)
+			_cam(player_room, "in", house.door_to(player_room, from), "p")
 			var first := not visited.has(player_room)
 			visited[player_room] = true
 			emit("player_arrive", {"room": player_room, "from": from, "first": first})

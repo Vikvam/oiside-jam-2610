@@ -1,70 +1,87 @@
 class_name MockRescuer
 extends RefCounted
-## Scripted rescuer. Knows the house and the exit, but NOT where the player
-## is — it only uses what came over the line (game.line_log). Talks a bit
-## too freely on purpose, which makes it a good sparring partner for the
-## murderer in simulations.
+## The scripted rescuer: her brain. She knows the house and the exit, and she
+## watches the security monitors (game.cam_log): grainy, so she sees a figure
+## move, never who it is. She does NOT know where the player is: she works it
+## out from the line (game.line_log) and the monitors, then guides them one
+## step at a time around him. In Haiku mode this still decides what she says;
+## the LLM only rephrases it.
+##
+## Directions come in three registers, picked per line:
+##   compass  ("the west door")        when the line seems quiet — clear, but he
+##                                      can use it if he's listening
+##   relative ("the door on your left") when he may be listening — useless to
+##                                      him without your heading
+##   nickname ("go to Old Gregor")      when she thinks you've seen that room
 
 var game
-var guess := ""
-var expect_next := ""     # room the player should be in after following us
-var cautious := false
+var guess := ""           # the room she thinks the player is in
+var expect_next := ""     # where she just sent them
+var p_facing := ""        # the way she thinks they're facing ("" = no idea)
+var him := ""             # where she last saw a figure she thinks is him
+var him_t := -100.0
+var tentative := ""       # a figure she saw while the player was off the line
+var known := {}           # rooms she believes the player has been in
+var cautious := false     # a pickup click with no hang-up since
 var said_cautious := false
 var pending_q := {}       # {feature, cands} — asked "tap once if you hear X"
 var bg_cands: Array = []
 var imposter := false
 var played_along := false
-var confirm_room := ""     # asked "did you make it?" about this room
-var told_way := false      # she has given the riddle: the way out by its landmark
-var _lost_asks := 0
+var confirm_room := ""    # asked "was that you on the camera?" about this room
+var warned := ""          # "him|guess" she last warned about
+var last_draft_urgent := false
+var _toggles: Array = []  # [[t, on]] the player's pickups / hang-ups
 var _pending := -1.0
+var _reason := ""
 var _read := 0            # line_log index already processed
+var _cam_read := 0        # cam_log index already processed
 const L := {
 	"en": {
-		"cautious": ["Shh. Someone else is on the line. Tap twice when they're gone.", "Wait. I heard a click. He's listening. Two taps when it's clear.", "Quiet. We're not alone. Tap twice when he's gone."],
+		"cautious": ["Shh. Someone else is on the line. I'll whisper.", "A click. He's listening. Carefully now."],
+		"wait_quiet": ["Not now. Tap twice when he's gone.", "He's still there. Two taps when it's clear."],
 		"ask_feat": ["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.", "I can't tell where you are. Is there a %s near you? Tap once for yes, twice for no."],
 		"things": {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"},
-		"pickup": ["I'm here. Where are you? Don't name the room. Tell me something you can see.", "You're back. Tell me something you can see — not the room's name."],
-		"unknown": ["I can't place you. Describe one thing near you. Not the room.", "Where are you? Something small. Something only we'd know, if you can."],
-		"last_nophone": ["Take the %s door. No phone in there, so listen: it's %s.", "Through the %s door. Then %s. Only that."],
-		"last": ["Good. Take the %s door. It's in the next room.", "Almost. The %s door — it's right there."],
-		"step": ["Okay. From there, take the %s door. Then call me again.", "The %s door. Go. Call me from the next phone.", "Take the %s door. Quietly."],
-		"exit_nick": ["You're there. It's %s. You know what I mean.", "That's the room. %s. Remember?"],
-		"exit_obj": ["You're in the right room. Check the %s.", "This is it. The %s. Go."],
-		"the": "the ",
+		"lost": ["I can't see you on any camera. Tell me one thing you can see — a nickname, if you can. Not the room.", "Where are you? Something small. Something only we'd know."],
+		"step": ["Okay. Take %s. Then call me again.", "%s. Go. Call me from the next phone.", "Take %s. Quietly."],
+		"step2": ["Take %s, then %s. No phone in between, so remember it.", "%s — then %s. Don't stop in between."],
+		"nick_go": ["Go to %s. Call me from there.", "Make for %s. Quietly."],
+		"exit_nick": ["That's the room. Search %s. You know what I mean.", "You're there. It's %s. Go."],
+		"exit_obj": ["You're in the right room. Search the %s.", "This is it. The %s. Go."],
+		"then_search": ["In there, search %s.", "In that room it's %s."],
+		"exit_wait": ["You're in the right room. I'll tell you what to search when he's off the line. Tap twice when it's quiet.", "Right room. Not a word now. Two taps when he's gone."],
+		"warn": ["He's right behind %s. Go another way — or hide.", "Stop. He's just past %s. Don't go that way."],
+		"warn_here": ["Don't move. Don't make a sound.", "He's close. Hide. Now."],
+		"blocked": ["Wait. He's between you and the way out. Hide and wait for me.", "Not yet. He's in the way. Stay hidden."],
 		"imposter": ["That wasn't me! Don't go anywhere he tells you.", "That voice — it wasn't me. Stay put."],
 		"play_along": ["Okay. Stay %s. Don't move, I'm thinking.", "Right, %s. Hide there. Don't make a sound."],
-		"confirm": ["Did you make it — the room I sent you to? One tap yes, two no.", "Are you where I told you? Tap once for yes, twice for no."],
-		"riddle": ["The way out is in the room with %s.", "It's where %s is. That room."],
-		"riddle_self": [" It's %s itself.", " Search %s itself."],
-		"riddle_obj": [" In there, search the %s.", " Try the %s there."],
-		"riddle_quiet": [" I'll tell you what to search when it's quiet.", " The rest when he's gone."],
-		"hedge_moved": [" If nobody's moved it — it's small.", " Unless someone carried it off…"],
-		"hedge_unsure": [" I think. Or was that the other room?", " I'm… almost sure."],
-		"lost": ["If you're lost, tell me one thing you see. Not the room.", "Tell me something you can see and I'll guide you. Not the room's name."],
+		"confirm": ["Someone just moved on a camera. Was that you? One tap yes, two no.", "Did you just come through a door? One tap yes, two no."],
+		"seen_you": ["I see you. ", "There you are. "],
+		"compass": "the %s door",
+		"rel": {"straight": "the door straight ahead", "left": "the door on your left", "right": "the door on your right", "back": "the door you came in by"},
 	},
 	"cs": {
-		"cautious": ["Pst. Na lince je ještě někdo. Ťukni dvakrát, až bude pryč.", "Počkej. Slyšela jsem cvaknutí. Poslouchá. Dvě ťuknutí, až bude čisto.", "Ticho. Nejsme sami. Ťukni dvakrát, až odejde."],
+		"cautious": ["Pst. Na lince je ještě někdo. Budu šeptat.", "Cvaklo to. Poslouchá. Teď opatrně."],
+		"wait_quiet": ["Teď ne. Ťukni dvakrát, až bude pryč.", "Pořád tam je. Dvě ťuknutí, až bude čisto."],
 		"ask_feat": ["Poslouchej. Je v té místnosti %s, i když je teď potichu? Jedno ťuknutí ano, dvě ne.", "Nevím, kde jsi. Je u tebe %s? Ťukni jednou pro ano, dvakrát pro ne."],
 		"things": {"clock": "hodiny", "fan": "větrák", "rain": "okno", "radiator": "radiátor"},
-		"pickup": ["Jsem tady. Kde jsi? Neříkej název místnosti. Řekni mi něco, co vidíš.", "Jsi zpátky. Řekni mi, co vidíš — ne název místnosti."],
-		"unknown": ["Nevím, kde jsi. Popiš jednu věc u sebe. Ne místnost.", "Kde jsi? Něco malého. Něco, co víme jen my dva, jestli můžeš."],
-		"last_nophone": ["Jdi %s dveřmi. Tam není telefon, tak poslouchej: je to %s.", "Projdi %s dveřmi. Pak %s. Jen to."],
-		"last": ["Dobře. Jdi %s dveřmi. Je to hned vedle.", "Skoro. %s dveře — je to tam."],
-		"step": ["Dobře. Odtud jdi %s dveřmi. Pak mi zase zavolej.", "%s dveře. Jdi. Zavolej mi z dalšího telefonu.", "Jdi %s dveřmi. Potichu."],
-		"exit_nick": ["Jsi tam. Je to %s. Víš, co myslím.", "To je ta místnost. %s. Pamatuješ?"],
-		"exit_obj": ["Jsi ve správné místnosti. Zkus %s.", "Tady to je. %s. Jdi."],
-		"the": "",
+		"lost": ["Na žádné kameře tě nevidím. Řekni mi jednu věc, kterou vidíš — přezdívku, jestli můžeš. Ne místnost.", "Kde jsi? Něco malého. Něco, co víme jen my dva."],
+		"step": ["Dobře. Jdi %s. Pak mi zase zavolej.", "Jdi %s. Zavolej mi z dalšího telefonu.", "Jdi %s. Potichu."],
+		"step2": ["Jdi %s a pak %s. Mezi tím není telefon, tak si to pamatuj.", "Jdi %s — a pak %s. Nezastavuj se."],
+		"nick_go": ["Jdi tam, kde je %s. Zavolej mi odtamtud.", "Zamiř tam, kde je %s. Potichu."],
+		"exit_nick": ["To je ta místnost. Prohledej: %s. Víš, co myslím.", "Jsi tam. Je to %s. Jdi."],
+		"exit_obj": ["Jsi ve správné místnosti. Prohledej: %s.", "Tady to je. %s. Jdi."],
+		"then_search": ["Tam prohledej: %s.", "V té místnosti je to %s."],
+		"exit_wait": ["Jsi ve správné místnosti. Co prohledat, ti řeknu, až zavěsí. Ťukni dvakrát, až bude ticho.", "Správná místnost. Teď ani slovo. Dvě ťuknutí, až odejde."],
+		"warn": ["Je hned za %s. Jdi jinudy — nebo se schovej.", "Stůj. Je hned za %s. Tudy ne."],
+		"warn_here": ["Nehýbej se. Ani hlásku.", "Je blízko. Schovej se. Hned."],
+		"blocked": ["Počkej. Je mezi tebou a cestou ven. Schovej se a čekej na mě.", "Ještě ne. Je v cestě. Zůstaň schovaný."],
 		"imposter": ["To jsem nebyla já! Nikam, kam ti řekne, nechoď.", "Ten hlas — to jsem nebyla já. Zůstaň, kde jsi."],
 		"play_along": ["Dobře. Zůstaň %s. Nehýbej se, přemýšlím.", "Jasně, %s. Schovej se tam. Ani muk."],
-		"confirm": ["Jsi tam, kam jsem tě poslala? Jedno ťuknutí ano, dvě ne.", "Jsi už tam, kde jsem říkala? Ťukni jednou pro ano, dvakrát pro ne."],
-		"riddle": ["Cesta ven je v místnosti, kde je %s.", "Je to tam, kde je %s. V té místnosti."],
-		"riddle_self": [" Je to přímo %s.", " Prohledej přímo: %s."],
-		"riddle_obj": [" Tam prohledej: %s.", " Tam zkus: %s."],
-		"riddle_quiet": [" Co tam prohledat, ti řeknu, až bude ticho.", " Zbytek, až odejde."],
-		"hedge_moved": [" Jestli to nikdo nepřenesl — je to malé.", " Pokud to někdo neodnesl…"],
-		"hedge_unsure": [" Myslím. Nebo to byla ta druhá místnost?", " Skoro jistě."],
-		"lost": ["Jestli ses ztratil, řekni mi jednu věc, kterou vidíš. Ne místnost.", "Řekni mi, co vidíš, a navedu tě. Ne název místnosti."],
+		"confirm": ["Na kameře se teď někdo pohnul. Byl jsi to ty? Jedno ťuknutí ano, dvě ne.", "Prošel jsi teď dveřmi? Jedno ťuknutí ano, dvě ne."],
+		"seen_you": ["Vidím tě. ", "Tady jsi. "],
+		"compass": "%s dveřmi",
+		"rel": {"straight": "dveřmi rovně před sebou", "left": "dveřmi po levé ruce", "right": "dveřmi po pravé ruce", "back": "dveřmi, kterými jsi přišel"},
 	},
 }
 var min_delay := 1.2
@@ -73,18 +90,74 @@ var max_delay := 2.8
 
 func _init(g) -> void:
 	game = g
+	p_facing = g.facing  # everyone starts facing the phone wall
 
 
 func request(ctx: Dictionary) -> void:
+	_reason = ctx.get("reason", "")
 	# After a pickup, wait until the line's background has been heard.
-	_pending = randf_range(2.3, 3.0) if ctx.get("reason", "") == "pickup" else randf_range(min_delay, max_delay)
+	_pending = randf_range(2.3, 3.0) if _reason == "pickup" else randf_range(min_delay, max_delay)
+	if _reason == "camera":
+		_pending = 0.4  # she's watching: warnings come fast
 
 
 func tick(dt: float) -> void:
 	if _pending >= 0.0:
 		_pending -= dt
 		if _pending < 0.0:
-			game.rescuer_says(_compose(), guess)
+			game.rescuer_says(decide(), guess)
+
+
+## What she says now. Also used as the draft in Haiku mode.
+func decide() -> String:
+	return _compose()
+
+
+func _tx() -> Dictionary:
+	return L[Loc.lang]
+
+
+func _was_on_line(t: float) -> bool:
+	var on := true
+	for tg in _toggles:
+		if tg[0] <= t:
+			on = tg[1]
+	return on
+
+
+func _set_guess(r: String, facing := "") -> void:
+	guess = r
+	known[r] = true
+	if facing != "":
+		p_facing = facing
+	expect_next = ""
+	tentative = ""
+
+
+## Read the monitors. A figure that moves while the player's receiver is up
+## must be him: you can't walk with the phone at your ear.
+func _read_cams() -> bool:
+	var h: House = game.house
+	var saw_you := false
+	for e in game.cam_log.slice(_cam_read):
+		var dest: String = e.room if e.kind == "in" else h.step(e.room, e.dir)
+		if _was_on_line(e.t):
+			him = dest
+			him_t = e.t
+			continue
+		if e.kind == "out" and guess != "" and e.room == guess:
+			tentative = dest  # probably you, leaving
+			p_facing = e.dir
+		elif e.kind == "in" and e.room != guess and (e.room == tentative or e.room == expect_next or (guess != "" and h.step(e.room, e.dir) == guess)):
+			_set_guess(e.room, House.opposite(e.dir))
+			saw_you = true
+		elif guess == "" and tentative == "":
+			tentative = dest  # someone moved; could be either of you
+		else:
+			him = dest
+			him_t = e.t
+	_cam_read = game.cam_log.size()
+	return saw_you
 
 
 func _compose() -> String:
@@ -110,82 +183,93 @@ func _compose() -> String:
 				bg = e.text
 			elif e.text.contains("player's extension picks up"):
 				picked_up = true
+				_toggles.append([e.get("t", game.time), true])
+			elif e.text.contains("the caller hangs up"):
+				_toggles.append([e.get("t", game.time), false])
+	var saw_you := _read_cams()
 	var low := Loc.fold(player_text)
 	var toks := Words.tokens(player_text)
+	var yes := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
+	var no := low.contains("[2 taps") or "no" in toks or "ne" in toks or "nope" in toks
 	if cautious and (low.contains("clear") or low.contains("gone") or low.contains("2 taps") or low.contains("hung up") or low.contains("pryc") or low.contains("cisto") or low.contains("zavesil")):
 		cautious = false
-	# Answer to "did you make it?"
-	if confirm_room != "" and not picked_up:
-		var yes1 := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
-		var no1 := low.contains("[2 taps") or "no" in toks or "ne" in toks
-		if yes1:
-			guess = confirm_room
-		if yes1 or no1:
-			confirm_room = ""
-	# Answer to our tap question?
-	if not pending_q.is_empty():
-		var yes := low.contains("[1 tap") or "yes" in toks or "ano" in toks or "jo" in toks
-		var no := low.contains("[2 taps") or "no" in toks or "ne" in toks or "nope" in toks
-		if yes or no:
-			var keep := []
-			for r in pending_q.cands:
-				if h.has_feature(r, pending_q.feature) == yes:
-					keep.append(r)
-			pending_q = {}
-			if keep.size() == 1:
-				guess = keep[0]
-			else:
-				bg_cands = keep
-	if picked_up and expect_next != "":
-		# Assume they followed us — but only if that's even possible:
-		# a room without a phone can't be calling, and the sounds must fit.
-		guess = ""
-		if _plausible(expect_next, bg):
-			if bg != "" and _from_background(bg) == [expect_next]:
-				guess = expect_next  # the sounds confirm it
-			else:
-				confirm_room = expect_next  # ask before guiding
-		expect_next = ""
-	# Update the guess from words, strongest first.
+	# Answer to "was that you on the camera?"
+	if confirm_room != "" and not picked_up and (yes or no):
+		if yes:
+			_set_guess(confirm_room)
+		else:
+			him = confirm_room
+			him_t = game.time
+		confirm_room = ""
+	# Answer to a sound question?
+	if not pending_q.is_empty() and (yes or no):
+		var keep := []
+		for r in pending_q.cands:
+			if h.has_feature(r, pending_q.feature) == yes:
+				keep.append(r)
+		pending_q = {}
+		if keep.size() == 1:
+			_set_guess(keep[0])
+		else:
+			bg_cands = keep
+	if picked_up and not saw_you:
+		# Did they get where she sent them? Trust it only if the sounds agree.
+		var cand := expect_next if expect_next != "" else tentative
+		if cand != "":
+			guess = ""
+			if _plausible(cand, bg):
+				if bg != "" and _from_background(bg) == [cand]:
+					_set_guess(cand)
+				else:
+					confirm_room = cand
+			expect_next = ""
+			tentative = ""
+	# What they said: nicknames first (safe), then objects, then rooms.
 	var hits: Array = Words.nicknames_named(player_text, h)
 	if hits.is_empty():
 		hits = Words.objects_named(player_text, h)
 	if not hits.is_empty():
-		guess = hits[0].room
-		expect_next = ""
+		_set_guess(hits[0].room)
+		confirm_room = ""
 	else:
 		var rooms := Words.rooms_named(player_text, h)
-		if not rooms.is_empty():
-			guess = rooms[0]
-			expect_next = ""
-		elif bg != "" and guess == "":
+		if not rooms.is_empty() and not cautious:
+			_set_guess(rooms[0])
+			confirm_room = ""
+		elif bg != "" and guess == "" and confirm_room == "":
 			var cands := _from_background(bg)
 			if cands.size() == 1:
-				guess = cands[0]
+				_set_guess(cands[0])
 			elif cands.size() > 1:
 				bg_cands = cands
-	var tx: Dictionary = L[Loc.lang]
+	var tx := _tx()
+	last_draft_urgent = false
 	if imposter:
 		imposter = false
 		return _pick(tx.imposter)
-	# First things first: where the way out is, in words he can't decode.
-	if not told_way:
-		told_way = true
-		return _riddle(not cautious)
+	var pre := ""
 	if cautious:
 		# A room named while he's listening is probably a lure: play along.
 		var lure := Words.rooms_named(player_text, h)
 		if not lure.is_empty() and not played_along:
 			played_along = true
 			return _pick(tx.play_along) % h.room_in(lure[0])
-		if said_cautious:
-			return ""
-		said_cautious = true
-		return _pick(tx.cautious)
+		if not said_cautious:
+			said_cautious = true
+			pre = _pick(tx.cautious) + " "
+	# 1. Danger first: she can see him coming.
+	var warn := _warning()
+	if warn != "":
+		last_draft_urgent = true
+		return pre + warn
+	if _reason == "camera" and not saw_you:
+		return pre.strip_edges()  # nothing new worth the risk of talking
+	if saw_you and pre == "":
+		pre = _pick(tx.seen_you)
+	# 2. Was that you?
 	if confirm_room != "" and guess == "":
-		return _pick(tx.confirm)
+		return pre + _pick(tx.confirm)
 	if guess == "" and bg_cands.size() > 1:
-		# Ask about a sound that splits the candidates.
 		for f in House.FEATURES:
 			var n := 0
 			for r in bg_cands:
@@ -193,47 +277,118 @@ func _compose() -> String:
 					n += 1
 			if n > 0 and n < bg_cands.size():
 				pending_q = {"feature": f, "cands": bg_cands.duplicate()}
-				return _pick(tx.ask_feat) % tx.things[f]
+				return pre + _pick(tx.ask_feat) % tx.things[f]
 	if guess == "":
-		# Remind them of the riddle first; only then ask where they are.
-		_lost_asks += 1
-		if _lost_asks % 2 == 1:
-			return _riddle(true) + " " + _pick(tx.lost)
-		return _pick(tx.pickup) if picked_up else _pick(tx.unknown)
-	var od := h.object_def(game.exit_obj)
-	var what: String = h.obj_nick(game.exit_obj) if od.has("nick") else tx.the + h.obj_name(game.exit_obj)
-	var asks_which := low.contains("which") or low.contains("what") or low.contains("where is") or low.contains("?") or "ktery" in toks or "ktera" in toks or "co" in toks or "kde" in toks
-	if guess != game.exit_room:
-		var p: Array = h.path(guess, game.exit_room)
-		var dir := Loc.dir(h.door_to(guess, p[0]))
-		expect_next = p[0]
-		if p.size() == 1:
-			if not h.rooms[game.exit_room].phone or asks_which:
-				return _pick(tx.last_nophone) % [dir, what]
-			return _cap(_pick(tx.last) % dir)
-		return _cap(_pick(tx.step) % dir)
-	if od.has("nick"):
-		return _pick(tx.exit_nick) % _cap(h.obj_nick(game.exit_obj))
-	return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
+		return pre + _pick(tx.lost)
+	# 3. Guide, one step at a time, around him.
+	return pre + _guide()
 
 
-## "The way out is in the room with Old Gregor. Search the china cabinet there."
-func _riddle(full: bool) -> String:
+func _him_fresh() -> bool:
+	return him != "" and game.time - him_t < 25.0
+
+
+func _warning() -> String:
+	if guess == "" or not _him_fresh():
+		return ""
+	var key: String = him + "|" + guess
+	if key == warned:
+		return ""
 	var h: House = game.house
-	var tx: Dictionary = L[Loc.lang]
-	var land := h.nick_obj(game.exit_room)
-	if land == "":
+	var d := h.distance(guess, him)
+	if d == 0:
+		warned = key
+		return _pick(_tx().warn_here)
+	if d == 1:
+		warned = key
+		return _cap(_pick(_tx().warn) % _door_phrase(guess, h.door_to(guess, him)))
+	return ""
+
+
+func _guide() -> String:
+	var h: House = game.house
+	var tx := _tx()
+	if guess == game.exit_room:
+		var od := h.object_def(game.exit_obj)
+		if od.has("nick"):
+			return _cap(_pick(tx.exit_nick) % h.obj_nick(game.exit_obj))
+		if cautious:
+			return _pick(tx.exit_wait)
 		return _cap(_pick(tx.exit_obj) % h.obj_name(game.exit_obj))
-	var nick := h.obj_nick(land)
-	var out: String = _pick(tx.riddle) % nick
-	if h.obj_alt(land) != "":
-		out += _pick(tx.hedge_moved) if h.is_movable(land) else _pick(tx.hedge_unsure)
-	if land == game.exit_obj:
-		out += _pick(tx.riddle_self) % nick
-	elif full:
-		out += _pick(tx.riddle_obj) % h.obj_name(game.exit_obj)
-	else:
-		out += _pick(tx.riddle_quiet)
+	var p := _route(guess, game.exit_room)
+	if p.is_empty():
+		return _pick(tx.blocked)
+	var dir := h.door_to(guess, p[0])
+	# A room she believes they know by its nickname: the safest way to say it.
+	var nick_obj := h.nick_obj(p[0])
+	if cautious and known.has(p[0]) and nick_obj != "" and h.object_room.get(nick_obj, "") == p[0]:
+		expect_next = p[0]
+		return _cap(_pick(tx.nick_go) % h.obj_nick(nick_obj))
+	if cautious and p_facing == "":
+		return _pick(tx.wait_quiet)  # no safe way to say it yet
+	var first := _door_phrase(guess, dir)
+	if p.size() >= 2 and not h.rooms[p[0]].phone and p[0] != game.exit_room:
+		# No phone in the next room: give two steps.
+		var second := _door_phrase(p[0], h.door_to(p[0], p[1]), dir)
+		expect_next = p[1]
+		p_facing = h.door_to(p[0], p[1])
+		return _cap(_pick(tx.step2) % [first, second])
+	expect_next = p[0]
+	p_facing = dir
+	if p.size() == 1 and not h.rooms[p[0]].phone:
+		# The exit room has no phone: tell them what to search before they go.
+		var od := h.object_def(game.exit_obj)
+		var what: String = h.obj_nick(game.exit_obj) if od.has("nick") else ("" if cautious else ("the " if Loc.lang == "en" else "") + h.obj_name(game.exit_obj))
+		if what != "":
+			return _cap(_pick(tx.step) % first) + " " + _cap(_pick(tx.then_search) % what)
+	return _cap(_pick(tx.step) % first)
+
+
+## "the west door" / "the door on your left", depending on who might hear.
+func _door_phrase(from_room: String, dir: String, facing := "") -> String:
+	var tx := _tx()
+	var f := facing if facing != "" else p_facing
+	if cautious and f != "":
+		return tx.rel[House.relative(f, dir)]
+	return tx.compass % Loc.dir(dir)
+
+
+## Shortest way to the exit that keeps out of his room and, if possible, away
+## from the rooms next to it.
+func _route(from_room: String, to_room: String) -> Array:
+	var h: House = game.house
+	if not _him_fresh():
+		return h.path(from_room, to_room)
+	var hard := {him: true}
+	var soft := hard.duplicate()
+	for n in h.neighbors(him):
+		soft[n] = true
+	for blocked in [soft, hard]:
+		var p := _bfs(from_room, to_room, blocked)
+		if not p.is_empty():
+			return p
+	return []
+
+
+func _bfs(a: String, b: String, blocked: Dictionary) -> Array:
+	var h: House = game.house
+	var prev := {a: ""}
+	var q := [a]
+	while not q.is_empty():
+		var cur: String = q.pop_front()
+		if cur == b:
+			break
+		for n in h.neighbors(cur):
+			if not prev.has(n) and (not blocked.has(n) or n == b):
+				prev[n] = cur
+				q.append(n)
+	if not prev.has(b):
+		return []
+	var out := []
+	var c := b
+	while c != a:
+		out.push_front(c)
+		c = prev[c]
 	return out
 
 

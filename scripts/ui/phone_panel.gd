@@ -249,6 +249,8 @@ func _on_event(t: String, d: Dictionary) -> void:
 			house_line("danger", Loc.t("in_room"))
 		"murderer_searching":
 			house_line("danger", Loc.t("searching", [Loc.dir(d.dir)]))
+		"murderer_left":
+			house_line("narr", Loc.t("he_left", [Loc.dir(d.dir)]))
 		"slipped_out":
 			house_line("narr", Loc.t("slipped_out"))
 		"murderer_found_exit":

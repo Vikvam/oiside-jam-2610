@@ -58,42 +58,57 @@ class Bot:
 	var g
 	var policy := ""
 	var think := 1.0
-	var plan_dir := ""
-	var plan_obj := ""
+	var steps: Array = []   # compass doors she told us to take, in order
+	var target := ""        # a room she pointed at by nickname
+	var want_obj := ""      # what she told us to search
 	var hiding := 0.0
 	var spoke_in := ""
 	var danger_room := ""
 	var danger_t := 0.0
-	var line_hot := 0.0
-	var target := ""        # room the riddle points to
-	var target_obj := ""    # what to search there
-	var riddle_nick := ""   # nickname object she named; its room is unknown until seen
-	var riddle_text := ""
+	var arrived_t := -100.0
+	var he_is_here := false
+
+	const REL := {"straight ahead": "straight", "on your left": "left", "on your right": "right", "you came in by": "back"}
 
 	func _init(game, p: String) -> void:
 		g = game
 		policy = p
 
+	## Her directions in the order she said them, as compass doors. Turns are
+	## read from the way we'll be facing at that point.
+	func _parse_steps(txt: String) -> Array:
+		var low := txt.to_lower()
+		var marks := []
+		for d in House.DIRS:
+			var at := low.find("the %s door" % d)
+			while at != -1:
+				marks.append([at, "c", d])
+				at = low.find("the %s door" % d, at + 1)
+		for k in REL:
+			var at := low.find(k)
+			while at != -1:
+				marks.append([at, "r", REL[k]])
+				at = low.find(k, at + 1)
+		marks.sort_custom(func(a, b): return a[0] < b[0])
+		var out := []
+		var facing: String = g.facing
+		for m in marks:
+			var d: String = m[2] if m[1] == "c" else House.absolute(facing, m[2])
+			out.append(d)
+			facing = d
+		return out
+
 	func on_event(t: String, d: Dictionary) -> void:
 		match t:
 			"rescuer_says":
-				var txt: String = d.text
-				if txt.contains("One tap yes") or txt.contains("Tap once for yes"):
-					g.tap()
-				var dirs := Words.directions(txt)
-				if not dirs.is_empty():
-					plan_dir = dirs[0]
-				var nh: Array = Words.nicknames_named(txt, g.house)
-				if riddle_nick == "" and target == "" and not nh.is_empty() and policy != "random":
-					riddle_nick = nh[0].obj
-					riddle_text = txt
-					_resolve_riddle()
-				var hits: Array = nh
-				if hits.is_empty():
-					hits = Words.objects_named(txt, g.house, {g.player_room: true})
-				for h in hits:
-					if h.room == g.player_room:
-						plan_obj = h.obj
+				_heard_her(d.text)
+			"player_arrive":
+				arrived_t = g.time
+			"murderer_in_room":
+				he_is_here = true
+				hiding = maxf(hiding, 3.0)
+			"murderer_left", "slipped_out":
+				he_is_here = false
 			"presence":
 				danger_room = g.house.step(g.player_room, d.dir)
 				danger_t = 10.0
@@ -101,7 +116,7 @@ class Bot:
 				# Slip out through another door than his.
 				var opts: Array = g.house.neighbors(g.player_room).filter(func(n): return n != g._search_from)
 				if not opts.is_empty() and policy != "silent":
-					g.move_to(opts[randi() % opts.size()], false)
+					g.move_to(opts[randi() % opts.size()], policy == "smart")
 			"line_click":
 				if policy in ["careful", "smart"] and d.kind == "pickup":
 					hiding = randf_range(6.0, 12.0)
@@ -111,15 +126,6 @@ class Bot:
 			"footsteps":
 				danger_room = d.room if d.dist == 1 else g.house.step(g.player_room, d.dir)
 				danger_t = 8.0
-				if d.dist >= 2 and policy == "smart" and g.can_act() and (d.running or d.dist == 2):
-					var bad: String = g.house.step(g.player_room, d.dir)
-					danger_room = bad
-					var opts := []
-					for n in g.house.neighbors(g.player_room):
-						if n != bad and g.house.neighbors(n).size() > 1:
-							opts.append(n)
-					if not opts.is_empty():
-						g.move_to(opts[randi() % opts.size()], false)
 				if d.dist == 1 and policy == "smart":
 					g.hide()
 					hiding = randf_range(8.0, 12.0)
@@ -131,24 +137,51 @@ class Bot:
 					if not opts.is_empty():
 						g.move_to(opts[randi() % opts.size()])
 
-	## The player only knows a nickname's room once they've been in it.
-	func _resolve_riddle() -> void:
-		if riddle_nick == "":
+	func _heard_her(txt: String) -> void:
+		if policy == "random":
+			var dirs := Words.directions(txt)
+			if not dirs.is_empty():
+				steps = [dirs[0]]
 			return
-		var at: String = g.house.object_room[riddle_nick]
-		if not g.visited.has(at):
+		var low := txt.to_lower()
+		if low.contains("one tap yes") or low.contains("tap once for yes"):
+			var yes: bool = g.time - arrived_t < 12.0  # "did you just come through a door?"
+			for f in House.FEATURES:
+				var word: String = {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"}[f]
+				if low.contains(word):
+					yes = g.house.has_feature(g.player_room, f)
+			g.tap()
+			if not yes:
+				g.tap()
+		if low.contains("right behind") or low.contains("just past"):
+			var ds := _parse_steps(txt)
+			if not ds.is_empty():
+				danger_room = g.house.step(g.player_room, ds[0])
+				danger_t = 12.0
+			steps = []
 			return
-		# Seen it and it was moved? Then it's the room it used to be in.
-		target = g.house.home_room[riddle_nick] if g.house.was_moved(riddle_nick) else at
-		target_obj = riddle_nick
-		for oh in Words.objects_named(riddle_text, g.house):
-			if g.house.home_room[oh.obj] == target:
-				target_obj = oh.obj
-		riddle_nick = ""
+		if low.contains("hide") or low.contains("don't move"):
+			if policy != "follow":
+				g.hide()
+				hiding = randf_range(8.0, 14.0)
+			steps = []
+			return
+		var parsed := _parse_steps(txt)
+		if not parsed.is_empty():
+			steps = parsed
+		# "Go to Old Gregor": only useful if we've seen where he is.
+		for nh in Words.nicknames_named(txt, g.house):
+			if low.contains("go to") or low.contains("make for"):
+				if g.visited.has(nh.room):
+					target = nh.room
+			elif low.contains("search") or low.contains("it's"):
+				want_obj = nh.obj
+		if low.contains("search"):
+			for o in Words.objects_named(txt, g.house):
+				want_obj = o.obj
 
 	func tick(dt: float) -> void:
 		think -= dt
-		_resolve_riddle()
 		danger_t -= dt
 		if policy == "silent":
 			if not g.hidden and g.can_act():
@@ -156,16 +189,21 @@ class Bot:
 					g.hang_up()
 				g.hide()
 			return
+		if he_is_here and g.hidden:
+			return  # never come out while he's standing here
 		if hiding > 0.0:
 			hiding -= dt
 			if g.receiver_up and policy == "careful":
 				g.hang_up()
-			if hiding <= 0.0 and g.house.rooms[g.player_room].phone:
-				g.pick_up()
-				if policy == "smart" and not g.foreign_sounds().is_empty():
-					hiding = randf_range(5.0, 9.0)
-					return
-				g.tap(); g.tap()
+			if hiding <= 0.0:
+				if g.hidden:
+					g.unhide()
+				if g.house.rooms[g.player_room].phone:
+					g.pick_up()
+					if policy == "smart" and not g.foreign_sounds().is_empty():
+						hiding = randf_range(5.0, 9.0)
+						return
+					g.tap(); g.tap()
 			return
 		if policy == "smart" and g.receiver_up and not g.foreign_sounds().is_empty():
 			hiding = randf_range(5.0, 9.0)
@@ -173,6 +211,9 @@ class Bot:
 		if think > 0.0 or not g.can_act():
 			return
 		think = randf_range(3.0, 6.0)
+		if g.hidden:
+			g.unhide()
+			return
 		if policy == "random":
 			var ns: Array = g.house.neighbors(g.player_room)
 			if randf() < 0.3:
@@ -181,45 +222,29 @@ class Bot:
 			else:
 				g.move_to(ns[randi() % ns.size()])
 			return
-		if plan_obj != "":
-			var o := plan_obj
-			plan_obj = ""
+		if want_obj != "" and g.house.object_room.get(want_obj, "") == g.player_room:
+			var o := want_obj
+			want_obj = ""
 			if g.try_exit(o):
 				return
-		if riddle_nick != "" and target == "":
-			# Explore: the nearest room not seen yet.
-			var best := ""
-			var bd := 99
-			for r in g.house.room_ids:
-				if not g.visited.has(r) and g.house.distance(g.player_room, r) < bd:
-					bd = g.house.distance(g.player_room, r)
-					best = r
-			if best != "":
-				var p0: Array = g.house.path(g.player_room, best)
-				if not p0.is_empty() and not (policy == "smart" and p0[0] == danger_room and danger_t > 0.0):
-					g.move_to(p0[0], policy == "smart" and danger_t > 0.0)
-					return
-		if target != "":
-			if g.player_room == target:
-				var o2 := target_obj
-				target = ""
-				if g.house.object_room.get(o2, "") == g.player_room and g.try_exit(o2):
-					return
-			else:
-				var p: Array = g.house.path(g.player_room, target)
-				if not p.is_empty() and not (policy == "smart" and p[0] == danger_room and danger_t > 0.0):
-					g.move_to(p[0], policy == "smart" and danger_t > 0.0)
-					return
-		if plan_dir != "":
-			var to: String = g.house.step(g.player_room, plan_dir)
-			plan_dir = ""
-			if to != "" and not (policy == "smart" and to == danger_room and danger_t > 0.0):
-				g.move_to(to, policy == "smart" and danger_t > 0.0)
+		var sneak: bool = policy == "smart" and danger_t > 0.0
+		if not steps.is_empty():
+			var to: String = g.house.step(g.player_room, steps[0])
+			steps.pop_front()
+			if to != "" and not (to == danger_room and danger_t > 0.0):
+				g.move_to(to, sneak)
 				return
+			steps = []
+		if target != "" and target != g.player_room:
+			var p: Array = g.house.path(g.player_room, target)
+			if not p.is_empty() and not (p[0] == danger_room and danger_t > 0.0):
+				g.move_to(p[0], sneak)
+				return
+		target = ""
 		var here: Dictionary = g.house.rooms[g.player_room]
 		if not here.phone:
 			var ns: Array = g.house.neighbors(g.player_room)
-			if policy == "smart" and danger_t > 0.0:
+			if danger_t > 0.0:
 				ns = ns.filter(func(x): return x != danger_room)
 				if ns.is_empty():
 					return

@@ -25,6 +25,9 @@ var memory := {}          # room id -> feature state when last seen
 var suspects := {}        # rooms the rescuer pointed at -> true
 var searched_thoroughly := {}
 var exit_known := ""
+var guard_since := 0.0
+var guard_break_until := -1.0  # he got bored of guarding: hunting until then
+var guard_patience := 40.0
 var lead_time := -100.0
 var dirty := false        # new evidence since the current plan
 
@@ -200,7 +203,7 @@ func on_words(speaker: String, text: String) -> void:
 			_shift(dirs, Loc.t("m_prey_dir", [", ".join(dirs.map(func(x): return Loc.t(x)))]), "prey")
 	else:
 		for r in rooms:
-			if not suspects.has(r) and not searched_thoroughly.has(r):
+			if r != room and not suspects.has(r) and not searched_thoroughly.has(r):
 				suspects[r] = true
 				dirty = true
 				note(Loc.t("m_pointed", [house.room_name(r)]))
@@ -301,6 +304,7 @@ func tick(dt: float) -> void:
 					timer = 0.3
 				else:
 					timer = hunt_time if goal == "hunt" else walk_time
+					game.on_murderer_leaves(room, path[0])
 		S.LISTEN:
 			_tick_listen(dt)
 		S.FAKE_HANGUP:
@@ -339,6 +343,12 @@ func tick(dt: float) -> void:
 					note(Loc.t("m_fresh"))
 					_stop_listening()
 					_decide()
+				elif game.time - guard_since > guard_patience:
+					# Nobody comes. Go and flush them out, then come back.
+					note(Loc.t("m_bored"))
+					guard_break_until = game.time + 45.0
+					_stop_listening()
+					_decide()
 
 
 func _go(target: String, kind: String) -> void:
@@ -369,7 +379,7 @@ func _decide() -> void:
 	dirty = false
 	if candidates.is_empty():
 		_reset_candidates()
-	if exit_known != "":
+	if exit_known != "" and game.time >= guard_break_until:
 		if candidates.size() == 1 and game.time - lead_time < 8.0 and not candidates.has(room):
 			_go(candidates.keys()[0], "hunt")
 		elif room != exit_known:
@@ -479,6 +489,7 @@ func _arrive() -> void:
 func _arrive_guard() -> void:
 	state = S.GUARD
 	timer = 1.0
+	guard_since = game.time
 	if house.rooms[room].phone and not listening:
 		listening = true
 		on_line = true
