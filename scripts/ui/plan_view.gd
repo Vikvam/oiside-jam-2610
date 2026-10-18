@@ -25,6 +25,7 @@ var _walk_to := Vector2.ZERO
 var _walk_t := 0.0
 var _walk_dur := 1.0
 var _reveal_t0 := 0.0
+var _redraw_acc := 0.0
 
 
 func _ready() -> void:
@@ -91,7 +92,10 @@ func _process(dt: float) -> void:
 	for r in ripples:
 		r.t += dt
 	ripples = ripples.filter(func(r): return r.t < 2.2)
-	queue_redraw()
+	_redraw_acc += dt
+	if _redraw_acc >= 1.0 / 30.0:  # 30 Hz is plenty for a floor plan
+		_redraw_acc = 0.0
+		queue_redraw()
 
 
 func _c(room: String) -> Vector2:

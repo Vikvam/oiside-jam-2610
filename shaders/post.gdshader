@@ -1,7 +1,7 @@
 shader_type canvas_item;
 // Full-screen post effect. mode: 0 blueprint, 1 phosphor CRT, 2 ink & paper.
 
-uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
 uniform int mode = 0;
 uniform float danger = 0.0;      // 0..1, red/amber pulse at the edges
 uniform float on_line = 0.0;     // 0..1, extra static when the line is open
@@ -46,12 +46,12 @@ void fragment() {
 		buv.x += jit;
 		vec3 base = texture(screen_tex, buv).rgb;
 		// cheap glow
-		vec3 glow = vec3(0.0);
-		for (int i = -2; i <= 2; i++) {
-			glow += texture(screen_tex, buv + vec2(float(i) * 2.5, 0.0) * px).rgb;
-			glow += texture(screen_tex, buv + vec2(0.0, float(i) * 2.5) * px).rgb;
-		}
-		glow /= 10.0;
+		// cheap 4-tap glow (was 10 taps + per-frame mipmaps: too heavy for iGPUs)
+		vec3 glow = texture(screen_tex, buv + vec2(3.0, 0.0) * px).rgb
+			+ texture(screen_tex, buv - vec2(3.0, 0.0) * px).rgb
+			+ texture(screen_tex, buv + vec2(0.0, 3.0) * px).rgb
+			+ texture(screen_tex, buv - vec2(0.0, 3.0) * px).rgb;
+		glow *= 0.25;
 		col = base + glow * 0.55;
 		float scan = 0.75 + 0.25 * sin(buv.y * 720.0 * 3.14159);
 		col *= scan;

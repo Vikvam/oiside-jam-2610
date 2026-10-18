@@ -41,6 +41,7 @@ var explore_mode := false
 var hints_on := true
 var rearranged := false
 var large := false
+var effects := true
 var stats := {"calls": 0, "escapes": 0, "best": 0.0}
 var stats_label: Label
 var running := false
@@ -213,6 +214,7 @@ func _load_settings() -> void:
 	hints_on = _settings.get_value("ui", "hints", true)
 	rearranged = _settings.get_value("ui", "rearranged", false)
 	large = _settings.get_value("ui", "large", false)
+	effects = _settings.get_value("ui", "effects", true)
 	stats = _settings.get_value("stats", "all", stats)
 	# Rescuer endpoint config lives next to the project (gitignored) or in user://.
 	var rc := ConfigFile.new()
@@ -232,6 +234,7 @@ func _save_settings() -> void:
 	_settings.set_value("ui", "hints", hints_on)
 	_settings.set_value("ui", "rearranged", rearranged)
 	_settings.set_value("ui", "large", large)
+	_settings.set_value("ui", "effects", effects)
 	_settings.set_value("stats", "all", stats)
 	_settings.save("user://settings.cfg")
 
@@ -697,6 +700,7 @@ func _apply_style() -> void:
 		var solid := panel.duplicate()
 		solid.bg_color = Color(Style.c("panel"), 1.0)
 		over_panel.add_theme_stylebox_override("panel", solid)
+	post.visible = effects
 	(post.material as ShaderMaterial).set_shader_parameter("mode", Style.c("post"))
 	(post.material as ShaderMaterial).set_shader_parameter("danger_color", Style.c("danger"))
 	if phone:
@@ -792,6 +796,8 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 			_start_game()
 			_attach_bot())
 		return
+	if t == "game_over":
+		_write_game_log(d)
 	if t == "game_over" and not _dev:
 		stats.calls += 1
 		if d.won:
@@ -814,6 +820,32 @@ func _on_game_event(t: String, d: Dictionary) -> void:
 				_show_over())
 	elif t == "murderer_log" and plan.show_debug:
 		phone.add_line("sound", "☠ " + d.text)
+
+
+## Every finished call is written to user://games/ so it can be reviewed.
+func _write_game_log(d: Dictionary) -> void:
+	if _dev and _soak_left > 0:
+		return
+	DirAccess.make_dir_recursive_absolute("user://games")
+	var stamp := Time.get_datetime_string_from_system().replace(":", "-")
+	var f := FileAccess.open("user://games/%s_%s.txt" % [stamp, game.end_reason], FileAccess.WRITE)
+	if f == null:
+		return
+	var h := game.house
+	f.store_line("# %s  %s  t=%d:%02d" % [stamp, game.end_reason, int(game.time) / 60, int(game.time) % 60])
+	f.store_line("settings: lang=%s style=%s voice=%s difficulty=%s explore=%s large=%s rearranged=%s" % [Loc.lang, Style.current, backend, difficulty, explore_mode, large, rearranged])
+	f.store_line("start: %s   exit: %s / %s   your route: %s" % [game.trail[0] if not game.trail.is_empty() else "?", game.exit_room, game.exit_obj, " > ".join(game.trail)])
+	f.store_line("his route: %s" % " > ".join(game.murderer.trail))
+	f.store_line("\n## The line (what she heard)")
+	for e in game.line_log:
+		f.store_line("%s: %s" % [e.who, e.text])
+	f.store_line("\n## What you saw")
+	for l in phone.lines:
+		f.store_line("[%s] %s" % [l.kind, l.text])
+	f.store_line("\n## His notebook")
+	for e in game.murderer.log:
+		f.store_line("%5.1f  %s" % [e.t, e.text])
+	f.close()
 
 
 func _on_room_clicked(r: String, sneak: bool) -> void:
@@ -862,6 +894,10 @@ func _unhandled_input(e: InputEvent) -> void:
 			return
 	if e is InputEventKey and e.pressed and not e.echo:
 		match e.keycode:
+			KEY_F6:
+				effects = not effects
+				post.visible = effects
+				_save_settings()
 			KEY_F1:
 				_toggle_help(not help_layer.visible)
 			KEY_ESCAPE:

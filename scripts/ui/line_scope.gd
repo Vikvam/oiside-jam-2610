@@ -15,6 +15,7 @@ var _click := 0.0
 var _breath := 0.0
 var _t := 0.0
 var _acc := 0.0
+var _redraw_acc := 0.0
 
 
 func _ready() -> void:
@@ -53,7 +54,10 @@ func _process(dt: float) -> void:
 	while _acc >= 1.0 / 60.0:
 		_acc -= 1.0 / 60.0
 		_push()
-	queue_redraw()
+	_redraw_acc += dt
+	if _redraw_acc >= 1.0 / 30.0:
+		_redraw_acc = 0.0
+		queue_redraw()
 
 
 func _push() -> void:

@@ -20,7 +20,8 @@ func _process(dt: float) -> void:
 	_t += dt
 	var on := game != null and not game.over and game.player_on_line()
 	_extend = move_toward(_extend, 1.0 if on else 0.0, dt * 3.0)
-	queue_redraw()
+	if _extend > 0.0 or on:
+		queue_redraw()
 
 
 func _draw() -> void:

@@ -19,6 +19,7 @@ var _acc := 0.0
 var _think_t := 0.0
 var _is_thinking := false
 var _dirty := true
+var _render_acc := 0.0
 var hints := true
 var active := true          # false while paused / on the title
 var _hinted := {}
@@ -279,7 +280,9 @@ func _process(dt: float) -> void:
 	hook_btn.text = Loc.t("hang_btn") if game.receiver_up else Loc.t("pick_btn")
 	tap_btn.text = Loc.t("tap_btn")
 	tap_hint.text = Loc.t("tap_hint")
-	if _dirty:
+	_render_acc += dt
+	if _dirty and _render_acc >= 1.0 / 20.0:  # re-parse the log at most 20x/s
+		_render_acc = 0.0
 		_dirty = false
 		_render()
 
@@ -287,7 +290,7 @@ func _process(dt: float) -> void:
 func _render() -> void:
 	var out := ""
 	var fresh_from := lines.size() - 10  # older lines fade back
-	for idx in lines.size():
+	for idx in range(maxi(0, lines.size() - 120), lines.size()):  # only the recent past
 		var l: Dictionary = lines[idx]
 		var txt: String = l.text.substr(0, l.shown).replace("[", "[lb]")
 		var a := "8c" if idx < fresh_from and not game.over else ""
