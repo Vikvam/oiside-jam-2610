@@ -1,6 +1,6 @@
 # UI rework: review and plan
 
-**Status: done** (see DECISIONS.md, "UI rework"). Not done: the line scope inside the phone box keeps its place.
+**Status: done** (see DECISIONS.md, "UI rework"). The layout test is `tests/layout.gd`.
 
 ## Why the UI doesn't fit (measured)
 
