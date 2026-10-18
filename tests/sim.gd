@@ -109,6 +109,17 @@ class Bot:
 				hiding = maxf(hiding, 3.0)
 			"murderer_left", "slipped_out":
 				he_is_here = false
+			"backed_out":
+				# He saw us. Out another door, or hide.
+				steps = []
+				danger_room = g.house.step(g.player_room, d.dir)
+				danger_t = 12.0
+				var opts: Array = g.house.neighbors(g.player_room).filter(func(n): return n != danger_room)
+				if not opts.is_empty() and policy != "follow":
+					g.move_to(opts[randi() % opts.size()], false)
+				else:
+					g.hide()
+					hiding = 10.0
 			"presence":
 				danger_room = g.house.step(g.player_room, d.dir)
 				danger_t = 10.0

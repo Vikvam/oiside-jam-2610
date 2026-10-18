@@ -12,7 +12,7 @@ const DOOR_W := 0.9
 
 var game: Game
 var show_debug := false
-var show_guess := true
+var show_guess := false     # F4: her guess as a dashed box (debug aid)
 var explore_mode := false   # A/B: sound icons only for rooms you've been in
 var guess := ""
 var hover := ""
@@ -236,7 +236,12 @@ func _draw() -> void:
 		var name_col: Color = Style.c("text") if game.visited.has(id) else dim
 		if id == game.player_room:
 			name_col = Style.c("accent")
-		if Style.current == "ink":
+		# Fog of war: a room you haven't been in is only walls, doors, a phone
+		# and maybe a camera. Its name, sounds and contents are unknown.
+		var known := game.visited.has(id) or game.over
+		if not known:
+			draw_string(font, rc.position + Vector2(10, 22), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, maxi(12, int(16 * U / 52.0)), dim)
+		elif Style.current == "ink":
 			# Hand-lettered: each label slightly crooked.
 			var ang := sin(float(id.hash() % 100)) * 0.05
 			draw_set_transform(rc.position + Vector2(10, 22), ang, Vector2.ONE)
@@ -244,10 +249,8 @@ func _draw() -> void:
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		else:
 			draw_string(font, rc.position + Vector2(10, 22), h.room_name(id).to_upper(), HORIZONTAL_ALIGNMENT_LEFT, rc.size.x - (66 if h.has_camera(id) else 40), maxi(10, int(14 * U / 52.0)), name_col)
-		if not explore_mode or game.visited.has(id) or game.over:
+		if known:
 			_draw_icons(id, rc)
-		else:
-			draw_string(font, Vector2(rc.position.x + 14, rc.end.y - 12), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, dim)
 		if game.visited.has(id):
 			var y := rc.position.y + 22.0 + maxf(12.0, U * 0.33)
 			var fs := 11 if U >= 45.0 else 10

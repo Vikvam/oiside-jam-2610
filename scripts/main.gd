@@ -417,22 +417,9 @@ func _build_title() -> void:
 			difficulty = df[0]
 			_refresh_title_buttons())
 		row3.add_child(b)
+	# (The "plan: all sounds / explore" toggle is gone: unexplored rooms are
+	# always unknown now.)
 	var row4 := HBoxContainer.new()
-	row4.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_child(row4)
-	var lab4 := Label.new()
-	lab4.text = Loc.t("plan")
-	row4.add_child(lab4)
-	for pm in [[false, Loc.t("plan_full")], [true, Loc.t("plan_explore")]]:
-		var b := Button.new()
-		b.text = pm[1]
-		b.toggle_mode = true
-		b.name = "plan_" + ("explore" if pm[0] else "full")
-		b.pressed.connect(func():
-			explore_mode = pm[0]
-			_refresh_title_buttons())
-		row4.add_child(b)
-	row4 = HBoxContainer.new()
 	row4.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(row4)
 	var lab4b := Label.new()
@@ -524,8 +511,6 @@ func _refresh_title_buttons() -> void:
 		n.button_pressed = n.name == "backend_" + backend
 	for n in title_layer.find_children("diff_*", "Button", true, false):
 		n.button_pressed = n.name == "diff_" + difficulty
-	for n in title_layer.find_children("plan_*", "Button", true, false):
-		n.button_pressed = n.name == ("plan_explore" if explore_mode else "plan_full")
 
 
 func _build_over() -> void:

@@ -186,3 +186,12 @@ The riddle-first rescuer overcorrected. The user's next two games were won in 31
 - **He gets bored of guarding a found exit** after 40 s and goes hunting for 45 s. *Why:* the soak found a stalemate.
 - Tests always use the scripted voice (`run_all.sh` passes `--backend=mock`), so they never spend the user's Haiku usage.
 - Sims: careful bot 44% escapes on gentle (median 52 s), 36% on normal. The smart bot gets 53% on gentle with a median of 3 minutes.
+
+## Joint session, round 3: fog of war, her guess out loud, backing out
+
+After 5 more games (0 escapes) the user asked for:
+- **Fog of war:** you don't know room names (or their sounds and contents) until you've been inside. The plan shows walls, doors, phones and cameras, with "?" for unknown rooms, and door buttons say "→ ?". The title's "plan" toggle is gone. *Why:* you can't say "kitchen" if you don't know it's the kitchen, so describing what you see becomes the game.
+- **She says where she thinks you are**, by something only you can check: "You're where the Jellyfish is, right?" She uses the nickname if that room has one she's sure of; otherwise an unremarkable object, but never while he may be listening. The dashed "her guess" box is off (F4 still shows it, as a debug aid).
+- **Walking into him isn't instant death on Gentle and Normal:** you see him in the doorway and stumble back, and he knows exactly where you are and comes for you. Run or hide. Hard keeps instant death.
+- She warns when he's off the cameras ("listen at the door before you open it"). She no longer says "west, then west". The Czech yes/no questions are fixed ("Máš v té místnosti hodiny?").
+- Sims: about 50–60% escapes on gentle, 35–50% on normal.

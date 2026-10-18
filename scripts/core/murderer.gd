@@ -436,6 +436,13 @@ func _decide() -> void:
 	_go(t, "phone")
 
 
+## He saw the player in a doorway: no doubt where they went.
+func saw_player(r: String) -> void:
+	_set_candidates([r], Loc.t("m_saw"), true, "seen")
+	_stop_listening()
+	_go(r, "hunt")
+
+
 ## Stand still for at least `t` seconds (searching the room the player is in).
 func hold(t: float) -> void:
 	state = S.THINK

@@ -30,6 +30,8 @@ var imposter := false
 var played_along := false
 var confirm_room := ""    # asked "was that you on the camera?" about this room
 var warned := ""          # "him|guess" she last warned about
+var told_guess := ""      # the room she last told the player she thinks they're in
+var _blind_n := 0
 var last_draft_urgent := false
 var _toggles: Array = []  # [[t, on]] the player's pickups / hang-ups
 var _pending := -1.0
@@ -40,11 +42,14 @@ const L := {
 	"en": {
 		"cautious": ["Shh. Someone else is on the line. I'll whisper.", "A click. He's listening. Carefully now."],
 		"wait_quiet": ["Not now. Tap twice when he's gone.", "He's still there. Two taps when it's clear."],
-		"ask_feat": ["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.", "I can't tell where you are. Is there a %s near you? Tap once for yes, twice for no."],
+		"ask_feat": ["Listen. Is there a %s in that room, even if it's quiet now? One tap yes, two no.", "I can't tell where you are. Is there a %s in your room? Tap once for yes, twice for no."],
 		"things": {"clock": "clock", "fan": "fan", "rain": "window", "radiator": "radiator"},
 		"lost": ["I can't see you on any camera. Tell me one thing you can see — a nickname, if you can. Not the room.", "Where are you? Something small. Something only we'd know."],
 		"step": ["Okay. Take %s. Then call me again.", "%s. Go. Call me from the next phone.", "Take %s. Quietly."],
 		"step2": ["Take %s, then %s. No phone in between, so remember it.", "%s — then %s. Don't stop in between."],
+		"step2_same": ["Take %s, and keep going the same way through the next room.", "%s — and straight on through the next room too."],
+		"you_are": ["You're by %s, right? ", "I think you're where %s is. "],
+		"blind": [" I can't see him anywhere. Listen at the door before you open it.", " He's off the cameras. Listen before every door."],
 		"nick_go": ["Go to %s. Call me from there.", "Make for %s. Quietly."],
 		"exit_nick": ["That's the room. Search %s. You know what I mean.", "You're there. It's %s. Go."],
 		"exit_obj": ["You're in the right room. Search the %s.", "This is it. The %s. Go."],
@@ -63,11 +68,14 @@ const L := {
 	"cs": {
 		"cautious": ["Pst. Na lince je ještě někdo. Budu šeptat.", "Cvaklo to. Poslouchá. Teď opatrně."],
 		"wait_quiet": ["Teď ne. Ťukni dvakrát, až bude pryč.", "Pořád tam je. Dvě ťuknutí, až bude čisto."],
-		"ask_feat": ["Poslouchej. Je v té místnosti %s, i když je teď potichu? Jedno ťuknutí ano, dvě ne.", "Nevím, kde jsi. Je u tebe %s? Ťukni jednou pro ano, dvakrát pro ne."],
+		"ask_feat": ["Poslouchej. Máš v té místnosti %s? I kdyby teď bylo ticho. Jedno ťuknutí ano, dvě ne.", "Nevím, kde jsi. Máš u sebe v místnosti %s? Ťukni jednou pro ano, dvakrát pro ne."],
 		"things": {"clock": "hodiny", "fan": "větrák", "rain": "okno", "radiator": "radiátor"},
 		"lost": ["Na žádné kameře tě nevidím. Řekni mi jednu věc, kterou vidíš — přezdívku, jestli můžeš. Ne místnost.", "Kde jsi? Něco malého. Něco, co víme jen my dva."],
 		"step": ["Dobře. Jdi %s. Pak mi zase zavolej.", "Jdi %s. Zavolej mi z dalšího telefonu.", "Jdi %s. Potichu."],
 		"step2": ["Jdi %s a pak %s. Mezi tím není telefon, tak si to pamatuj.", "Jdi %s — a pak %s. Nezastavuj se."],
+		"step2_same": ["Jdi %s a v další místnosti pokračuj stejným směrem.", "Jdi %s — a další místností rovně dál."],
+		"you_are": ["Jsi tam, kde je %s, že jo? ", "Myslím, že jsi tam, kde je %s. "],
+		"blind": [" Nikde ho na kamerách nevidím. Než otevřeš dveře, poslouchej.", " Zmizel z kamer. Před každými dveřmi poslouchej."],
 		"nick_go": ["Jdi tam, kde je %s. Zavolej mi odtamtud.", "Zamiř tam, kde je %s. Potichu."],
 		"exit_nick": ["To je ta místnost. Prohledej: %s. Víš, co myslím.", "Jsi tam. Je to %s. Jdi."],
 		"exit_obj": ["Jsi ve správné místnosti. Prohledej: %s.", "Tady to je. %s. Jdi."],
@@ -280,8 +288,31 @@ func _compose() -> String:
 				return pre + _pick(tx.ask_feat) % tx.things[f]
 	if guess == "":
 		return pre + _pick(tx.lost)
-	# 3. Guide, one step at a time, around him.
+	# 3. Tell them where she thinks they are, in a way only they can check,
+	# then guide, one step at a time, around him.
+	if guess != told_guess and guess != game.exit_room:
+		told_guess = guess
+		var detail := _detail(guess)
+		if detail != "":
+			pre += _pick(tx.you_are) % detail
 	return pre + _guide()
+
+
+## Something in that room the player can check and he probably can't decode:
+## its nickname, or an unremarkable object. Only things she's sure of
+## (nothing that might have been carried off).
+func _detail(r: String) -> String:
+	var h: House = game.house
+	var plain := ""
+	for oid in h.home_room:
+		if h.home_room[oid] != r or h.is_movable(oid) or h.obj_alt(oid) != "":
+			continue
+		var o := h.object_def(oid)
+		if o.has("nick"):
+			return h.obj_nick(oid)
+		if plain == "" and not o.get("obvious", false) and not cautious:  # he might know it
+			plain = ("the " if Loc.lang == "en" else "") + h.obj_name(oid)
+	return plain
 
 
 func _him_fresh() -> bool:
@@ -329,19 +360,27 @@ func _guide() -> String:
 	var first := _door_phrase(guess, dir)
 	if p.size() >= 2 and not h.rooms[p[0]].phone and p[0] != game.exit_room:
 		# No phone in the next room: give two steps.
-		var second := _door_phrase(p[0], h.door_to(p[0], p[1]), dir)
+		var dir2 := h.door_to(p[0], p[1])
 		expect_next = p[1]
-		p_facing = h.door_to(p[0], p[1])
+		p_facing = dir2
+		if dir2 == dir:
+			return _cap(_pick(tx.step2_same) % first)
+		var second := _door_phrase(p[0], dir2, dir)
 		return _cap(_pick(tx.step2) % [first, second])
 	expect_next = p[0]
 	p_facing = dir
+	var blind := ""
+	if not _him_fresh():
+		_blind_n += 1
+		if _blind_n % 3 == 1:
+			blind = _pick(tx.blind)
 	if p.size() == 1 and not h.rooms[p[0]].phone:
 		# The exit room has no phone: tell them what to search before they go.
 		var od := h.object_def(game.exit_obj)
 		var what: String = h.obj_nick(game.exit_obj) if od.has("nick") else ("" if cautious else ("the " if Loc.lang == "en" else "") + h.obj_name(game.exit_obj))
 		if what != "":
 			return _cap(_pick(tx.step) % first) + " " + _cap(_pick(tx.then_search) % what)
-	return _cap(_pick(tx.step) % first)
+	return _cap(_pick(tx.step) % first) + blind
 
 
 ## "the west door" / "the door on your left", depending on who might hear.

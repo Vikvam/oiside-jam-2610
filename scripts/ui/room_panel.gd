@@ -52,7 +52,7 @@ func bind(g: Game) -> void:
 
 func _on_event(t: String, d: Dictionary) -> void:
 	match t:
-		"player_arrive", "feature_toggled", "exit_try", "weather", "heating", "game_over", "player_move_start", "hidden":
+		"player_arrive", "feature_toggled", "exit_try", "weather", "heating", "game_over", "player_move_start", "hidden", "backed_out":
 			rebuild()
 		"busy":
 			_busy_total = maxf(d.dur, 0.01)
@@ -156,7 +156,8 @@ func rebuild() -> void:
 	for dir in House.DIRS:
 		var to := h.step(game.player_room, dir)
 		if to != "":
-			_btn(doors_box, "%s · %s → %s" % [Loc.t("rel_" + House.relative(game.facing, dir)), Loc.t(dir.capitalize()), h.room_name(to)], func():
+			var dest := h.room_name(to) if game.visited.has(to) else "?"
+			_btn(doors_box, "%s · %s → %s" % [Loc.t("rel_" + House.relative(game.facing, dir)), Loc.t(dir.capitalize()), dest], func():
 				move_requested.emit(to, sneak), ok)
 	var hb := _btn(doors_box, Loc.t("hidden_btn") if game.hidden else Loc.t("hide"), func(): game.toggle_hide(), ok)
 	hb.tooltip_text = Loc.t("hide_tip")

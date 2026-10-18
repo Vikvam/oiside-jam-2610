@@ -624,18 +624,20 @@ func tick(dt: float) -> void:
 			moving_to = ""
 			facing = house.door_to(from, player_room)
 			trail.append(player_room)
-			_cam(player_room, "in", house.door_to(player_room, from), "p")
-			var first := not visited.has(player_room)
-			visited[player_room] = true
-			emit("player_arrive", {"room": player_room, "from": from, "first": first})
-			_presence_timer = 0.0
-			_check_presence(true)
-			murderer.on_player_step(player_room, sneaking)
 			if murderer.room == player_room:
-				_end(false, "walked_in")
-				return
-			if house.rooms[player_room].phone and not receiver_up:
-				pass  # player picks up manually
+				if difficulty == "hard":
+					_end(false, "walked_in")
+					return
+				visited[player_room] = true  # you did get a glimpse of it
+				_back_out(from)
+			else:
+				_cam(player_room, "in", house.door_to(player_room, from), "p")
+				var first := not visited.has(player_room)
+				visited[player_room] = true
+				emit("player_arrive", {"room": player_room, "from": from, "first": first})
+				_presence_timer = 0.0
+				_check_presence(true)
+				murderer.on_player_step(player_room, sneaking)
 	if busy != "":
 		busy_timer -= dt
 		if busy_timer <= 0.0:
@@ -677,6 +679,17 @@ func tick(dt: float) -> void:
 			if _search_timer <= 0.0:
 				_searching = false
 				_end(false, "caught")
+
+
+## Gentle/normal: you open the door, he's right there — you stumble back the
+## way you came, and now he knows exactly where you are. Run, or hide.
+func _back_out(from: String) -> void:
+	var dir := house.door_to(from, player_room)
+	player_room = from
+	trail.append(from)
+	facing = House.opposite(dir)
+	emit("backed_out", {"dir": dir})
+	murderer.saw_player(from)
 
 
 func _check_presence(arrived: bool) -> void:
